@@ -1,0 +1,278 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\sbadaptor.h" />
+    <ClInclude Include="include\sbbuffer.h" />
+    <ClInclude Include="include\sbbuilder.h" />
+    <ClInclude Include="include\sbcalc.h" />
+    <ClInclude Include="include\sbconverter.h" />
+    <ClInclude Include="include\sbcriticalsection.h" />
+    <ClInclude Include="include\sbcsv.h" />
+    <ClInclude Include="include\sbevent.h" />
+    <ClInclude Include="include\sbimage.h" />
+    <ClInclude Include="include\sbimagebmp.h" />
+    <ClInclude Include="include\sbimagepng.h" />
+    <ClInclude Include="include\sbimagesvg.h" />
+    <ClInclude Include="include\sblogger.h" />
+    <ClInclude Include="include\sbmesh.h" />
+    <ClInclude Include="include\sbmessage.h" />
+    <ClInclude Include="include\sbmodel.h" />
+    <ClInclude Include="include\sbmodel3ds.h" />
+    <ClInclude Include="include\sbmodelobj.h" />
+    <ClInclude Include="include\sbmodelpmx.h" />
+    <ClInclude Include="include\sbmodelstl.h" />
+    <ClInclude Include="include\sbmutex.h" />
+    <ClInclude Include="include\sbpath.h" />
+    <ClInclude Include="include\sbrandom.h" />
+    <ClInclude Include="include\sbremote.h" />
+    <ClInclude Include="include\sbscene.h" />
+    <ClInclude Include="include\sbscenelocal.h" />
+    <ClInclude Include="include\sbsceneremote.h" />
+    <ClInclude Include="include\sbsceneshared.h" />
+    <ClInclude Include="include\sbsci.h" />
+    <ClInclude Include="include\sbservice.h" />
+    <ClInclude Include="include\sbshared.h" />
+    <ClInclude Include="include\sbsolver.h" />
+    <ClInclude Include="include\sbtcp.h" />
+    <ClInclude Include="include\sbthread.h" />
+    <ClInclude Include="include\sbtimer.h" />
+    <ClInclude Include="include\sbtokenizer.h" />
+    <ClInclude Include="include\sbtree.h" />
+    <ClInclude Include="include\sbtypedb.h" />
+    <ClInclude Include="include\sbtypes.h" />
+    <ClInclude Include="include\sbudp.h" />
+    <ClInclude Include="include\sbxml.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\sbadaptor.cpp" />
+    <ClCompile Include="src\sbbuilder.cpp" />
+    <ClCompile Include="src\sbcalc.cpp" />
+    <ClCompile Include="src\sbconverter.cpp" />
+    <ClCompile Include="src\sbcriticalsection.cpp" />
+    <ClCompile Include="src\sbevent.cpp" />
+    <ClCompile Include="src\sbimage.cpp" />
+    <ClCompile Include="src\sbimagebmp.cpp" />
+    <ClCompile Include="src\sbimagepng.cpp" />
+    <ClCompile Include="src\sbimagesvg.cpp" />
+    <ClCompile Include="src\sblogger.cpp" />
+    <ClCompile Include="src\sbmesh.cpp" />
+    <ClCompile Include="src\sbmessage.cpp" />
+    <ClCompile Include="src\sbmodel.cpp" />
+    <ClCompile Include="src\sbmodel3ds.cpp" />
+    <ClCompile Include="src\sbmodelobj.cpp" />
+    <ClCompile Include="src\sbmodelpmx.cpp" />
+    <ClCompile Include="src\sbmodelstl.cpp" />
+    <ClCompile Include="src\sbmutex.cpp" />
+    <ClCompile Include="src\sbpath.cpp" />
+    <ClCompile Include="src\sbrandom.cpp" />
+    <ClCompile Include="src\sbremote.cpp" />
+    <ClCompile Include="src\sbscene.cpp" />
+    <ClCompile Include="src\sbscenelocal.cpp" />
+    <ClCompile Include="src\sbsceneremote.cpp" />
+    <ClCompile Include="src\sbsceneshared.cpp" />
+    <ClCompile Include="src\sbsci.cpp" />
+    <ClCompile Include="src\sbservice.cpp" />
+    <ClCompile Include="src\sbshared.cpp" />
+    <ClCompile Include="src\sbsolver.cpp" />
+    <ClCompile Include="src\sbtcp.cpp" />
+    <ClCompile Include="src\sbthread.cpp" />
+    <ClCompile Include="src\sbtimer.cpp" />
+    <ClCompile Include="src\sbtokenizer.cpp" />
+    <ClCompile Include="src\sbtree.cpp" />
+    <ClCompile Include="src\sbtypedb.cpp" />
+    <ClCompile Include="src\sbtypes.cpp" />
+    <ClCompile Include="src\sbudp.cpp" />
+    <ClCompile Include="src\sbxml.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="doc\3DSINFO.TXT" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{3FB13E33-3965-4F78-9C2B-6F223E10548E}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Scenebuilder</RootNamespace>
+    <ProjectName>Scenebuilder</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)lib\x86\</OutDir>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files (x86)\boost\boost_1_47\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <TargetName>$(ProjectName)D</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)lib\x64\</OutDir>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <TargetName>$(ProjectName)D</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)lib\x86\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)lib\x64\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../;./include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)ScenebuilderD.lib</OutputFile>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../;./include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)ScenebuilderD.lib</OutputFile>
+      <AdditionalDependencies>libexpatMT.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../;./include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)Scenebuilder.lib</OutputFile>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../;./include</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+    <Lib>
+      <OutputFile>$(OutDir)Scenebuilder.lib</OutputFile>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+      <AdditionalDependencies>libexpatMT.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

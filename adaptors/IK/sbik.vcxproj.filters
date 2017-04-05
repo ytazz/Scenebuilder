@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="sbik.cpp" />
+    <ClCompile Include="sbikbody.cpp" />
+    <ClCompile Include="sbikconstraint.cpp" />
+    <ClCompile Include="sbiklink.cpp" />
+    <ClCompile Include="sbikrange.cpp" />
+    <ClCompile Include="sbiksolver.cpp" />
+    <ClCompile Include="sbikvariable.cpp" />
+    <ClCompile Include="sbikhandle.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sbik.h" />
+    <ClInclude Include="sbikbody.h" />
+    <ClInclude Include="sbikconstraint.h" />
+    <ClInclude Include="sbiklink.h" />
+    <ClInclude Include="sbikrange.h" />
+    <ClInclude Include="sbiksolver.h" />
+    <ClInclude Include="sbikvariable.h" />
+    <ClInclude Include="sbikhandle.h" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1083 @@
+\documentclass[a4paper, 12pt]{jarticle}
+\usepackage{graphicx, booktabs, amsmath, amssymb, url, makeidx, color, listings}
+
+\title{Scenebuilder\\XML要素リファレンスマニュアル}
+\date{}
+\author{}
+
+\newcommand{\figlabel}{図\,}
+\newcommand{\tablabel}{表\,}
+\newcommand{\textttb}[1]{\texttt{\textbf{#1}}}
+\newcommand{\texttti}[1]{\texttt{\textit{#1}}}
+
+% こうしないとtypewrite fontのboldが出ないらしい
+\renewcommand{\ttdefault}{pcr}
+
+\setlength{\oddsidemargin}{0mm}
+\setlength{\evensidemargin}{0mm}
+\setlength{\voffset}{0mm}
+\setlength{\hoffset}{0mm}
+\setlength{\topmargin}{0mm}
+\setlength{\headheight}{0mm}
+\setlength{\headsep}{0mm}
+\setlength{\textwidth}{160mm}
+\setlength{\textheight}{220mm}
+
+\begin{document}
+\maketitle
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\normalsize,          % the size of the fonts that are used for the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  numbers=none,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  string=[b]",
+  numberstyle=\tiny\color{mygray}\texttt, % the style that is used for the line-numbers
+  commentstyle=\color{mygreen}\texttt,    % comment style
+  stringstyle=\color{black}\texttt,     % string literal style
+  identifierstyle=\texttt,
+  tabsize=2,                       % sets default tabsize to 2 spaces
+}
+
+\subsection*{著者}
+tazz
+
+\subsection*{改訂履歴}
+
+\begin{tabular}{ll}
+2013/9/4	& 執筆開始
+\end{tabular}
+
+\section{はじめに}
+
+ScenebuilderライブラリはXMLをロードしてシーンを構築することができます．
+本マニュアルではXMLによるシーン記述のために使用可能な要素について説明します．
+
+\section{XMLの書式}
+
+一行目は普通次のように書きます．
+\begin{lstlisting}
+  <?xml version="1.0" encoding="utf-8"?>
+\end{lstlisting}
+一般的な書式はXMLの仕様を参照してください．
+XMLの要素の書式は次のようになります．
+\begin{lstlisting}
+  <elem attr="value" ... >
+
+    ...
+
+  </elem>
+\end{lstlisting}
+最初の行を開始タグ，最後の行を終了タグと呼びます．
+開始タグの\texttt{elem}は要素名です．
+要素名の後には任意個の属性名・属性値のペアが続きます．
+ここで\lstinline{attr}が属性名，\lstinline{value}は属性値です．
+`='の前後には空白をはさんでも構いません．
+属性値はかならず二重引用符\lstinline{"..."}でくくります．
+要素定義の中には任意個の子要素を記述できる他，平文を記述することもできます．
+ただしScenebuilderがXMLを読む際，平文は無視されます．
+
+また，子要素を持たない要素は簡単に
+\begin{lstlisting}
+  <elem attr="value" ... />
+\end{lstlisting}
+と書くこともできます．
+このような書式で，XMLは要素の木構造を定義します．
+
+基本的に，XML要素はScenebuilderによって構築されるシーンに含まれるオブジェクトを定義します．
+例えば\lstinline{body}要素は剛体を定義し，\lstinline{hinge}要素は回転関節を定義します．
+その一方で，それ自体はオブジェクトを定義せずに，オブジェクトツリーの構築を支援する機能を提供するXML要素もあります．
+以下では前者をオブジェクト要素，後者を特殊要素を呼びます．
+オブジェクト要素は，その要素名がScenebuilderクラスを表します．
+使用可能なクラスについては\ref{sec_class}節を参照してください．
+
+\section{基本型}
+\label{sec_primitive}
+
+Scenebuilderが認識するXMLにおいて，属性値はいくつかの決められた基本型を持ちます．
+以下が基本型の一覧です．
+\vspace{2mm}\\
+\begin{tabular}{ll}
+C/C++型名	       & 説明                \\ \hline
+\texttt{bool}      & 真偽値              \\
+\texttt{int}       & 整数                \\
+\texttt{real\_t}   & 実数                \\
+\texttt{vec2\_t}   & 2次元ベクトル       \\
+\texttt{vec3\_t}   & 3次元ベクトル       \\
+\texttt{vec4\_t}   & 4次元ベクトル       \\
+\texttt{quat\_t}   & クォータニオン      \\
+\texttt{mat3\_t}   & 3$\times$3行列      \\
+\texttt{str32\_t}  & 32文字固定長文字列  \\
+\texttt{str256\_t} & 256文字固定長文字列 \\
+\texttt{string}    & パス
+\end{tabular}
+\vspace{2mm}\\
+これらの型名はScenebuilderを利用するC/C++プログラム上で使用可能なように型定義されていますが，
+XMLを記述する上では気に留める必要はありません．
+以下ではXML上でこれらの基本型の値をXMLで記述する際の書式について説明します．
+
+\subsection*{真偽値の書式}
+
+真の場合は\lstinline{true}，偽の場合は\lstinline{false}と記述します．
+先頭のみ大文字，または全て大文字の書式も可です．
+
+\subsection*{整数値の書式}
+
+普通に整数を（\lstinline{-123}のように）記述します．
+次の実数のように演算式や単位は使えないので気を付けてください．
+
+\subsection*{実数値の書式}
+
+実数値の記述には，数値表記に加えて簡単な演算式や単位指定を用いることができます．
+数値表記には\lstinline{1.234e-5}などの書式が使えます．
+式に使える演算子は
+\vspace{1mm}\\
+\begin{tabular}{l|l}
+\texttt{+}	& 正符号（単項演算子），加算（二項演算子） \\
+\texttt{-}  & 負符号（単項演算子），減算（二項演算子） \\
+\texttt{*}  & 乗算 \\
+\texttt{/}  & 除算 \\
+\texttt{\^}  & 累乗
+\end{tabular}
+\vspace{1mm}\\
+です．
+また,使用可能な数学関数は
+\vspace{1mm}\\
+\begin{tabular}{ll}
+\texttt{sin}  &  \\
+\texttt{cos}  &  \\
+\texttt{tan}  &  \\
+\texttt{exp}  &  \\
+\texttt{log}  &  \\
+\texttt{sqrt} & 
+\end{tabular}
+\vspace{1mm}\\
+です．
+使用可能な定数は
+\vspace{1mm}\\
+\begin{tabular}{l|l}
+\texttt{pi}  & 円周率
+\end{tabular}
+\vspace{1mm}\\
+です．
+数値表記の直後に現れる非数字文字列で，上の関数と定数のいずれにも
+当てはまらないものは単位として認識されます．
+また，`['と`]'で囲まれた部分も単位として認識されます．
+
+Scenebuilderは，内部的にはすべての物理量を基本単位である
+m（メートル），kg（キログラム），s（秒）およびその複合単位（m/s，kg\,m/s$^2$など）で
+表現します．
+XML中の実数値は使用単位にもとづいて内部表現に換算されます．
+例えば\lstinline{12.3mm}の場合，mmからmへの換算係数は$0.001$ですので，
+内部的に$0.0123$に変換されます．
+\lstinline{45[km/h]}であれば$1000/3600$をかけて$12.5$に変換されます．
+
+仕様可能な単位とその換算係数は次の通りです．
+\vspace{1mm}\\
+\begin{tabular}{ll|ll|ll|ll}
+名前            & 換算係数 &                 &      &                 &                   &                 &                   \\ \hline
+\texttt{km}     & 1000     & \texttt{hour}   & 3600 & \texttt{N}      & 1                 & \texttt{rad}    & 1                 \\
+\texttt{m}      & 1        & \texttt{h}      & 3600 & \texttt{mN}     & 0.001             & \texttt{deg}    & \texttt{pi}/180   \\
+\texttt{cm}     & 0.01     & \texttt{min}    & 60   & \texttt{G}      & 9.80665           & \texttt{\%}     & 0.01              \\
+\texttt{mm}     & 0.001    & \texttt{second} & 1    & \texttt{kgf}    & \texttt{G}        &                 &                   \\
+\texttt{kg}     & 1        & \texttt{s}      & 1    & \texttt{Nm}     & 1                 &                 &                   \\
+\texttt{g}      & 0.001    &                 &      & \texttt{mNm}    & 0.001             &                 &                   \\
+                &          &                 &      & \texttt{kgfcm}  & 0.01 \,\texttt{G} &                 &
+\end{tabular}
+\vspace{1mm}\\
+また，上の単位を組み合わせて複合単位指定が可能です．
+例えば\lstinline{[g/cm^3]}とすると，換算係数は$0.001 / 0.01^3$で$1000$となります．
+複合単位指定で使用可能な演算子は\texttt{/}と\texttt{\^{}}の二つのみで，\texttt{\^{}}の方が演算の優先順位が上です．
+複合単位を使用する場合は必ず`['\;`]'で囲ってください．
+
+
+数値指定において単位が省略された場合，後述する属性の物理的次元とデフォルト単位にもとづいて単位が特定されます．
+初期状態においてデフォルト単位はm，kg，sです．
+このとき，例えば\lstinline{body}要素の\lstinline{mass}属性に対して\lstinline{mass="5.0"}と指定した場合，
+\lstinline{mass}属性の物理的次元は質量で，質量のデフォルト単位がkgであることから
+内部値はそのまま$5.0$となります．
+デフォルト単位は\lstinline{unit_length}，\lstinline{unit_mass}，\lstinline{unit_time}グローバル属性で変更することができます．
+\lstinline{<attr unit_length="mm">}とした上で，
+\texttt{body}要素の\texttt{vel}属性に\lstinline{vel="0 0 200"}と指定した場合，
+\texttt{vel}属性の物理的次元は速度ですので，mm/sで換算され，内部値は$0.0\;0.0\;0.2$となります．
+
+
+\noindent\textbf{注意}
+ \;\; 一つの実数値の記述の中に空白を含めることは（括弧の中でも）できません．
+
+\noindent\textbf{注意}
+ \;\; 単位を明示した場合は属性の物理的次元は無視されます．例えば質量の単位にkmを用いてもエラーにはなりません．
+
+\subsection*{ベクトル型の書式}
+
+ベクトルの成分の数だけ実数値を空白区切りで記述します．
+\lstinline{trn="0.5 0.0 -3*2.4"}など．
+各成分の表記の途中で空白を入れることはできません．
+ただし先頭と末尾に空白を入れることは可能です．
+
+\subsection*{クォータニオン型の書式}
+
+回転を表すクォータニオンはいくつかの異なる書式で記述できます．
+
+\subsubsection*{4次元ベクトル表記}
+
+\lstinline{"1 0 0 0"}のように4成分を並べて記述します．
+
+\subsubsection*{回転角度@回転軸表記}
+
+`@'区切りで回転角度と回転軸を指定します．
+\lstinline{"30deg@1 0 1"}とすると$[1\;0\;1]$を軸とする$30$度の回転となります．
+角度指定部は実数値と同じ書式です．
+回転軸指定部は3次元ベクトルと同じ書式です．
+
+回転軸がx，y，z軸の場合は
+\lstinline{"90deg@y"}
+などと記述することもできます．
+
+\subsubsection*{回転行列表記}
+
+3$\times$3行列と同じ書式です．
+
+\subsubsection*{回転の合成}
+
+`*'区切りで複数個のクォータニオン表記を連結することで，回転の合成を表せます．
+\lstinline{"-45deg@z*120deg@y"}など．
+
+\noindent\textbf{注意}\;\;
+回転の合成において，個々の回転の記述で`*'演算子を使用すると，合成の`*'と誤認識されエラーとなります．
+
+\subsection*{3$\times$3行列型の書式}
+
+実数値，3次元ベクトル，9次元ベクトルのいずれかと同じ書式です．
+実数値指定の場合，単位行列にその値をかけた行列を表します．
+3次元ベクトル指定の場合，そのベクトルの各成分が対角成分となるような対角行列を表します．
+9次元ベクトル指定の場合，そのベクトルの各成分が3$\times$3行列の各成分に対応します．
+ただし，成分の並びは列に沿った順番（column-major）です．
+
+\subsection*{固定長文字列の書式}
+
+固定長文字列は，そのバイト長に制限のある文字列型です．
+\lstinline{str32_t}と\lstinline{str256_t}があり，それぞれ32バイト，256バイト制限です．
+バイト数には末尾の終端文字も含まれます．
+また，非ascii文字はUTF-8エンコーディングされますので，その分のバイト数を消費します．
+文字列の指定に特に書式はありませんが，
+制限バイト数を超過する文字列を指定した場合は，バイト数におさまるように切り詰められます．
+
+\subsection*{パスの書式}
+
+パスは，ある要素から別の要素への参照を定義します．
+パスの書式は，参照元の要素から参照先の要素へ至る道筋に沿って，要素の\lstinline{name}属性値を区切り文字'/'で連結したものになります．
+
+使用例を以下に示します．
+\begin{lstlisting}
+  <namespace name="robot">
+    <mesh name="mesh_arm" .../>
+    
+    <namespace name="arm">
+      <body name="body">
+        <connector name="c"/>
+      </body>
+    
+      <attach connector="body/c" shape="../mesh_arm"/>
+    </namespace>
+  </namespace>
+\end{lstlisting}
+この例では，\lstinline{attach}要素によって剛体に形状を取り付けています．
+\lstinline{attach}要素の\lstinline{connector}属性と\lstinline{shape}属性はいずれもパス型です．
+パスは\lstinline{attach}要素からの相対パスになります．
+\lstinline{connector}属性には，\lstinline{attach}と同じ階層にある\lstinline{body}（\lstinline{name}属性は\lstinline{"body"}）
+の下にある\lstinline{connector}（\lstinline{name}属性は\lstinline{"c"}）を参照しています．
+また，\lstinline{shape}属性は\lstinline{attach}の一つ上の階層にある\lstinline{mesh}（\lstinline{name}属性は\lstinline{"mesh_arm"}）
+を参照しています．\lstinline{..}は「ひとつ上の階層」を表します．
+
+\noindent\textbf{注意}
+ \;\; パスは内部的に\lstinline{str256_t}で保持されますので，前述の\lstinline{str256_t}と同様のバイト数制限を受けます．
+
+\section{クラス一覧}
+\label{sec_class}
+
+\subsection*{属性表について}
+
+次節以降の各要素が持つ属性を示す表において，各項目の意味は次の通りです．
+\vspace{1mm}\\
+\begin{tabular}{l|l}
+name	& 属性の名前 \\
+type    & 属性の基本型 \\
+default & 未指定の場合のデフォルト値 \\
+P/S     & パラメータ(P)か状態(S)か \\
+dim     & 物理量の次元
+\end{tabular}
+\vspace{1mm}\\
+パラメータと状態の区別は，C/C++プログラムからScenebuilder APIを使用する際に関係してきますが，
+XMLを記述する上では意識する必要はありません．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{sceneobject}}
+
+\subsubsection*{基底クラス}
+---
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		            & type               & default 	      & P/S & dim & description	         \\ \hline
+\texttt{name}           & \texttt{str256\_t} & \texttt{""}    & P   &     & 名前                 \\
+\texttt{unit\_length}   & \texttt{str32\_t}  & \texttt{"m"}   & P   &     & 長さのデフォルト単位 \\
+\texttt{unit\_rotation} & \texttt{str32\_t}  & \texttt{"rad"} & P   &     & 角度のデフォルト単位 \\
+\texttt{unit\_mass}     & \texttt{str32\_t}  & \texttt{"kg"}  & P   &     & 質量のデフォルト単位 \\
+\texttt{unit\_time}     & \texttt{str32\_t}  & \texttt{"s"}   & P   &     & 時間のデフォルト単位
+\end{tabular}
+
+\subsubsection*{説明}
+全てのクラスの基本クラス．
+\lstinline{name}はパスによる要素の参照に使用します．
+\lstinline{unit_***}属性には\ref{sec_primitive}節で述べた単位指定子を指定します．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{spatialobject}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		 & type             & default 		 & P/S & dim & description	\\ \hline
+\texttt{trn} & \texttt{vec3\_t} & $[0\,0\,0]$	 & S   & $L$ & 位置			\\
+\texttt{rot} & \texttt{quat\_t} & $[1\,0\,0\,0]$ & S   & $R$ & 向き
+\end{tabular}
+
+\subsubsection*{説明}
+三次元空間上の位置と向きが定義されたクラス．
+\lstinline{trn}と\lstinline{rot}は，上の階層にある\lstinline{spatialobject}派生要素からの相対的な位置と向きを表す．
+例えば
+\begin{lstlisting}
+  <namespace name="world">
+    <namespace name="japan" trn="3 0 0">
+      <namespace name="nagoya" trn="-2 -1 0">
+   
+      </namespace>
+    </namespace>
+  </namespace>
+\end{lstlisting}
+の場合，\lstinline{"nagoya"}の空間的位置は\lstinline{"japan"}に対しては$[-2\;-1\;0]$，
+\lstinline{"world"}に対しては$[1\;-1\;0]$となる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{namespace}}
+
+\subsubsection*{基底クラス}
+\texttt{spatialobject}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+固有の名前空間を定義するためのクラス．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{body}}
+
+\subsubsection*{基底クラス}
+\texttt{spatialobject}
+
+\subsubsection*{属性}
+
+\begin{tabular}{llllll}
+name		        & type             & default        & P/S & dim    & description	          \\ \hline
+\texttt{mass}       & \texttt{real\_t} & $1.0$		    & P   & $M$    & 質量			          \\
+\texttt{inertia}    & \texttt{mat3\_t} & 単位行列	    & P   & $ML^2$ & 慣性行列                 \\
+\texttt{center}     & \texttt{vec3\_t} & $[0\,0\,0]$    & P   & $L$    & 重心位置                 \\
+\texttt{dynamical}  & \texttt{bool}    & \texttt{true}  & P   &        & 加速度を生じるか         \\
+\texttt{auto\_mass} & \texttt{bool}    & \texttt{false} & P   &        & 質量の自動計算           \\
+\texttt{auto\_tree} & \texttt{bool}    & \texttt{false} & P   &        & 関節座標シミュレーション \\
+\texttt{vel}        & \texttt{vec3\_t} & $[0\,0\,0]$    & S   & $L/T$  & 速度                     \\
+\texttt{angvel}     & \texttt{vec3\_t} & $[0\,0\,0]$	& S	  & $R/T$  & 角速度                   
+\end{tabular}
+
+\subsubsection*{説明}
+剛体．空間上の剛体の位置と向きは，\lstinline{spatialobject}要素の\lstinline{trn}属性と\lstinline{rot}属性によって表される．
+その一方で速度と角速度は\lstinline{vel}属性と\lstinline{angvel}属性がそれぞれ表す．
+\lstinline{spatialobject}の項で説明したように，位置と向きは上層の\lstinline{spatialobject}に対する相対座標であるが，
+速度と角速度は絶対座標で表される．
+
+\lstinline{dynamical}属性が\lstinline{true}の場合，剛体は外力の影響を受けずに等速運動する．
+速度が$0$の場合は空間中に静止する．
+
+\lstinline{auto_mass}属性が\lstinline{true}の場合，剛体に取り付けられた形状とその密度に基づいて剛体の質量，重心位置および慣性行列が自動計算される．
+この際，\lstinline{mass}，\lstinline{inertia}，\lstinline{center}の属性値は無視される．
+
+\lstinline{auto_tree}属性が\lstinline{true}の場合，剛体と関節によって構成される木構造が自動的に検出され，その木構造に関しては
+関節座標系を用いて物理シミュレーションが計算される．
+この際，\lstinline{auto_tree}が\lstinline{true}である剛体が木構造の根となる．
+また，関節の極性は根に近い方がソケット，反対側がプラグとなっている場合にのみ木構造に含まれる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{connector}}
+
+\subsubsection*{基底クラス}
+\texttt{spatialobject}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+コネクタ．
+剛体に対する形状や関節の取り付け位置を定義する．
+コネクタの位置と向きは，\lstinline{spatialobject}要素の\lstinline{trn}属性と\lstinline{rot}属性によって表される．
+
+\subsubsection*{制限}
+\texttt{body}の子孫タグであることが必要．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{pmat}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		              & type             & default & P/S & dim     & description  \\ \hline
+\texttt{density}          & \texttt{real\_t} & $1.0$   & P   & $M/L^3$ & 密度		  \\
+\texttt{cor}              & \texttt{real\_t} & $0.3$   & P   &         & 跳ね返り係数 \\
+\texttt{static\_friction} & \texttt{real\_t} & $0.3$   & P   &         & 静摩擦係数   \\
+\texttt{dynamic\_friction}& \texttt{real\_t} & $0.3$   & P   &         & 動摩擦係数   \\
+\texttt{spring}           & \texttt{real\_t} & $0.0$   & P   &         & バネ係数     \\
+\texttt{damper}           & \texttt{real\_t} & $0.0$   & P   &         & ダンパ係数
+\end{tabular}
+
+\subsubsection*{説明}
+物理的材質（physical material）．
+形状と共に剛体に関連付けることで物性を定義する．
+
+\lstinline{density}は剛体の自動質量計算において用いられる（\lstinline{body.auto\_mass}参照）．
+
+\lstinline{cor}は跳ね返り係数を表す．
+物体がある程度以上の相対速度をもって衝突する場合，衝突直後の相対速度はおおむね衝突前の相対速度に跳ね返り係数$\;\times -1$を
+かけた値となる．
+
+\lstinline{static_friction}と\lstinline{dynamic_friction}はそれぞれ静摩擦係数と動摩擦係数である．
+接触面の接線方向に作用する力は，摩擦係数によって決まる摩擦力円錐に含まれるように制限される．
+このとき，接線方向の相対速度がしきい値以下の場合は静摩擦，以上の場合は動摩擦として扱われる．
+
+\lstinline{spring}と\lstinline{damper}は接触面の法線方向の反発力を表すバネ・ダンパ係数である．
+これらを$0$とした場合は，係数が$\infty$であるものと見なされる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{vmat}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		       & type               & default              & P/S & dim  & description \\ \hline
+\texttt{ambient}   & \texttt{vec4\_t}   & $[0.2\,0.2\,0.2\,1]$ & P   &      & 環境色	  \\
+\texttt{diffuse}   & \texttt{vec4\_t}   & $[0.8\,0.8\,0.8\,1]$ & P   &      & 拡散色      \\
+\texttt{specular}  & \texttt{vec4\_t}   & $[0\,0\,0\,1]$       & P   &      & 反射色      \\
+\texttt{emissive}  & \texttt{vec4\_t}   & $[0\,0\,0\,1]$       & P   &      & 自己発色    \\
+\texttt{shininess} & \texttt{real\_t}   & $0.0$                & P   &      & 反射強度    \\
+\texttt{alpha}     & \texttt{real\_t}   & $1.0$                & P   &      & 透過度      \\
+\texttt{colorname} & \texttt{str32\_t}  & ""                   & P   &      & 予約色      \\
+\texttt{texture}   & \texttt{str256\_t} & ""                   & P   &      & テクスチャ
+\end{tabular}
+
+\subsubsection*{説明}
+視覚的材質（visual material）．
+形状と共に剛体に関連付けることで視覚的性質を定義する．
+
+\lstinline{alpha}属性に$1.0$以外の値を設定した場合，その値が透過度として用いられ，拡散色のA成分は無視される．
+
+\lstinline{colorname}属性には予約色の名前を指定できる．
+\lstinline{colorname}に有効な予約色名が指定された場合，その予約色が拡散色に設定され，\lstinline{diffuse}の値は無視される．
+
+\lstinline{texture}属性にはテクスチャファイル名を指定できる．
+テクスチャファイル名は，\lstinline{vmat}要素が記述されたXMLファイルからテクスチャ画像ファイルへの相対パスである．
+また，\lstinline{vmat}要素の\lstinline{texture}属性によってテクスチャを指定する場合は，
+材質を割り当てる\lstinline{shape}要素の\lstinline{auto_texcoord}属性でテクスチャ座標生成方法を指定する必要がある．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{shape}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		             & type              & default       & P/S & dim  & description              \\ \hline
+\texttt{collision}       & \texttt{bool}     & \texttt{true} & P   &      & 物理演算用	             \\
+\texttt{visual}          & \texttt{bool}     & \texttt{true} & P   &      & 視覚化用                 \\
+\texttt{auto\_texcoord}  & \texttt{str32\_t} & ""            & P   &      & テクスチャ座標生成       \\
+\texttt{texture\_scale}  & \texttt{vec2\_t}  & $[1\,1]$      & P   &      & テクスチャ座標スケール   \\
+\texttt{texture\_offset} & \texttt{vec2\_t}  & $[0\,0]$      & P   &      & テクスチャ座標オフセット
+\end{tabular}
+
+\subsubsection*{説明}
+形状．
+剛体に取り付けることによって，物理シミュレーションにおける剛体の形状や物性，剛体の可視化方法を表現する．
+
+\lstinline{collision}属性が\lstinline{true}の場合，
+形状は\lstinline{pmat}要素と合わせて剛体の質量の自動計算および衝突判定に使用される．
+
+\lstinline{visual}属性が\lstinline{true}の場合，
+形状は\lstinline{vmat}要素と合わせて可視化に使用される．
+\texttt{auto\_ texcoord}属性はテクスチャ座標の自動生成に使用する．
+\lstinline{vmat}要素の\lstinline{texture}属性でテクスチャが指定されている場合，\lstinline{auto_texcoord}属性を正しく設定しないと
+テクスチャが表示されない．
+\lstinline{auto_texcoord}には\lstinline{"box"}と\lstinline{"sphere"}のいずれかが指定できる．
+\lstinline{"box"}とした場合，その形状を内包する直方体にテクスチャを貼り，それを形状に投影するようにテクスチャ座標を生成する．
+直方体に対しては，その展開図をテクスチャのUV座標空間にマッピングする．
+
+\lstinline{"sphere"}とした場合，その形状の外接球にテクスチャを貼り，それを形状に投影するようにテクスチャ座標が生成される．
+球に対してはその経度（$[-180\mathrm{deg},\,180\mathrm{deg}]$）をU座標（$[0, 1]$）に，
+緯度（$[-90\mathrm{deg},\,90\mathrm{deg}]$）をV座標（$[0, 1]$）にマッピングする．
+
+\lstinline{texture_scale}属性と\lstinline{texture_offset}属性はテクスチャの大きさと位置の調整に使用する．
+上で述べた方法で直方体および球に対して生成されたUV座標に対して，
+\lstinline{texture_scale}の各成分でスケーリングし，\lstinline{texture_offset}の各成分を加えたものが最終的なUV座標となる．
+
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{box}}
+
+\subsubsection*{基底クラス}
+\texttt{shape}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		  & type             & default     & P/S & dim  & description \\ \hline
+\texttt{size} & \texttt{vec3\_t} & $[1\,1\,1]$ & P   & $L$  & 大きさ
+\end{tabular}
+
+\subsubsection*{説明}
+直方体．
+取り付けるコネクタの原点が直方体の中心となり，
+コネクタ座標軸と各辺が平行となる．
+\texttt{size.x}，\texttt{size.x}，\texttt{size.z}がそれぞれx，y，z方向の辺の長さを表す．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{sphere}}
+
+\subsubsection*{基底クラス}
+\texttt{shape}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		    & type             & default & P/S & dim  & description \\ \hline
+\texttt{radius} & \texttt{real\_t} & $1$     & P   & $L$  & 半径
+\end{tabular}
+
+\subsubsection*{説明}
+球．
+取り付けるコネクタの原点が球の中心となる．
+\texttt{radius}が半径を表す．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{cylinder}}
+
+\subsubsection*{基底クラス}
+\texttt{shape}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		    & type             & default & P/S & dim  & description \\ \hline
+\texttt{radius} & \texttt{real\_t} & $1$     & P   & $L$  & 半径        \\
+\texttt{height} & \texttt{real\_t} & $1$     & P   & $L$  & 高さ
+\end{tabular}
+
+\subsubsection*{説明}
+円柱．
+取り付けるコネクタの原点が円柱の中心となり，コネクタのz軸が円柱の軸となる．
+\texttt{radius}が半径，\texttt{height}が高さ（軸方向の長さ）を表す．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{mesh}}
+
+\subsubsection*{基底クラス}
+\texttt{shape}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		      & type               & default        & P/S & dim  & description \\ \hline
+\texttt{filename} & \texttt{str256\_t} & ""             & P   &      & ファイル名  \\
+\texttt{scale}    & \texttt{real\_t}   & $0$            & P   &      & スケール    \\
+\texttt{prism}    & \texttt{bool}      & \texttt{false} & P   &      & 角柱化      \\
+\texttt{prismdir} & \texttt{vec3\_t}   & $[0\,0\,1]$    & P   &      & 角柱化方向
+\end{tabular}
+
+\subsubsection*{説明}
+メッシュ．
+別ファイルに保存された3Dモデルデータを表す．
+
+\texttt{filename}は\texttt{mesh}要素が記述されているXMLファイルからの相対パス．
+
+\texttt{scale}はメッシュの拡大率．
+\texttt{scale}が$0$の場合，\texttt{unit\_length}属性に基づく単位変換係数が拡大率として使われる．
+\texttt{scale}に正の値を指定した場合，その値が拡大率として使われる．
+
+\lstinline{mesh}要素の\lstinline{collision}属性を\lstinline{true}に設定して物理シミュレーションに使用する場合，
+元の凸多面体形状の凸包（形状を包含する最小の凸多面体）に変換される．
+凹みや穴のある形状はそのままの形では扱われないので注意が必要である．
+\lstinline{prism}属性を\lstinline{true}に指定すると，凸多面体であるモデルデータが三角柱の集まりに自動的に変換される．
+丘陵など，特定の方向に沿って凹凸のある形状は，角柱化することによって物理シミュレーションで凹みや穴を再現できるようになる．
+角柱化の際，凸多面体の面を構成する三角形が\lstinline{prismdir}属性で示された方向に掃引されることで三角柱に変換される．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{light}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+ライト．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{camera}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		 & type             & default & P/S & dim  & description \\ \hline
+\texttt{fov} & \texttt{real\_t} & $0.3$   & P   &      & 視野角
+\end{tabular}
+
+\subsubsection*{説明}
+カメラ．
+コネクタに取り付けることによって三次元空間上のカメラ（視点）を定義する．
+コネクタの原点がカメラ原点となり，コネクタのz軸負の向きが視線の向き，y軸正の向きが視野上向きとなる．
+\texttt{fov}属性は視野角の正接を指定する．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{attach}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		       & type               & default & P/S & dim  & description \\ \hline
+\texttt{connector} & \texttt{str256\_t} & ""      & P   &      & コネクタ    \\
+\texttt{shape}     & パス               &         & P   &      & 形状        \\
+\texttt{vmat}      & パス               &         & P   &      & 視覚的材質  \\
+\texttt{pmat}      & パス               &         & P   &      & 物理的材質  \\
+\texttt{light}     & パス               &         & P   &      & ライト      \\
+\texttt{camera}    & パス               &         & P   &      & カメラ      \\
+\texttt{bone}      & パス               &         & P   &      & ボーン
+\end{tabular}
+
+\subsubsection*{説明}
+
+コネクタに形状，カメラ，ライトなどを取り付けるために使用する．
+
+\subsubsection*{形状の取り付け}
+\texttt{connector}で指定したコネクタに\texttt{shape}で指定した形状を取り付ける．
+形状の\texttt{collision}属性が\texttt{true}の場合，\texttt{pmat}で指定した物理的材質が使用される．
+形状の\texttt{visual}属性が\texttt{true}の場合，\texttt{vmap}で指定した視覚的材質が使用される．
+
+\subsubsection*{カメラの取り付け}
+\texttt{connector}で指定したコネクタに\texttt{camera}で指定したカメラを取り付ける．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{joint}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{llllll}
+name		     & type          & default       & P/S & dim  & description \\ \hline
+\texttt{sock}    & パス          &               & P   &      & ソケット    \\
+\texttt{plug}    & パス          &               & P   &      & プラグ      \\
+\texttt{enabled} & \texttt{bool} & \texttt{true} & P   &      & 有効化フラグ
+\end{tabular}
+
+\subsubsection*{説明}
+
+関節．
+剛体同士を連結して運動に制限を加える．
+剛体の連結はソケットとプラグと呼ばれるコネクタを介して定義する．
+\lstinline{sock}属性はソケットとなる\lstinline{connector}へのパス，
+\lstinline{plug}属性はプラグとなる\lstinline{connector}へのパスを表す．
+それぞれの\lstinline{connector}要素の上層にある\lstinline{body}要素が連結される剛体となる．
+
+\lstinline{enabled}属性は関節の有効・無効状態を表す．
+\lstinline{enabled}を\lstinline{true}とした場合，剛体を連結するための拘束力が働く．
+逆に\lstinline{false}とした場合，拘束力は作用せず，関節が定義されていないのと同じように振る舞う．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{joint1d}}
+
+\subsubsection*{基底クラス}
+\texttt{joint}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		       & type               & default               & P/S & dim           &          & description    \\ \hline
+\texttt{range}     & \texttt{vec2\_t}   & $[-\infty \, \infty]$ & P   & $R$           & $L$      & 可動範囲       \\
+\texttt{vrange}    & \texttt{vec2\_t}   & $[-\infty \, \infty]$ & P   & $R/T$         & $L/T$    & 速度範囲       \\
+\texttt{flim}      & \texttt{real\_t}   & $\infty$              & P   & $ML^2/T^2$    & $ML/T^2$ & 関節トルク上限 \\
+\texttt{damper}    & \texttt{real\_t}   & $0$                   & P   & $ML^2/(RT)$   & $M/T$    & ダンパ係数     \\
+\texttt{spring}    & \texttt{real\_t}   & $0$                   & P   & $ML^2/(RT^2)$ & $M/T^2$  & バネ係数       \\
+\texttt{pos}       & \texttt{real\_t}   & $0$                   & S   & $R$           & $L$      & 変位           \\
+\texttt{vel}       & \texttt{real\_t}   & $0$                   & S   & $R/T$         & $L/T$    & 速度           \\
+\texttt{targetpos} & \texttt{real\_t}   & $0$                   & S   & $R$           & $L$      & 目標変位       \\
+\texttt{targetvel} & \texttt{real\_t}   & $0$                   & S   & $R/T$         & $L/T$    & 目標速度       \\
+\texttt{filename}  & \texttt{str256\_t} & ""                    & P   &               &          & DLLファイル名
+\end{tabular}
+\vspace{2mm}\\
+dimの左側は回転関節，右側は直動関節の場合
+
+\subsubsection*{説明}
+
+1自由度関節．
+1自由度回転関節と，1自由度直動関節の基本クラス．
+回転か直動かによって各属性値の物理的次元が異なるので注意．
+
+\lstinline{range}属性は可動範囲を表す．
+関節が可動範囲を超えるように動いたとき，範囲内に留めるような拘束力が作用する．
+同様に\lstinline{vrange}属性は関節速度の許容範囲を表す．
+\lstinline{flim}は関節の自由度方向に作用する力（トルク）の絶対値の上限を表す．
+
+\lstinline{damper}属性と\lstinline{spring}属性はそれぞれ関節のダンパ係数とバネ係数を表す．
+また，\lstinline{pos}属性と\lstinline{vel}属性は関節自由度の変位と速度，
+\lstinline{targetpos}属性と\lstinline{targetvel}属性は目標変位と目標速度を表す．
+関節に作用する力（トルク）は次式で与えられる．
+\vspace{1mm}\\
+\hspace{5mm}力 = \lstinline{spring} $\times$ (\lstinline{targetpos} - \lstinline{pos}) + \lstinline{damper} $\times$ (\lstinline{targetvel} - \lstinline{vel})
+\vspace{1mm}\\
+これに\lstinline{flim}による制限が加わる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{hinge}}
+
+\subsubsection*{基底クラス}
+\texttt{joint1d}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+
+1自由度回転関節．
+ソケットとプラグの原点およびz軸が一致するように拘束し，z軸に関する回転運動を許す関節．
+ソケットのx軸に関するプラグのx軸の角度が関節変位となる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{slider}}
+
+\subsubsection*{基底クラス}
+\texttt{joint1d}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+
+1自由度直動関節．
+ソケットとプラグの各軸の向きを一致させ，かつz軸同士を同一直線上に拘束する関節．
+ソケットの原点に対するプラグの原点のz軸方向の変位が関節変位となる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{balljoint}}
+
+\subsubsection*{基底クラス}
+\texttt{joint}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+
+3自由度回転関節．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{fixjoint}}
+
+\subsubsection*{基底クラス}
+\texttt{joint}
+
+\subsubsection*{属性}
+---
+
+\subsubsection*{説明}
+
+固定関節．
+ソケットとプラグを一致させる．自由度は無い．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{gear}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		       & type              & default & P/S & dim & description \\ \hline
+\texttt{up}        & パス              &         & P   &     & 上段関節    \\
+\texttt{down}      & パス              &         & P   &     & 下段関節    \\
+\texttt{ratio}     & \texttt{real\_t}  & $1$     & P   &     & 減速比      \\
+\texttt{offset}    & \texttt{real\_t}  & $0$     & P   &     & 位相差      \\
+\texttt{type}      & \texttt{str32\_t} & ""      & P   &     & 同期の種類
+\end{tabular}
+
+\subsubsection*{説明}
+
+ギア．
+二つの関節の変位あるいは速度を同期させる．
+
+\lstinline{up}属性と\lstinline{down}属性にはそれぞれギアの上段となる関節と下段となる関節へのパスを指定する．
+ただし参照する関節は\lstinline{joint1d}の派生要素である必要がある．
+
+\lstinline{type}属性はギアによる同期の種類を指定する．
+\lstinline{type}が\lstinline{"vel"}の場合は速度の同期となり，
+\vspace{2mm}\\
+\hspace{5mm}下段関節の\lstinline{vel} = \lstinline{ratio} $\times$ 上段関節の\lstinline{vel}
+\vspace{2mm}\\
+となるように拘束される．
+\lstinline{type}が\lstinline{"pos"}の場合は変位の同期となり，
+\vspace{2mm}\\
+\hspace{5mm}下段関節の\lstinline{pos} = \lstinline{ratio} $\times$ 上段関節の\lstinline{pos} $+$ \lstinline{offset} 
+\vspace{2mm}\\
+となるように拘束される．
+\lstinline{type}が未指定の場合は速度同期として扱われる．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{gravity}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		       & type              & default     & P/S & dim     & description \\ \hline
+\texttt{accel}     & \texttt{vec3\_t}  & $[0\,0\,0]$ & P   & $L/T^2$ & 重力加速度
+\end{tabular}
+
+\subsubsection*{説明}
+
+重力．
+\texttt{accel}属性が剛体に作用する重力加速度を表す．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{contact\_group}}
+
+\subsubsection*{基底クラス}
+\texttt{sceneobject}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		         & type          & default        & P/S & dim & description  \\ \hline
+\texttt{enable}      & \texttt{bool} & \texttt{true}  & P   &     & 有効化フラグ \\
+\texttt{all\_bodies} & \texttt{bool} & \texttt{false} & P   &     & 全剛体選択
+\end{tabular}
+
+\subsubsection*{説明}
+
+接触グループ．
+物理シミュレーションにおいて接触判定を行うかどうかを設定するための剛体のグループを定義する．
+グループに剛体を加えるには，\lstinline{constact_group}要素の下層に\lstinline{link}要素を定義し，
+加えたい\lstinline{body}要素を参照する．
+
+\lstinline{enable}属性はグループ内の剛体同士の接触判定を有効化（\lstinline{true}）あるいは無効化（\lstinline{false}）する．
+
+\lstinline{all_bodies}属性が\lstinline{true}の場合，\lstinline{contact_group}要素と同じ階層かあるいは下層にある全ての\lstinline{body}要素が
+グループに加えられる．
+
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{ik}}
+
+\subsubsection*{基底クラス}
+\texttt{spatialobject}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		         & type          & default        & P/S & dim & description  \\ \hline
+\texttt{end}         & パス          &                & P   &     & IK先端       \\
+\texttt{ref}         & パス          &                & P   &     & IK基準       \\
+\texttt{enable\_trn} & \texttt{bool} & \texttt{true}  & P   &     & 位置IK有効化 \\
+\texttt{enable\_rot} & \texttt{bool} & \texttt{false} & P   &     & 回転IK有効化
+\end{tabular}
+
+\subsubsection*{説明}
+
+逆運動学．
+
+
+\newpage
+\subsection{特殊要素一覧}
+
+\subsection*{\texttt{attr}}
+
+\subsubsection*{説明}
+
+\lstinline{attr}要素は属性のデフォルト値を変更します．
+例えば，
+\begin{lstlisting}
+  <attr mass="3.0"/>
+  <body name="body1"/>
+  <body name="body2"/>
+\end{lstlisting}
+は
+\begin{lstlisting}
+  <body name="body1" mass="3.0"/>
+  <body name="body2" mass="3.0"/>
+\end{lstlisting}
+と同じ効果があります．
+\lstinline{attr}要素で変更した属性値は，再び\lstinline{attr}要素で変更するまで有効です．
+また，下の階層でのデフォルト属性値の変更は上の階層には影響を及ぼしません．
+例えば，
+\begin{lstlisting}
+  <namespace name="parent">
+    <attr unit_length="mm"/>
+    <namespace name="child">
+      <attr unit_length="m"/>
+      <sphere name="big_ball" radius="0.03"/>
+    </namespace>
+    <sphere name="small_ball" radius="5.0"/>
+  </namespace>
+\end{lstlisting}
+とした場合，\lstinline{sphere}要素``\lstinline{big_ball}''の\lstinline{radius}属性はメートルで解釈されますが，
+\lstinline{sphere}要素``\lstinline{small_ball}''の\lstinline{radius}属性はミリメートルで解釈されます．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{link}}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		  & type               & default     & P/S & dim & description  \\ \hline
+\texttt{name} & \texttt{str256\_t} & \texttt{""} & P   &     & 名前 \\
+\texttt{path} & パス               & \texttt{""} & P   &     & パス
+\end{tabular}
+
+\subsubsection*{説明}
+
+\texttt{link}要素は，要素間の参照を定義します．
+以下の二つは等価です．
+\begin{lstlisting}
+  <attach shape="body/c1"/>
+\end{lstlisting}
+\begin{lstlisting}
+  <attach>
+    <link name="shape" path="../body/c1"/>
+  </attach>
+\end{lstlisting}
+\lstinline{link}要素で参照を定義する場合，相対パスの基準は\lstinline{link}要素になるので\lstinline{../}が
+余分に必要である点に注意してください．
+
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{module}}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		       & type               & default        & P/S & dim & description  \\ \hline
+\texttt{name}      & \texttt{str256\_t} & \texttt{true}  & P   &     & 名前
+\end{tabular}
+
+\subsubsection*{説明}
+
+モジュールを定義します．
+モジュールを用いると，同じ構造のオブジェクトツリーを複製することができます．
+以下に例を示します．
+\begin{lstlisting}
+  <module name="wheel">
+    <body name="body">
+      <connector name="c"/>
+    </body>
+  </module>
+
+  <import name="wheel1" path="wheel"/>
+  <import name="wheel2" path="wheel"/>
+  <import name="wheel3" path="wheel"/>
+\end{lstlisting}
+上は以下と等価です．
+\begin{lstlisting}
+  <namespace name="wheel1">
+    <body name="body">
+      <connector name="c"/>
+    </body>
+  </module>
+  <namespace name="wheel2">
+    <body name="body">
+      <connector name="c"/>
+    </body>
+  </module>
+  <namespace name="wheel3">
+    <body name="body">
+      <connector name="c"/>
+    </body>
+  </module>
+\end{lstlisting}
+このように，\lstinline{module}要素でモジュールを定義した後で，
+\lstinline{import}要素の\lstinline{path}属性でそのモジュール名を指定すると，
+ScenebuilderがXMLをロードする際に\lstinline{import}要素が\lstinline{namespace}要素に置換され，
+その中にモジュールの子要素が階層ごと複製されます．
+このとき，生成される\lstinline{namespace}要素の\lstinline{name}属性の値は\lstinline{import}要素から継承されます．
+
+\lstinline{module}要素とその下のオブジェクト要素を定義しただけでは，オブジェクトは生成されないことに注意してください．
+例え一つのみの場合でも\lstinline{import}要素によってインポートする必要があります．
+
+\newpage %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{\texttt{import}}
+
+\subsubsection*{属性}
+\begin{tabular}{lllllll}
+name		      & type               & default     & P/S & dim & description          \\ \hline
+\texttt{path}     & パス               & \texttt{""} & P   &     & インポートパス       \\
+\texttt{filename} & \texttt{str256\_t} & \texttt{""} & P   &     & インポートファイル名
+\end{tabular}
+
+\subsubsection*{説明}
+
+インポートを定義します．
+\lstinline{path}属性と\lstinline{filename}属性はどちらか一方を使用します．
+\lstinline{path}属性を指定した場合，参照先の\lstinline{module}要素をインポートします．
+\lstinline{module}の説明も参照してください．
+
+\lstinline{filename}属性を指定した場合，\lstinline{filename}に指定されたディレクトリパスにある
+XMLファイルの内容をインポートします．
+この場合，モジュールのインポート時と同様に\lstinline{import}要素が同名の\lstinline{namespace}要素に置換され，
+インポートされるXMLの最上位要素の子要素が階層ごとコピーされます．
+最上位要素はコピーされないことに注意してください．
+
+
+\end{document}
