@@ -25,6 +25,7 @@ public:
 	Solver*		solver;
 	Links		links;		///< links to constrained variables
 	uint		nelem;
+	uint        index;
 	bool		enabled;			///< enabled constraint (controlled by user)
 	bool		active;				///< active constraint (task-related constraints, range constraints)
 	
@@ -70,6 +71,7 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
+	void RegisterDeviation(vvec_t& yvec);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);

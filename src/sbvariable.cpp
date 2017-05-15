@@ -11,9 +11,10 @@ Variable::Variable(uint _type, Solver* solver){
 	case Scalar:	nelem = 1; break;
 	case Vec3:		nelem = 3; break;
 	case Quat:
-	default:		nelem = 4; break;
+	default:		nelem = 3; break;
 	}
 
+	index  = 0;
 	dmax   = 1.0;
 	weight = 1.0;
 	locked = false;
@@ -107,6 +108,11 @@ void Variable::UpdateConjugate2(uint k, real_t _dz){
 }
 void Variable::UpdateConjugate3(uint k, real_t ddzd){
 	dzd[k] += ddzd;
+}
+
+void Variable::RegisterDelta(const vvec_t& dxvec){
+	for(uint n = 0; n < nelem; n++)
+		dx[n] = dxvec[index+n];
 }
 
 }

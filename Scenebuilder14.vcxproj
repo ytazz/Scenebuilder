@@ -31,6 +31,7 @@
     <ClInclude Include="include\sbevent.h" />
     <ClInclude Include="include\sbikbody.h" />
     <ClInclude Include="include\sbikhandle.h" />
+    <ClInclude Include="include\sbikjoint.h" />
     <ClInclude Include="include\sbiksolver.h" />
     <ClInclude Include="include\sbimage.h" />
     <ClInclude Include="include\sbimagebmp.h" />
@@ -46,6 +47,7 @@
     <ClInclude Include="include\sbmodelpmx.h" />
     <ClInclude Include="include\sbmodelstl.h" />
     <ClInclude Include="include\sbmutex.h" />
+    <ClInclude Include="include\sbnumeric.h" />
     <ClInclude Include="include\sbpath.h" />
     <ClInclude Include="include\sbrandom.h" />
     <ClInclude Include="include\sbremote.h" />
@@ -79,6 +81,7 @@
     <ClCompile Include="src\sbevent.cpp" />
     <ClCompile Include="src\sbikbody.cpp" />
     <ClCompile Include="src\sbikhandle.cpp" />
+    <ClCompile Include="src\sbikjoint.cpp" />
     <ClCompile Include="src\sbiksolver.cpp" />
     <ClCompile Include="src\sbimage.cpp" />
     <ClCompile Include="src\sbimagebmp.cpp" />
@@ -132,6 +135,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v140</PlatformToolset>
+    <UseIntelMKL>Sequential</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -244,9 +248,9 @@
       <AdditionalIncludeDirectories>../;./include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
-      <WholeProgramOptimization>false</WholeProgramOptimization>
-      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
-      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

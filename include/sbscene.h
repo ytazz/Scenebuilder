@@ -141,6 +141,8 @@ struct BodyProp : SpatialObjectProp{
 	bool    auto_tree;  ///< create joint coordinate tree using this body as a root
 	vec3_t	vel;		///< velocity in world coordinate
 	vec3_t	angvel;		///< ang-velocity in world coordinate
+	vec3_t  acc;
+	vec3_t  angacc;
 	
 	static string GetName(){ return "body"; }
 	static void Construct(Property* p){ new(p) BodyProp; }
@@ -155,7 +157,9 @@ struct BodyProp : SpatialObjectProp{
 			->AddAttr("auto_mass" ,	Primitive::Bool, 1, OFFSET(BodyProp, auto_mass ), false         , AttrCategory::Param)
 			->AddAttr("auto_tree" ,	Primitive::Bool, 1, OFFSET(BodyProp, auto_tree ), false         , AttrCategory::Param)
 			->AddAttr("vel"       , Primitive::Vec3, 1, OFFSET(BodyProp, vel       ), vec3_t()      , AttrCategory::State, Dimension::L_T)
-			->AddAttr("angvel"    , Primitive::Vec3, 1, OFFSET(BodyProp, angvel    ), vec3_t()      , AttrCategory::State, Dimension::R_T);
+			->AddAttr("angvel"    , Primitive::Vec3, 1, OFFSET(BodyProp, angvel    ), vec3_t()      , AttrCategory::State, Dimension::R_T)
+			->AddAttr("acc"       , Primitive::Vec3, 1, OFFSET(BodyProp, acc       ), vec3_t()      , AttrCategory::State, Dimension::L_TT)
+			->AddAttr("angacc"    , Primitive::Vec3, 1, OFFSET(BodyProp, angacc    ), vec3_t()      , AttrCategory::State, Dimension::R_TT);
 	}
 };
 
@@ -707,10 +711,24 @@ struct IKProp : SpatialObjectProp{
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(IKProp), &Construct, SpatialObjectProp::id);
 		db->GetType(id)
-			->AddAttr("end", Primitive::Path, 1, 0)
-			->AddAttr("ref", Primitive::Path, 1, 0)
+			->AddAttr("sock", Primitive::Path, 1, 0)
 			->AddAttr("enable_trn", Primitive::Bool, 1, OFFSET(IKProp, enable_trn), true , AttrCategory::Param)
 			->AddAttr("enable_rot", Primitive::Bool, 1, OFFSET(IKProp, enable_rot), false, AttrCategory::Param);
+	}
+};
+
+struct IKComProp : SceneObjectProp{
+	static int id;
+	vec3_t	pos;
+	bool    enable;
+
+	static string GetName(){ return "ikcom"; }
+	static void Construct(Property* p){ new(p) IKComProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(IKComProp), &Construct, SceneObjectProp::id);
+		db->GetType(id)
+			->AddAttr("pos"   , Primitive::Vec3, 1, OFFSET(IKComProp, pos   ), vec3_t(), AttrCategory::State, Dimension::L)
+			->AddAttr("enable", Primitive::Bool, 1, OFFSET(IKComProp, enable), true    , AttrCategory::Param);
 	}
 };
 

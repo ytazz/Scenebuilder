@@ -139,6 +139,9 @@
     <ClCompile Include="src\sbconsole.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\sbikjoint.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\sbadaptor.h">
@@ -283,6 +286,12 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\sbconsole.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\sbikjoint.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\sbnumeric.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

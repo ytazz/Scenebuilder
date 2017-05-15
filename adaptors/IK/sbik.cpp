@@ -6,16 +6,19 @@
 namespace Scenebuilder{;
 
 AdaptorIK::BodyAux::BodyAux(IKBody* b){
-	body = b;
+	ikBody = b;
 }
+
 AdaptorIK::BodyAux::~BodyAux(){
 	for(uint i = 0; i < cons.size(); i++)
 		cons[i]->body = 0;
 }
+
 AdaptorIK::ConnectorAux::ConnectorAux(AdaptorIK::BodyAux* b){
 	body = b;
 	body->cons.push_back(this);
 }
+
 AdaptorIK::ConnectorAux::~ConnectorAux(){
 	if(body)
 		RemoveFromArray(body->cons, this);
@@ -30,62 +33,59 @@ AdaptorIK::ConnectorAux::~ConnectorAux(){
 	}
 	for(uint i = 0; i < handles.size(); i++){
 		HandleAux* handle = handles[i];
-		if(handle->end == this)
-			handle->end = 0;
-		if(handle->ref== this)
-			handle->ref = 0;
+		if(handle->sock == this)
+			handle->sock = 0;
 		handle->OnChange(this);
 	}
 
 }
-AdaptorIK::JointAux::JointAux(AdaptorIK::ConnectorAux* s, AdaptorIK::ConnectorAux* p){
-	sock  = s;
-	plug  = p;
+
+AdaptorIK::JointAux::JointAux(AdaptorIK::ConnectorAux* _sock, AdaptorIK::ConnectorAux* _plug, IKJoint* _joint){
+	sock    = _sock;
+	plug    = _plug;
+	ikJoint = _joint;
 	sock->joints.push_back(this);
 	plug->joints.push_back(this);
 }
+
 AdaptorIK::JointAux::~JointAux(){
 	if(sock)
 		RemoveFromArray(sock->joints, this);
 	if(plug)
 		RemoveFromArray(plug->joints, this);
 }
-AdaptorIK::HandleAux::HandleAux(IKHandle* h, AdaptorIK::ConnectorAux* e, AdaptorIK::ConnectorAux* r){
-	handle = h;
-	end    = e;
-	ref    = r;
-	end->handles.push_back(this);
-	ref->handles.push_back(this);
+
+AdaptorIK::HandleAux::HandleAux(IKHandle* _handle, AdaptorIK::ConnectorAux* _sock){
+	ikHandle = _handle;
+	sock     = _sock;
+	sock->handles.push_back(this);
 }
+
 AdaptorIK::HandleAux::~HandleAux(){
-	if(end)
-		RemoveFromArray(end->handles, this);
-	if(ref)
-		RemoveFromArray(ref->handles, this);
+	if(sock)
+		RemoveFromArray(sock->handles, this);
+}
+
+AdaptorIK::ComHandleAux::ComHandleAux(IKComHandle* _handle){
+	ikComHandle = _handle;
+}
+
+AdaptorIK::ComHandleAux::~ComHandleAux(){
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void AdaptorIK::JointAux::OnChange(Aux* caller){
-	if(!sock || !plug)
-		return;
-	IKBody* sockBody = sock->body->body;
-	IKBody* plugBody = plug->body->body;
-	if(plugBody->GetParent() == sockBody){
-		if(caller == sock)
-			plugBody->SetSocketPose(sock->pose);
-		if(caller == plug)
-			plugBody->SetPlugPose(plug->pose);
-	}
+	if(caller == sock)
+		ikJoint->SetSocketPose(sock->pose);
+	if(caller == plug)
+		ikJoint->SetPlugPose(plug->pose);
 }
 
 void AdaptorIK::HandleAux::OnChange(Aux* caller){
-	if(!end || !ref)
-		return;
-	if(caller == end)
-		handle->SetEndPose(end->pose);
-	if(caller == ref)
-		handle->SetRefPose(ref->pose);
+	if(caller == sock)
+		ikHandle->SetSocketPose(sock->pose);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,22 +95,42 @@ AdaptorIK::AdaptorIK(){
 
 IKBody* AdaptorIK::GetBody(int id){
 	AUTO(BodyAux*, bodyAux, HandleByID(id, BodyProp::id));
-	return bodyAux->body;
+	return bodyAux->ikBody;
 }
 
 IKBody* AdaptorIK::GetBody(string name){
 	AUTO(BodyAux*, bodyAux, HandleByName(name, BodyProp::id));
-	return bodyAux->body;
+	return bodyAux->ikBody;
+}
+
+IKJoint* AdaptorIK::GetJoint(int id){
+	AUTO(JointAux*, jntAux, HandleByID(id, JointProp::id));
+	return jntAux->ikJoint;
+}
+
+IKJoint* AdaptorIK::GetJoint(string name){
+	AUTO(JointAux*, jntAux, HandleByName(name, JointProp::id));
+	return jntAux->ikJoint;
 }
 
 IKHandle*	AdaptorIK::GetHandle(int id){
 	AUTO(HandleAux*, handleAux, HandleByID(id, IKProp::id));
-	return handleAux->handle;
+	return handleAux->ikHandle;
 }
 
 IKHandle*	AdaptorIK::GetHandle(string name){
 	AUTO(HandleAux*, handleAux, HandleByName(name, IKProp::id));
-	return handleAux->handle;
+	return handleAux->ikHandle;
+}
+
+IKComHandle* AdaptorIK::GetComHandle(int id){
+	AUTO(ComHandleAux*, handleAux, HandleByID(id, IKComProp::id));
+	return handleAux->ikComHandle;
+}
+
+IKComHandle* AdaptorIK::GetComHandle(string name){
+	AUTO(ComHandleAux*, handleAux, HandleByName(name, IKComProp::id));
+	return handleAux->ikComHandle;
 }
 
 int AdaptorIK::CreateObject(int id){
@@ -167,15 +187,22 @@ int AdaptorIK::CreateObject(int id){
 		if(IsUndefined(sockId) || IsUndefined(plugId))
 			return SupportState::Undefined;
 
-		int jntType;
-		if(type == HingeProp::id)
-			jntType = IKBody::JointType::Hinge;
-		else if(type == SliderProp::id)
-			jntType = IKBody::JointType::Slider;
-		else if(type == BalljointProp::id)
-			jntType = IKBody::JointType::Balljoint;
-		else if(type == FixjointProp::id)
-			jntType = IKBody::JointType::Fixjoint;
+		int  jntType;
+		if(type == HingeProp::id){
+			jntType = IKJoint::Type::Hinge;
+		}
+		else if(type == SliderProp::id){
+			jntType = IKJoint::Type::Slider;
+		}
+		else if(type == BalljointProp::id){
+			jntType = IKJoint::Type::Balljoint;
+		}
+		else if(type == FixjointProp::id){
+			jntType = IKJoint::Type::Fixjoint;
+		}
+		else if(type == LineToLineProp::id){
+			jntType = IKJoint::Type::LineToLine;
+		}
 		else{
 			Message::Error("%s: unsupported joint type", name.c_str());
 			return SupportState::Ignored;
@@ -183,15 +210,23 @@ int AdaptorIK::CreateObject(int id){
 
 		AUTO(ConnectorAux*, sockAux, GetAux(sockId));
 		AUTO(ConnectorAux*, plugAux, GetAux(plugId));
+
+		//
+		IKJoint* ikJoint = ikSolver.AddJoint(jntType);
 		
 		// 親子関係を設定
-		IKBody* sockBody = sockAux->body->body;
-		IKBody* plugBody = plugAux->body->body;
-		if(!plugBody->parent){
-			plugBody->SetParent(sockBody, jntType);
-		}
+		IKBody* sockBody = sockAux->body->ikBody;
+		IKBody* plugBody = plugAux->body->ikBody;
 
-		JointAux* jntAux = new JointAux(sockAux, plugAux);
+		ikJoint->SetSocketBody(sockBody);
+		ikJoint->SetPlugBody  (plugBody);
+
+		if( typedb->KindOf(type, Joint1DProp  ::id) ||
+			typedb->KindOf(type, BalljointProp::id) ||
+			typedb->KindOf(type, FixjointProp ::id) )
+			plugBody->SetParent(sockBody, ikJoint);
+
+		JointAux* jntAux = new JointAux(sockAux, plugAux, ikJoint);
 		RegAux(id, jntAux);
 		joints.push_back(jntAux);
 
@@ -199,37 +234,55 @@ int AdaptorIK::CreateObject(int id){
 	}
 	else if(type == IKProp::id){
 		// get connectors
-		int endId = scene->GetLink(id, "end");
-		int refId = scene->GetLink(id, "ref");
-
-		if(!IsValidID(endId) || IsIgnored(endId)){
-			Message::Error("%s: invalid link to end", name.c_str());
+		int sockId = scene->GetLink(id, "sock");
+		
+		if(!IsValidID(sockId) || IsIgnored(sockId)){
+			Message::Error("%s: invalid link to sock", name.c_str());
 			return SupportState::Ignored;
 		}
-		if(scene->GetObjectType(endId) != ConnectorProp::id){
-			Message::Error("%s: end must link to Connector", name.c_str());
+		if(scene->GetObjectType(sockId) != ConnectorProp::id){
+			Message::Error("%s: sock must link to Connector", name.c_str());
 			return SupportState::Ignored;
 		}
-		if(!IsValidID(refId) || IsIgnored(refId)){
-			Message::Error("%s: invalid link to ref", name.c_str());
-			return SupportState::Ignored;
-		}
-		if(scene->GetObjectType(refId) != ConnectorProp::id){
-			Message::Error("%s: ref must link to Connector", name.c_str());
-			return SupportState::Ignored;
-		}
-		if(IsUndefined(refId) || IsUndefined(refId))
+		if(IsUndefined(sockId))
 			return SupportState::Undefined;
 
-		AUTO(ConnectorAux*, endAux, GetAux(endId));
-		AUTO(ConnectorAux*, refAux, GetAux(refId));
+		AUTO(ConnectorAux*, sockAux, GetAux(sockId));
 		
-		IKBody* endBody = endAux->body->body;
-		IKBody* refBody = refAux->body->body;
+		IKBody* sockBody = sockAux->body->ikBody;
 		
-		HandleAux* handleAux = new HandleAux(ikSolver.AddHandle(endBody, refBody), endAux, refAux);
+		HandleAux* handleAux = new HandleAux(ikSolver.AddHandle(sockBody), sockAux);
 		RegAux(id, handleAux);
 		handles.push_back(handleAux);
+
+		return SupportState::Supported;
+	}
+	else if(type == IKComProp::id){
+		vector<int>    bodies;
+		vector<int>    links;
+		vector<string> names;
+		
+		scene->GetLinks(id, links, names);
+
+		for(uint i = 0; i < links.size(); i++){
+			int dest = links[i];
+			if(IsUndefined(dest))
+				return SupportState::Undefined;
+			if(IsIgnored(dest))
+				continue;
+			if(scene->GetObjectType(dest) != BodyProp::id)
+				continue;
+			bodies.push_back(dest);
+		}
+
+		ComHandleAux* comHandleAux = new ComHandleAux(ikSolver.AddComHandle());
+		for(uint i = 0; i < bodies.size(); i++){
+			AUTO(BodyAux*, bodyAux, GetAux(bodies[i]));
+			comHandleAux->bodies.push_back(bodyAux);
+			comHandleAux->ikComHandle->AddBody(bodyAux->ikBody);
+		}
+		RegAux(id, comHandleAux);
+		comHandles.push_back(comHandleAux);
 
 		return SupportState::Supported;
 	}
@@ -242,7 +295,7 @@ void AdaptorIK::DeleteObject(int id){
 
 	if(type == BodyProp::id){
 		AUTO(BodyAux*, bodyAux, aux);
-		ikSolver.DeleteBody(bodyAux->body);
+		ikSolver.DeleteBody(bodyAux->ikBody);
 		RemoveFromArray(bodies, bodyAux);
 	}
 	else if(type == ConnectorProp::id){
@@ -254,8 +307,13 @@ void AdaptorIK::DeleteObject(int id){
 	}
 	else if(type == IKProp::id){
 		AUTO(HandleAux*, handleAux, aux);
-		ikSolver.DeleteHandle(handleAux->handle);
+		ikSolver.DeleteHandle(handleAux->ikHandle);
 		RemoveFromArray(handles, handleAux);
+	}
+	else if(type == IKComProp::id){
+		AUTO(ComHandleAux*, comHandleAux, aux);
+		ikSolver.DeleteComHandle(comHandleAux->ikComHandle);
+		RemoveFromArray(comHandles, comHandleAux);
 	}
 	RemoveAux(id);
 }
@@ -272,8 +330,12 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 		
 		if(cat & AttrCategory::Param){
 			if(download){
+				bodyAux->ikBody->mass   = bodyProp->mass;
+				bodyAux->ikBody->center = bodyProp->center;
 			}
 			else{
+				bodyProp->mass   = bodyAux->ikBody->mass;
+				bodyProp->center = bodyAux->ikBody->center;
 			}		
 		}
 		if(cat & AttrCategory::State){
@@ -283,7 +345,7 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				scene->CalcRelativeTransform(-1, par, typedb, tr);
 				
 			if(download){
-				bodyAux->body->SetPose(pose_t(tr.rot * bodyProp->trn + tr.trn, tr.rot * bodyProp->rot));
+				bodyAux->ikBody->SetPose(pose_t(tr.rot * bodyProp->trn + tr.trn, tr.rot * bodyProp->rot));
 			}
 			else{
 
@@ -313,21 +375,22 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 
 		if(typedb->KindOf(type, Joint1DProp::id)){
 			AUTO(Joint1DProp*, joint1DProp, prop);
-			IKBody* plugBody = jointAux->plug->body->body;
 				
 			if(cat & AttrCategory::Param){
 				if(download){
-					//plugBody->SetPosLimit(0, joint1DProp->range[0], joint1DProp->range[1]);
+					jointAux->ikJoint->SetPosLimit(0, joint1DProp-> range[0], joint1DProp-> range[1]);
+					jointAux->ikJoint->SetVelLimit(0, joint1DProp->vrange[0], joint1DProp->vrange[1]);
 				}
 			}
 			if(cat & AttrCategory::State){
 				if(download){
-					plugBody->SetJointPos(0, joint1DProp->pos);
+					// IK計算の初期値に設定
+					jointAux->ikJoint->SetInitialPos(0, joint1DProp->pos);
+					jointAux->ikJoint->SetInitialVel(0, joint1DProp->vel);
 				}
 				else{
 					// IKの計算結果をtargetposに代入
-					if(plugBody->handled)
-						joint1DProp->targetpos = plugBody->GetJointPos(0);
+					joint1DProp->targetpos = jointAux->ikJoint->GetPos(0);
 				}
 			}
 		}
@@ -337,23 +400,28 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 		AUTO(HandleAux*, handleAux, GetAux(id));
 		if(cat & AttrCategory::Param){
 			if(download){
-				handleAux->handle->EnablePos(ikProp->enable_trn);
-				handleAux->handle->EnableOri(ikProp->enable_rot);
+				handleAux->ikHandle->EnablePos(ikProp->enable_trn);
+				handleAux->ikHandle->EnableOri(ikProp->enable_rot);
 			}
 		}
 		if(cat & AttrCategory::State){
 			if(download){
-				handleAux->handle->SetDesiredPose(pose_t(ikProp->trn, ikProp->rot));
+				handleAux->ikHandle->SetDesiredPos(ikProp->trn);
+				handleAux->ikHandle->SetDesiredOri(ikProp->rot);
 			}
 			else{
-				pose_t pose;
-				handleAux->handle->GetCurrentPose(pose);
-				ikProp->trn = pose.Pos();
-				ikProp->rot = pose.Ori();
+			}
+		}
+	}
+	else if(type == IKComProp::id){
+		AUTO(IKComProp*, ikComProp, prop);
+		AUTO(ComHandleAux*, comHandleAux, GetAux(id));
+		if(cat & AttrCategory::Param){
+			if(download){
+				comHandleAux->ikComHandle->EnablePos(ikComProp->enable);
 			}
 		}
 	}
 }
-
 
 }

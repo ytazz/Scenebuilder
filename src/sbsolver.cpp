@@ -1,6 +1,15 @@
 ﻿#include <sbsolver.h>
 #include <sbmessage.h>
 
+#define USE_MKL
+
+#if defined USE_MKL
+# include <mkl_lapacke.h>
+#endif
+
+#include <Foundation/UTPreciseTimer.h>
+static UTPreciseTimer timer;
+
 namespace Scenebuilder{;
 
 static const real_t inf = numeric_limits<real_t>::max();
@@ -60,8 +69,8 @@ void Solver::Clear(){
 }
 
 void Solver::Init(){
-	state.obj     = CalcObjective();
-	state.objDiff = inf;
+	//state.obj     = CalcObjective();
+	//state.objDiff = inf;
 }
 
 real_t Solver::CalcUpdatedObjective(real_t alpha){
@@ -154,7 +163,15 @@ real_t Solver::CalcStepSize(){
 }
 
 void Solver::CalcDirection(){
-	cons_active.clear();
+	timer.CountUS();
+	vars_unlocked.clear();
+	cons_active  .clear();
+
+	for(uint j = 0; j < vars.size(); j++){
+		Variable* var = vars[j];
+		if(!var->locked)
+			vars_unlocked.push_back(var);
+	}
 	for(uint i = 0; i < cons.size(); i++){
 		Constraint* con = cons[i];
 		if(!con->enabled) continue;
@@ -165,9 +182,11 @@ void Solver::CalcDirection(){
 		if(con->active)
 			cons_active.push_back(con);
 	}
+	int timeCoef = timer.CountUS();
+	//DSTR << "tcoef " << timeCoef << endl;
 
 	if(param.methodMajor == Method::Major::SteepestDescent){
-		for(uint j = 0; j < vars.size(); j++){
+		for(uint j = 0; j < vars_unlocked.size(); j++){
 			vars[j]->ResetState();
 		}
 		for(uint i = 0; i < cons_active.size(); i++){
@@ -176,37 +195,94 @@ void Solver::CalcDirection(){
 				con->UpdateGradient(k);
 		}	
 	}
-	if(param.methodMajor == Method::Major::GaussNewton1){
-		for(uint j = 0; j < vars.size(); j++){
-			vars[j]->Prepare();
-		}
-		for(uint j = 0; j < vars.size(); j++){
-			vars[j]->ResetState();
-		}
-		for(uint i = 0; i < cons_active.size(); i++){
-			cons_active[i]->CalcCorrection();
-		}
-		for(uint i = 0; i < cons_active.size(); i++){
-			cons_active[i]->ResetState();
-		}
-		for(int n = 0; n < param.numIterMinor; n++){
-			for(uint j = 0; j < vars.size(); j++){
-				Variable* var = vars[j];
-				for(uint k = 0; k < var->nelem; k++)
-					var->UpdateVar3(k);
+	if(param.methodMajor == Method::Major::GaussNewton1){		
+		if(param.methodMinor == Method::Minor::Direct){
+			timer.CountUS();
+			uint dimvar = 0;
+			uint dimcon = 0;
+			uint idxvar = 0;
+			uint idxcon = 0;
+			for(uint j = 0; j < vars_unlocked.size(); j++){
+				Variable* var = vars_unlocked[j];
+				var->index = dimvar;
+				dimvar += var->nelem;
+			}
+			for(uint i = 0; i < cons_active.size(); i++){
+				Constraint* con = cons_active[i];
+				con->index = dimcon;
+				dimcon += con->nelem;
+			}
+			int t1 = timer.CountUS();
+
+			//DSTR << "dimcon " << dimcon << " dimvar " << dimvar << endl;
+			
+			timer.CountUS();
+			J.resize(dimcon, dimvar);
+			y.resize(dimcon);
+			J.clear();
+			y.clear();
+			for(uint i = 0; i < cons_active.size(); i++){
+				Constraint* con = cons_active[i];
+				for(uint j = 0; j < con->links.size(); j++){
+					Link* lnk = con->links[j];
+					if(lnk->var->locked)
+						continue;
+					lnk->RegisterCoef(J);
+				}
+				cons_active[i]->RegisterDeviation(y);
+			}
+			int t2 = timer.CountUS();
+			
+			timer.CountUS();
+#if defined USE_MKL
+			size_t ny = std::max(dimcon, dimvar);
+			y2.resize(ny);
+			for(uint i = 0; i < dimcon; i++)
+				y2[i] = y[i];
+
+			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
+			dx.resize(dimvar);
+			for(uint i = 0; i < dimvar; i++)
+				dx[i] = -1.0 * y2[i];
+#else
+			JtrJ = J.trans()*J;
+			Jtry = J.trans()*y;
+			dx = -1.0 * (JtrJ.inv()*Jtry);
+#endif
+			int t3 = timer.CountUS();
+			
+			for(uint j = 0; j < vars_unlocked.size(); j++){
+				Variable* var = vars_unlocked[j];
+				var->RegisterDelta(dx);
 			}
 
-			if(param.methodMinor == Method::Minor::Jacobi){
+			//DSTR << "t1 t2 t3 " << t1 << " " << t2 << " " << t3 << endl;
+		}
+		else{
+			for(uint j = 0; j < vars_unlocked.size(); j++) vars[j]->Prepare();
+			for(uint j = 0; j < vars_unlocked.size(); j++) vars[j]->ResetState();
+			for(uint i = 0; i < cons_active  .size(); i++) cons_active[i]->CalcCorrection();
+			for(uint i = 0; i < cons_active  .size(); i++) cons_active[i]->ResetState();
+
+			for(int n = 0; n < param.numIterMinor; n++){
 				for(uint j = 0; j < vars.size(); j++){
-					vars[j]->dz.clear();
+					Variable* var = vars[j];
+					for(uint k = 0; k < var->nelem; k++)
+						var->UpdateVar3(k);
 				}
 
-				for(uint i = 0; i < cons_active.size(); i++){
-					Constraint* con = cons_active[i];
-					for(uint k = 0; k < con->nelem; k++)
-						con->UpdateConjugate(k);
-				}
+				if(param.methodMinor == Method::Minor::Jacobi){
+					for(uint j = 0; j < vars.size(); j++){
+						vars[j]->dz.clear();
+					}
 
+					for(uint i = 0; i < cons_active.size(); i++){
+						Constraint* con = cons_active[i];
+						for(uint k = 0; k < con->nelem; k++)
+							con->UpdateConjugate(k);
+					}
+
+				}
 			}
 		}
 	}
@@ -241,19 +317,25 @@ void Solver::CalcDirection(){
 }
 
 void Solver::Step(){
-	for(uint j = 0; j < vars.size(); j++){
-		vars[j]->ResetState();
-	}
-
 	// 更新方向を計算
+	timer.CountUS();
+	for(uint j = 0; j < vars.size(); j++)
+		vars[j]->ResetState();
 	CalcDirection();
+	state.timeDir = timer.CountUS();
 
 	// 直線探索で更新幅を計算
+	timer.CountUS();
 	state.stepSize = CalcStepSize();
-	
+	state.timeStep = timer.CountUS();
+
+	//DSTR << " tdir "  << state.timeDir
+	//	 << " tstep " << state.timeStep << endl;
+
 	// 変数を更新
 	for(uint j = 0; j < vars.size(); j++){
-		vars[j]->Modify(state.stepSize);
+		if( !vars[j]->locked )
+			vars[j]->Modify(state.stepSize);
 	}
 
 	real_t objPrev = state.obj;

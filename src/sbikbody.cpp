@@ -1,230 +1,299 @@
 ﻿#include <sbiksolver.h>
 #include <sbikbody.h>
+#include <sbikjoint.h>
+#include <sbikhandle.h>
 
 #include <GL/glew.h>
 
 namespace Scenebuilder{;
 
-IKBody::IKBody(IKSolver* _ikSolver){
-	ikSolver = _ikSolver;
-	parent   = 0;
-	handled  = false;
-	type     = 0;
-	ndof     = 0;
-}
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void IKBody::AddVars(){
-	for(uint i = 0; i < ndof; i++){
-		pos[i] = new SVar(ikSolver);
-		pos[i]->dmax = (revolutive[i] ? ikSolver->dmaxRevolutive : ikSolver->dmaxPrismatic);
+IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3){
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		AddSLink(jnt->force_var);
+	}
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		AddSLink(handle->force_var);
+	}
+}
+void IKBody::ForceCon::CalcCoef(){
+	uint idx = 0;
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		((SLink*)links[idx++])->SetCoef(jnt->sockBody == body ? 1.0 : -1.0);
+	}
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		((SLink*)links[idx++])->SetCoef(-1.0);
+	}
+}
+void IKBody::ForceCon::CalcDeviation(){
+	y = body->force;
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->force_var->val;
+	}
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		y += -1.0 * handle->force_var->val;
 	}
 }
 
-void IKBody::DeleteVars(){
-	for(uint i = 0; i < ndof; i++)
-		ikSolver->DeleteVar(pos[i]);
-}
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void IKBody::AddCons(){
-	//for(uint i = 0; i < ndof; i++)
-	//	range[i] = new RangeConS(&ik->ikSolver, pos[i]);
-}
-
-void IKBody::DeleteCons(){
-	//for(uint i = 0; i < ndof; i++)
-	//	ik->ikSolver.DeleteCon(range[i]);
-}
-
-IKBody* IKBody::GetParent(){
-	return parent;
-}
-
-void IKBody::SetParent(IKBody* par, int _type){
-	DeleteVars();
-	DeleteCons();
-
-	if(parent)
-		RemoveFromArray(parent->children, this);
-	parent = par;
-	parent->children.push_back(this);
-
-	type = _type;
-	if(type == JointType::Hinge){
-		ndof = 1;
-		revolutive[0] = true;
+IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3){
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		AddXLink(jnt->force_var );
+		AddSLink(jnt->moment_var);
 	}
-	if(type == JointType::Slider){
-		ndof = 1;
-		revolutive[0] = false;
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		AddXLink(handle->force_var );
+		AddSLink(handle->moment_var);
 	}
-	if(type == JointType::Balljoint){
-		ndof = 3;
-		revolutive[0] = revolutive[1] = revolutive[2] = true;
+}
+void IKBody::MomentCon::CalcCoef(){
+	uint idx = 0;
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		((XLink*)links[idx++])->SetCoef((jnt->sockBody == body ? 1.0 : -1.0) * (jnt->sockPosAbs - body->centerPosAbs));
+		((SLink*)links[idx++])->SetCoef( jnt->sockBody == body ? 1.0 : -1.0);
 	}
-	if(type == JointType::Fixjoint){
-		ndof = 0;
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		((XLink*)links[idx++])->SetCoef(-1.0 * (handle->sockPosAbs - body->centerPosAbs));
+		((SLink*)links[idx++])->SetCoef(-1.0);
 	}
-
-	AddVars();
-	AddCons();
 }
-
-void IKBody::SetSocketPose(const pose_t& p){
-	psock = p;
-}
-
-void IKBody::SetPlugPose(const pose_t& p){
-	pplug = p;
-}
-
-void IKBody::GetSocketPose(pose_t& p){
-	p = psock;
-}
-
-void IKBody::GetPlugPose(pose_t& p){
-	p = pplug;
-}
-
-void IKBody::SetPose(const pose_t& p){
-	pose = p;
-}
-
-void IKBody::GetPose(pose_t& p){
-	p = pose;
-}
-
-real_t IKBody::GetJointPos(uint i){
-	return pos[i]->val;
-}
-
-void IKBody::SetJointPos(uint i, real_t _pos){
-	pos[i]->val = _pos;
-}
-
-void IKBody::LockPos(uint i, bool lock){
-	pos[i]->Lock(lock);
-}
-
-void IKBody::SetPosLimit(uint i, real_t lower, real_t upper){
-	range[i]->_min = lower;
-	range[i]->_max = upper;
-}
-
-void IKBody::MarkHandled(IKBody* ref){
-	handled = true;
-	if(!parent || this == ref)
-		return;
-	parent->MarkHandled(ref);
-}
-
-void IKBody::CalcJacobian(){
-	if(type == JointType::Hinge){
-		Jv[0] = vec3_t();
-		Jw[0] = vec3_t(0.0, 0.0, 1.0);
+void IKBody::MomentCon::CalcDeviation(){
+	y = body->moment;
+	for(uint i = 0; i < body->joints.size(); i++){
+		IKJoint* jnt = body->joints[i];
+		y += (jnt->sockBody == body ? 1.0 : -1.0) * ((jnt->sockPosAbs - body->centerPosAbs) % jnt->force_var->val + jnt->moment_var->val);
 	}
-	if(type == JointType::Slider){
-		Jv[0] = vec3_t(0.0, 0.0, 1.0);
-		Jw[0] = vec3_t();
-	}
-	if(type == JointType::Balljoint){
-		Jv[0].clear();
-		Jv[1].clear();
-		Jv[2].clear();
-
-		real_t yaw   = pos[0]->val;
-		real_t pitch = pos[1]->val;
-
-		// 行列の場合と行・列のインデックス順が逆なので注意
-		Jw[0][0] = -sin(yaw) * sin(pitch);
-		Jw[0][1] =  cos(yaw) * sin(pitch);
-		Jw[0][2] =  1.0 - cos(pitch);
-		Jw[1][0] =  cos(yaw);
-		Jw[1][1] =  sin(yaw);
-		Jw[1][2] =  0.0;
-		Jw[2][0] =  sin(yaw) * sin(pitch);
-		Jw[2][1] = -cos(yaw) * sin(pitch);
-		Jw[2][2] =  cos(pitch);
-	}
-	if(type == JointType::Fixjoint){
-
+	for(uint i = 0; i < body->handles.size(); i++){
+		IKHandle* handle = body->handles[i];
+		y += -1.0 * ((handle->sockPosAbs - body->centerPosAbs) % handle->force_var->val + handle->moment_var->val);
 	}
 }
 
-void IKBody::CalcRelativePose(){
-	if(type == JointType::Hinge){
-		prel.Pos().clear();
-		prel.Ori() = quat_t::Rot(pos[0]->val, 'z');
-	}
-	if(type == JointType::Slider){
-		prel.Pos() = vec3_t(0.0, 0.0, pos[0]->val);
-		prel.Ori() = quat_t();
-	}
-	if(type == JointType::Balljoint){
-		real_t yaw   = pos[0]->val;
-		real_t pitch = pos[1]->val;
-		real_t roll  = pos[2]->val;
-		
-		quat_t q;
-		q.w = cos(pitch/2) * cos(roll/2);
-		q.x = sin(pitch/2) * cos(yaw - roll/2);
-		q.y = sin(pitch/2) * sin(yaw - roll/2);
-		q.z = cos(pitch/2) * sin(roll/2);
-		
-		prel.Pos() = vec3_t();
-		prel.Ori() = quat_t();
-	}
-	if(type == JointType::Fixjoint){
-		prel.Pos() = vec3_t();
-		prel.Ori() = quat_t();
-	}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+IKBody::IKBody(IKSolver* _solver){
+	solver   = _solver;
+	parBody  = 0;
+	parJoint = 0;
+
+	pos_var    = 0;
+	ori_var    = 0;
+	vel_var    = 0;
+	angvel_var = 0;
+	acc_var    = 0;
+	angacc_var = 0;
+
+	force_con  = 0;
+	moment_con = 0;
+
+	mass = 1.0;
+}
+
+void IKBody::SetParent(IKBody* par, IKJoint* _joint){
+	if(parBody)
+		RemoveFromArray(parBody->children, this);
+	parBody  = par;
+	parJoint = _joint;
+	if(parBody)
+		parBody->children.push_back(this);
+}
+
+IKBody*  IKBody::GetParent(){ return parBody;  }
+IKJoint* IKBody::GetJoint (){ return parJoint; }
+
+void   IKBody::SetMass  (real_t m){ mass = m;    }
+real_t IKBody::GetMass  (        ){ return mass; }
+
+void   IKBody::SetCenter(const vec3_t& c){ center = c;      }
+void   IKBody::GetCenter(      vec3_t& c){ c      = center; }
+void   IKBody::SetPose  (const pose_t& p){ pos = p.Pos(); ori = p.Ori(); }
+void   IKBody::GetPose  (      pose_t& p){ p.Pos() = pos; p.Ori() = ori; }
+
+void IKBody::Init(){
+
+}
+
+void IKBody::AddVar(){
+	pos_var    = new V3Var(solver);
+	ori_var    = new QVar (solver);
+	vel_var    = new V3Var(solver);
+	angvel_var = new V3Var(solver);
+	acc_var    = new V3Var(solver);
+	angacc_var = new V3Var(solver);
+}
+
+void IKBody::AddCon(){
+	force_con  = new ForceCon (this);
+	moment_con = new MomentCon(this);
 }
 
 void IKBody::Prepare(){
-	if(handled && parent){
-		CalcRelativePose();
-		CalcJacobian();
-		
-		pose_t psock_abs = parent->pose * psock;
-		pose  = psock_abs * prel * pplug.Inv();
-		pivot = psock_abs.Pos();
+	pos_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Pos);
+	ori_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Pos);
+	vel_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Vel);
+	angvel_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Vel);
+	acc_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
+	angacc_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 
-		for(uint i = 0; i < ndof; i++){
-			Jv_abs[i] = psock_abs.Ori() * Jv[i];
-			Jw_abs[i] = psock_abs.Ori() * Jw[i];
-		}
+	force_con ->enabled = (solver->mode == IKSolver::Mode::Force);
+	moment_con->enabled = (solver->mode == IKSolver::Mode::Force);
 
+	if(solver->mode == IKSolver::Mode::Force){
+		force  = mass * (centerAccAbs - solver->gravity); 
+		moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
+
+		DSTR << "bf " << force << " bm " << moment << endl;
 	}
-
-	for(uint i = 0; i < children.size(); i++)
-		children[i]->Prepare();
 }
 
-void IKBody::CompFK(){
-	if(parent){
-		CalcRelativePose();
-		pose = parent->pose * psock * prel * pplug.Inv();
+void IKBody::Finish(){
+	if(solver->mode == IKSolver::Mode::Pos){
+		pos    = pos_var   ->val;
+		ori    = ori_var   ->val;
 	}
+	if(solver->mode == IKSolver::Mode::Vel){
+		vel    = vel_var   ->val;
+		angvel = angvel_var->val;
+	}
+	if(solver->mode == IKSolver::Mode::Acc){
+		acc    = acc_var   ->val;
+		angacc = angacc_var->val;
+	}
+}
+
+void IKBody::Update(){
+	if(solver->mode == IKSolver::Mode::Pos){
+		if(!parBody){
+			centerPosAbs = pos_var->val + ori_var->val * center;
+		}
+		else{
+			parJoint->CalcRelativePose();
+			parJoint->CalcJacobian();
+		
+			parJoint->sockPosAbs = parBody->pos_var->val + parBody->ori_var->val * parJoint->sockPos;
+			parJoint->sockOriAbs = parBody->ori_var->val * parJoint->sockOri;
+			parJoint->plugPosAbs = parJoint->sockPosAbs + parJoint->sockOriAbs * parJoint->relPos;
+			parJoint->plugOriAbs = parJoint->sockOriAbs * parJoint->relOri;
+
+			ori_var->val = parJoint->plugOriAbs * parJoint->plugOri.Conjugated();
+			pos_var->val = parJoint->plugPosAbs - ori_var->val * parJoint->plugPos;
+			
+			centerPosAbs = pos_var->val + ori_var->val * center;
+		
+			for(uint i = 0; i < parJoint->ndof; i++){
+				parJoint->Jv_abs[i] = parJoint->sockOriAbs * parJoint->Jv[i];
+				parJoint->Jw_abs[i] = parJoint->sockOriAbs * parJoint->Jw[i];
+			}
+		}
+	}
+
+	if(solver->mode == IKSolver::Mode::Vel){
+		if(!parBody){
+			vec3_t rc = centerPosAbs - pos_var->val;
+			centerVelAbs = vel_var->val + angvel_var->val % rc;
+		}
+		else{
+			vec3_t vvp = parBody->vel_var   ->val;
+			vec3_t vwp = parBody->angvel_var->val;
+			vec3_t rpc = pos_var->val - parBody->pos_var->val;
+
+			vel_var   ->val = vvp + vwp % rpc;
+			angvel_var->val = vwp;
+
+			cv = vwp % (vwp % rpc);
+			cw = vec3_t();
+
+			for(uint i = 0; i < parJoint->ndof; i++){
+				vec3_t vvj = parJoint->Jv_abs[i] * parJoint->qd_var[i]->val;
+				vec3_t vwj = parJoint->Jw_abs[i] * parJoint->qd_var[i]->val;
+				vec3_t rjc = pos_var->val - parJoint->sockPosAbs;
+
+				vel_var   ->val += vvj + vwj % rjc;
+				angvel_var->val += vwj;
+
+				cv += 2.0 * (vwp % (vvj + vwj % rjc));
+				cw += vwp % vwj;
+			}
+
+			vec3_t rc = centerPosAbs - pos_var->val;
+			centerVelAbs = vel_var->val + angvel_var->val % rc;
+		}
+	}
+
+	if(solver->mode == IKSolver::Mode::Acc){
+		if(!parBody){
+			vec3_t rc = centerPosAbs - pos_var->val;
+			centerAccAbs = acc_var->val + angacc_var->val % rc + angvel_var->val % (angvel_var->val % rc);
+		}
+		else{
+			vec3_t avp = parBody->acc_var   ->val;
+			vec3_t awp = parBody->angacc_var->val;
+			vec3_t rpc = pos_var->val - parBody->pos_var->val;
+
+			acc_var   ->val = avp + awp % rpc + cv;
+			angacc_var->val = awp             + cw;
+
+			for(uint i = 0; i < parJoint->ndof; i++){
+				vec3_t avj = parJoint->Jv_abs[i] * parJoint->qdd_var[i]->val;
+				vec3_t awj = parJoint->Jw_abs[i] * parJoint->qdd_var[i]->val;
+				vec3_t rjc = pos_var->val - parJoint->sockPosAbs;
+
+				acc_var   ->val += avj + awj % rjc;
+				angacc_var->val += awj;
+			}
+
+			vec3_t rc = centerPosAbs - pos_var->val;
+			centerAccAbs = acc_var->val + angacc_var->val % rc + angvel_var->val % (angvel_var->val % rc);
+		}
+	}
+
+	if(solver->mode == IKSolver::Mode::Force){
+		
+	}
+
 	for(uint i = 0; i < children.size(); i++)
-		children[i]->CompFK();
+		children[i]->Update();
 }
 
 void IKBody::Draw(GRRenderIf* render){
-	glColor4fv((float*)ikSolver->bodyColor);
+	Vec3f p0, p1;
+	
+	glColor4fv((float*)solver->bodyColor.rgb);
+
 	render->SetPointSize(3.0f);
+	p0 = pos;
+	render->DrawPoint(p0);
 
-	Vec3f p = pose.Pos();
-	render->DrawPoint(p);
-
-	if(parent){
-		Vec3f p0, p1;
+	if(parBody){
 		render->SetLineWidth(1.0f);
-		p0 = parent->pose.Pos();
-		p1 = parent->pose * psock.Pos();
+		p0 = parBody ->pos;
+		p1 = parJoint->pos;
 		render->DrawLine(p0, p1);
-		p0 = pose.Pos();
-		p1 = pose * pplug.Pos();
+		p0 = pos;
+		p1 = parJoint->pos;
 		render->DrawLine(p0, p1);
 	}
+
+	glColor4fv((float*)solver->velColor.rgb);
+	p1 = p0 + solver->velScale * vel;
+	render->DrawLine(p0, p1);
+
+	glColor4fv((float*)solver->accColor.rgb);
+	p1 = p0 + solver->accScale * acc;
+	render->DrawLine(p0, p1);
+
 }
 
 }

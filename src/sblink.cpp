@@ -30,10 +30,17 @@ void SLink::AddColSqr(vec3_t& v){
 
 void SLink::AddError(){
 	if(con->nelem == 1)
-		 con->y[0] += coef * ((SVar*)var)->val;
-	else con->y += coef * ((V3Var*)var)->val;
+		 con->y[0] += coef * ((SVar *)var)->val;
+	else con->y    += coef * ((V3Var*)var)->val;
 }
-	
+
+void SLink::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	for(uint n = 0; n < con->nelem; n++)
+		J[i+n][j+n] = coef;
+}	
+
 /*void SLink::UpdateVar(uint k, real_t dl){
 	var->UpdateVar(k, coef * dl);
 }
@@ -75,6 +82,14 @@ void XLink::AddColSqr(vec3_t& v){
 void XLink::AddError(){
 	con->y += coef % ((V3Var*)var)->val;
 }
+
+void XLink::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	J[i+0][j+0] =  0.0    ; J[i+0][j+1] = -coef[2]; J[i+0][j+2] =  coef[1];
+	J[i+1][j+0] =  coef[2]; J[i+1][j+1] =  0.0    ; J[i+1][j+2] = -coef[0];
+	J[i+2][j+0] = -coef[1]; J[i+2][j+1] =  coef[0]; J[i+2][j+2] =  0.0    ;
+}	
 
 /*void XLink::UpdateVar(uint k, real_t dl){
 	if(k == 0){
@@ -165,6 +180,14 @@ void CLink::AddError(){
 	con->y += coef * ((SVar*)var)->val;
 }
 
+void CLink::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	J[i+0][j] = coef[0];
+	J[i+1][j] = coef[1];
+	J[i+2][j] = coef[2];
+}	
+
 /*void CLink::UpdateVar(uint k, real_t dl){
 	var->UpdateVar(0, coef[k] * dl);
 }
@@ -202,6 +225,14 @@ void RLink::AddColSqr(vec3_t& v){
 void RLink::AddError(){
 	con->y[0] += coef * ((V3Var*)var)->val;
 }
+
+void RLink::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	J[i][j+0] = coef[0];
+	J[i][j+1] = coef[1];
+	J[i][j+2] = coef[2];
+}	
 
 /*void RLink::UpdateVar(uint k, real_t dl){
 	var->UpdateVar(0, coef[0] * dl);

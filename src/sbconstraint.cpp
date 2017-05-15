@@ -5,6 +5,7 @@ namespace Scenebuilder{;
 
 Constraint::Constraint(Solver* solver, uint n){
 	nelem	= n;
+	index   = 0;
 	enabled = true;
 	active  = true;
 	
@@ -58,6 +59,11 @@ void Constraint::CalcDeviation(){
 	y.clear();
 	for(uint i = 0; i < links.size(); i++)
 		links[i]->AddError();
+}
+
+void Constraint::RegisterDeviation(vvec_t& yvec){
+	for(uint n = 0; n < nelem; n++)
+		yvec[index+n] = y[n];
 }
 
 void Constraint::ResetState(){

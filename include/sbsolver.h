@@ -29,6 +29,7 @@ public:
 		};
 		struct Minor{
 			enum{
+				Direct,
 				Jacobi,
 				GaussSeidel,
 			};
@@ -53,6 +54,8 @@ public:
 		real_t  objDiff;    ///< 評価値の変化量
 		real_t  stepSize;   ///< ステップ幅
 		int     iterCount;  ///< 累計反復回数
+		int     timeDir;
+		int     timeStep;
 
 		State();
 	};
@@ -61,9 +64,15 @@ public:
 	State           state;
 	
 	VariableRefs    vars;			///< array of all variables
+	Variables       vars_unlocked;
 	ConstraintRefs  cons;			///< array of all constraints
 	Constraints     cons_active;	///< array of active constraints
 	LinkRefs        links;			///< array of links
+
+	vmat_t          J, JtrJ;
+	vvec_t          y, y2;
+	vvec_t          Jtry;
+	vvec_t          dx;
 
 public:
 	/// 内部関数

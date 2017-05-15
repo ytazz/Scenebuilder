@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <sbsolver.h>
+#include <sbconverter.h>
 
 #include <SprGraphics.h>
 using namespace Spr;
@@ -8,12 +9,16 @@ using namespace Spr;
 namespace Scenebuilder{;
 
 class IKBody;
+class IKJoint;
 class IKHandle;
-typedef vector< UTRef<IKBody  > > IKBodyRefs;
-typedef vector< UTRef<IKHandle> > IKHandleRefs;
+class IKComHandle;
+typedef vector< UTRef<IKBody     > > IKBodyRefs;
+typedef vector< UTRef<IKJoint    > > IKJointRefs;
+typedef vector< UTRef<IKHandle   > > IKHandleRefs;
+typedef vector< UTRef<IKComHandle> > IKComHandleRefs;
 
 
-/** 逆機構学（inverse kinematics, IK）計算クラス
+/** 逆運動学（inverse kinematics, IK）計算クラス
 	- 基本的な解析
 	 - 根が固定されたシリアルリンクを考える
 	 - リンクの番号を根から末端にむかって0, 1, ...とする．
@@ -42,45 +47,82 @@ typedef vector< UTRef<IKHandle> > IKHandleRefs;
 
 class IKSolver : public Solver{
 public:
-	real_t        dmaxRevolutive;        
-	real_t        dmaxPrismatic;
-	Vec4f         bodyColor;
-	Vec4f         handleColor;
-	bool          ready;
+	struct Mode{
+		enum{
+			Pos,
+			Vel,
+			Acc,
+			Force
+		};
+	};
 
-	IKBodyRefs    ikBodies;
-	IKHandleRefs  ikHandles;
+	int     numIter;
+	vec3_t  gravity;
+	Color   bodyColor;
+	Color   velColor;
+	Color   accColor;
+	Color   forceColor;
+	Color   handleColor;
+	float   velScale;
+	float   accScale;
+	float   forceScale;
+
+	int     mode;
+	bool    ready;
+
+	int     timeInit;
+	int     timePrepare;
+	int     timeFinish;
+	int     timeUpdate;
+	
+	IKBodyRefs       ikBodies;
+	IKJointRefs      ikJoints;
+	IKHandleRefs     ikHandles;
+	IKComHandleRefs  ikComHandles;
+
+	vec3_t  forceTotal;
+	vec3_t  momentTotal;
+
+public:
 	
 	void Init   ();
 	void Prepare();
+	void Finish ();
+	void Update ();
 
 public:
 	/// Solverの仮想関数
-	virtual real_t  CalcObjective   ();
-	virtual void    CalcInitialValue();
-	virtual void    CalcCoef        ();
+	virtual real_t  CalcObjective();
+	virtual void    CalcDirection();
 
 public:
 	/// 剛体を追加
-	IKBody*		AddBody   (IKBody* par = 0);
+	IKBody*		AddBody   ();
 	void        DeleteBody(IKBody* body);
 
+	///
+	IKJoint*    AddJoint   (int _type);
+	void        DeleteJoint(IKJoint* joint);
+
 	/// 拘束を追加
-	IKHandle*   AddHandle   (IKBody* endBody, IKBody* refBody);
+	IKHandle*   AddHandle   (IKBody* sockBody);
 	void        DeleteHandle(IKHandle* handle);
-	
+
+	///
+	IKComHandle*  AddComHandle   ();
+	void          DeleteComHandle(IKComHandle* handle);
+
 	/** 逆キネ計算を行う
 	 **/
-	void	CompIK();
-
+	void	CompPosIK  ();
+	void	CompVelIK  ();
+	void	CompAccIK  ();
+	void	CompForceIK();
+	
 	/** 順キネ計算を行う
 		- 関節角度を所与として，根から末端に向かい剛体の位置と向きを求める
 	 **/
-	void	CompFK();
-
-	/// 色設定
-	void	SetBodyColor  (const Vec4f& c);
-	void	SetHandleColor(const Vec4f& c);
+	//void	CompFK();
 
 	/// 描画
 	void Draw(GRRenderIf* render);

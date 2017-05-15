@@ -1,76 +1,244 @@
 ﻿#pragma once
 
-#include <sbconstraint.h>
-
-#include <SprGraphics.h>
-using namespace Spr;
-
 namespace Scenebuilder{;
 
 class IKSolver;
 class IKBody;
-class FixPosCon;
-class FixOriCon;
 
 class IKHandle : public UTRefCount{
 public:
-	IKSolver* ikSolver;
-	IKBody*	  endBody;              ///< エンドボディ（ハンドルを取り付けるボディ）
-	IKBody*	  refBody;              ///< 参照ボディ　（基準フレームを取り付けるボディ）
-	pose_t	  endPose, endPoseAbs;  ///< エンドボディから見たハンドルの位置と向き
-	pose_t	  refPose, refPoseAbs;  ///< 参照ボディから見た基準フレームの位置と向き
-	pose_t	  desPose;              ///< 基準フレームに対するハンドルの位置と向きの目標値
-	pose_t    curPose;              ///< 基準フレームに対するハンドルの位置と向きの現在値
+	class PosCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		PosCon(IKHandle* h);
+	};
+	class OriCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		OriCon(IKHandle* h);
+	};
+	class VelCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		VelCon(IKHandle* h);
+	};
+	class AngvelCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AngvelCon(IKHandle* h);
+	};
+	class AccCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AccCon(IKHandle* h);
+	};
+	class AngaccCon : public Constraint{
+	public:
+		IKHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AngaccCon(IKHandle* h);
+	};
 
-	bool      enablePos;            ///< 位置の拘束の有効性
-	bool      enableOri;            ///< 向きの拘束の有効性
+	IKSolver*   solver;
+	IKBody*	    body;         ///< エンドボディ（ハンドルを取り付けるボディ）
+	
+	PosCon*     pos_con;
+	OriCon*     ori_con;
+	VelCon*     vel_con;
+	AngvelCon*  angvel_con;
+	AccCon*     acc_con;
+	AngaccCon*  angacc_con;
 
-	FixPosCon*	con_fix_pos;
-	FixOriCon*	con_fix_ori;
+	vec3_t  pos;
+	quat_t  ori;
+	vec3_t  vel;
+	vec3_t  angvel;
+	vec3_t  acc;
+	vec3_t  angacc;
+	vec3_t  force;
+	vec3_t  moment;
+
+	vec3_t	sockPos;     ///< エンドボディから見たハンドルの位置と向き
+	quat_t  sockOri;
+	vec3_t  sockPosAbs;
+	quat_t  sockOriAbs;
+	vec3_t  sockOffsetAbs;
+	vec3_t  sockVelAbs;
+	vec3_t  sockAngvelAbs;
+	vec3_t  sockAccAbs;
+	vec3_t  sockAngaccAbs;
+
+	vec3_t  desPos;
+	quat_t  desOri;
+	vec3_t  desVel;
+	vec3_t  desAngvel;
+	vec3_t  desAcc;
+	vec3_t  desAngacc;
+
+	bool    enablePos;
+	bool    enableOri;
+	bool    enableVel;
+	bool    enableAngvel;
+	bool    enableAcc;
+	bool    enableAngacc;
 
 public:
-	void AddCons   ();
-	void DeleteCons();
+	void SetSocketPose(const pose_t& p);
+	void GetSocketPose(pose_t& p);
+	
+	void SetDesiredPos   (const vec3_t& pos   );
+	void SetDesiredOri   (const quat_t& ori   );
+	void SetDesiredVel   (const vec3_t& vel   );
+	void SetDesiredAngvel(const vec3_t& angvel);
+	void SetDesiredAcc   (const vec3_t& acc   );
+	void SetDesiredAngacc(const vec3_t& angacc);
+	
+	void GetDesiredPos   (vec3_t& _pos   );
+	void GetDesiredOri   (quat_t& _ori   );
+	void GetDesiredVel   (vec3_t& _vel   );
+	void GetDesiredAngvel(vec3_t& _angvel);
+	void GetDesiredAcc   (vec3_t& _acc   );
+	void GetDesiredAngacc(vec3_t& _angacc);
+	
+	void GetCurrentPos   (vec3_t& _pos   );
+	void GetCurrentOri   (quat_t& _ori   );
+	void GetCurrentVel   (vec3_t& _vel   );
+	void GetCurrentAngvel(vec3_t& _angvel);
+	void GetCurrentAcc(   vec3_t& _acc   );
+	void GetCurrentAngacc(vec3_t& _angacc);
+	
+	void EnablePos   (bool on = true);
+	void EnableOri   (bool on = true);
+	void EnableVel   (bool on = true);
+	void EnableAngvel(bool on = true);
+	void EnableAcc   (bool on = true);
+	void EnableAngacc(bool on = true);
 
-public:
-	void SetEndPose(const pose_t& p);
-	void SetRefPose(const pose_t& p);
+	void SetForce (const vec3_t& _force );
+	void SetMoment(const vec3_t& _moment);
 
-	void GetEndPose(pose_t& p);
-	void GetRefPose(pose_t& p);
-
-	void SetDesiredPose(const pose_t& p);
-	void GetDesiredPose(pose_t& p);
-	void GetCurrentPose(pose_t& p);
-
-	void EnablePos(bool on = true);
-	void EnableOri(bool on = true);
-
+	void Init   ();
+	void AddVar ();
+	void AddCon ();
 	void Prepare();
-	void CompFK ();
+	void Finish ();
+	void Update ();
 	void Draw   (GRRenderIf* render);
 
-	IKHandle(IKSolver* _ikSolver, IKBody* _endBody, IKBody* _refBody);
+	IKHandle(IKSolver* _solver, IKBody* _body);
 };
 
-class FixPosCon : public Constraint{
+class IKComHandle : public UTRefCount{
 public:
-	IKHandle* handle;
+	struct BodyInfo{
+		IKBody*  body;
+		real_t   massNorm;   ///< normalized mass
+	};
+	struct JointInfo{
+		IKJoint* joint;
+		vector<BodyInfo*> bodies;
+	};
 
-	virtual void CalcCoef();
-	virtual void CalcDeviation();
+	class PosCon : public Constraint{
+	public:
+		IKComHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		PosCon(IKComHandle* h);
+	};
+	class VelCon : public Constraint{
+	public:
+		IKComHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		VelCon(IKComHandle* h);
+	};
+	class AccCon : public Constraint{
+	public:
+		IKComHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AccCon(IKComHandle* h);
+	};
 
-	FixPosCon(IKSolver* _solver, IKHandle* h);
-};
+	IKSolver*          solver;
+	vector<BodyInfo>   bodies;
+	vector<JointInfo>  joints;
+	IKBody*            root;
 
-class FixOriCon : public Constraint{
-public:
-	IKHandle* handle;
+	PosCon*   pos_con;
+	VelCon*   vel_con;
+	AccCon*   acc_con;
 
-	virtual void CalcCoef();
-	virtual void CalcDeviation();
+	vec3_t    pos;
+	vec3_t    vel;
+	vec3_t    acc;
+
+	vec3_t    comPosAbs;
+	vec3_t    comVelAbs;
+	vec3_t    comAccAbs;
+
+	vec3_t    desPos;
+	vec3_t    desVel;
+	vec3_t    desAcc;
+
+	bool      enablePos;
+	bool      enableVel;
+	bool      enableAcc;
+
+	real_t    totalMass;
 	
-	FixOriCon(IKSolver* _solver, IKHandle* h);
+public:
+	void AddBody   (IKBody* _body);
+	void DeleteBody(IKBody* _body);
+
+	void SetDesiredPos(const vec3_t& pos);
+	void SetDesiredVel(const vec3_t& vel);
+	void SetDesiredAcc(const vec3_t& acc);
+	void GetDesiredPos(vec3_t& pos);
+	void GetDesiredVel(vec3_t& vel);
+	void GetDesiredAcc(vec3_t& acc);
+	
+	void GetCurrentPos(vec3_t& pos);
+	void GetCurrentVel(vec3_t& vel);
+	void GetCurrentAcc(vec3_t& acc);
+
+	real_t GetTotalMass();
+	
+	void EnablePos(bool on = true);
+	void EnableVel(bool on = true);
+	void EnableAcc(bool on = true);
+
+	void   Init   ();
+	void   AddVar ();
+	void   AddCon ();
+	void   Prepare();
+	void   Finish ();
+	void   Update ();
+	
+	void Draw(GRRenderIf* render);
+
+	IKComHandle(IKSolver* _solver);
 };
 
 }

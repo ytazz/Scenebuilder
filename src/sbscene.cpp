@@ -36,6 +36,7 @@ int GearProp            ::id;
 int GravityProp         ::id;
 int ContactGroupProp    ::id;
 int IKProp              ::id;
+int IKComProp           ::id;
 int MotorProp           ::id;
 int SensorProp          ::id;
 int JointSensorProp     ::id;
@@ -124,6 +125,7 @@ void SceneBase::Register(TypeDB* db){
 	GravityProp         ::Register(db);
 	ContactGroupProp    ::Register(db);
 	IKProp              ::Register(db);
+	IKComProp           ::Register(db);
 	MotorProp           ::Register(db);
 	LightProp           ::Register(db);
 	SensorProp          ::Register(db);
@@ -160,12 +162,23 @@ string SceneBase::AssignName(const string& name, TypeInfo* type, int parId){
 }
 
 bool SceneBase::FindName(const string& str, int parId){
+	// 子オブジェクトから探す
 	vector<int> children;
 	GetChildren(parId, children);
 	for(uint i = 0; i < children.size(); i++){
 		if(GetName(children[i]) == str)
 			return true;
 	}
+
+	// リンクから探す
+	vector<int>    links;
+	vector<string> names;
+	GetLinks(parId, links, names);
+	for(uint i = 0; i < names.size(); i++){
+		if(names[i] == str)
+			return true;
+	}
+
 	return false;
 }
 

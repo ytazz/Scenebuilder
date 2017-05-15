@@ -30,6 +30,8 @@ public:
 	/// x -> c(x)
 	virtual void AddError() = 0;
 
+	virtual void RegisterCoef(vmat_t& J) = 0;
+
 	virtual void Forward (uint k, real_t d, Constraint::UpdateFunc func) = 0;
 	virtual void Backward(uint k, real_t d, Variable  ::UpdateFunc func) = 0;
 
@@ -51,11 +53,12 @@ public:
 	void SetCoef(real_t k);
 
 	virtual real_t Norm(){ return std::abs(coef); }
-	virtual void AddRowSqr(vec3_t& v);
-	virtual void AddColSqr(vec3_t& v);
-	virtual void AddError ();
-	virtual void Forward  (uint k, real_t d, Constraint::UpdateFunc func);
-	virtual void Backward (uint k, real_t d, Variable  ::UpdateFunc func);
+	virtual void AddRowSqr   (vec3_t& v);
+	virtual void AddColSqr   (vec3_t& v);
+	virtual void AddError    ();
+	virtual void RegisterCoef(vmat_t& J);
+	virtual void Forward     (uint k, real_t d, Constraint::UpdateFunc func);
+	virtual void Backward    (uint k, real_t d, Variable  ::UpdateFunc func);
 
 	SLink(Variable* v, Constraint* c, real_t k);
 };
@@ -79,11 +82,12 @@ public:
  */
 class XLink : public V3Link{
 public:
-	virtual void AddRowSqr(vec3_t& v);
-	virtual void AddColSqr(vec3_t& v);
-	virtual void AddError ();
-	virtual void Forward  (uint k, real_t d, Constraint::UpdateFunc func);
-	virtual void Backward (uint k, real_t d, Variable  ::UpdateFunc func);
+	virtual void AddRowSqr   (vec3_t& v);
+	virtual void AddColSqr   (vec3_t& v);
+	virtual void AddError    ();
+	virtual void RegisterCoef(vmat_t& J);
+	virtual void Forward     (uint k, real_t d, Constraint::UpdateFunc func);
+	virtual void Backward    (uint k, real_t d, Variable  ::UpdateFunc func);
 
 	XLink(Variable* v, Constraint* c):V3Link(v, c){}
 };
@@ -100,11 +104,12 @@ class CLink : public V3Link{
 public:
 
 public:
-	virtual void AddRowSqr(vec3_t& v);
-	virtual void AddColSqr(vec3_t& v);
-	virtual void AddError();
-	virtual void Forward(uint k, real_t d, Constraint::UpdateFunc func);
-	virtual void Backward(uint k, real_t d, Variable::UpdateFunc func);
+	virtual void AddRowSqr   (vec3_t& v);
+	virtual void AddColSqr   (vec3_t& v);
+	virtual void AddError    ();
+	virtual void RegisterCoef(vmat_t& J);
+	virtual void Forward     (uint k, real_t d, Constraint::UpdateFunc func);
+	virtual void Backward    (uint k, real_t d, Variable::UpdateFunc func);
 
 	CLink(Variable* v, Constraint* c,vec3_t k):V3Link(v, c){}
 };
@@ -116,11 +121,12 @@ public:
  */
 class RLink : public V3Link{
 public:
-	virtual void AddRowSqr(vec3_t& v);
-	virtual void AddColSqr(vec3_t& v);
-	virtual void AddError ();
-	virtual void Forward  (uint k, real_t d, Constraint::UpdateFunc func);
-	virtual void Backward (uint k, real_t d, Variable  ::UpdateFunc func);
+	virtual void AddRowSqr   (vec3_t& v);
+	virtual void AddColSqr   (vec3_t& v);
+	virtual void AddError    ();
+	virtual void RegisterCoef(vmat_t& J);
+	virtual void Forward     (uint k, real_t d, Constraint::UpdateFunc func);
+	virtual void Backward    (uint k, real_t d, Variable  ::UpdateFunc func);
 
 	RLink(Variable* v, Constraint* c):V3Link(v, c){}
 };

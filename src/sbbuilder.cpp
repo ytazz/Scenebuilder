@@ -293,8 +293,10 @@ void Builder::ProcessNode(int nodeId){
 	else if(type->id == LinkProp::id){
 		LinkProp prop;
 		FillProperty(type, &prop);
-
-		Link(curObjId, curObjId, string(prop.path), string(prop.name));
+		string n    = prop.name;
+		string name = scene->AssignName(n, type, curObjId);
+	
+		Link(curObjId, curObjId, string(prop.path), name);
 	}
 	//
 	else if(type->id == ForProp::id){

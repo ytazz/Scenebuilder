@@ -13,80 +13,94 @@ using namespace Spr;
 namespace Scenebuilder{;
 
 class IKSolver;
+class IKJoint;
 
 /// 剛体
 class IKBody : public UTRefCount{
 public:
-	struct JointType{
-		enum{
-			Hinge,
-			Slider,
-			Balljoint,
-			Fixjoint,
-		};
+	class ForceCon : public Constraint{
+	public:
+		IKBody*  body;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		ForceCon(IKBody* b);
 	};
 
-	IKSolver*           ikSolver;
-	IKBody*				parent;
-	vector< IKBody* >	children;
-	uint                type;
-	uint                ndof;           ///< 関節の自由度
-	bool                revolutive[3];  ///< 回転自由度ならtrue 直動自由度ならfalse
-	bool                handled;	    ///< Handleにつながる鎖上にあればtrue
+	class MomentCon : public Constraint{
+	public:
+		IKBody*  body;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		MomentCon(IKBody* b);
+	};
 
-	pose_t	psock;				///< 親剛体に対するソケットの位置と向き
-	pose_t	pplug;				///< この剛体に対するプラグの位置と向き
+	IKSolver*           solver;
+	IKBody*				parBody;
+	IKJoint*            parJoint;
+	vector< IKBody*  >  children;
+	vector< IKJoint* >  joints;
+	vector< IKHandle*>  handles;
+	bool                ready;
 	
-	pose_t	pose;				///< グローバル座標上の位置と向き
-	pose_t	prel;				///< ソケットに対するプラグの位置と向き
-	vec3_t	pivot;				///< グローバル座標上の関節の軸中心
-	vec3_t	Jv[3], Jv_abs[3];	///< ヤコビアン（並進）
-	vec3_t  Jw[3], Jw_abs[3];	///< ヤコビアン（回転）
+	real_t  mass;
+	vec3_t  center;
+	mat3_t  inertia;
+
+	vec3_t  centerPosAbs;
+	vec3_t  centerVelAbs;
+	vec3_t  centerAccAbs;
+
+	vec3_t  pos;
+	quat_t  ori;
+	vec3_t  vel;
+	vec3_t  angvel;
+	vec3_t  acc;
+	vec3_t  angacc;
+	vec3_t  force;
+	vec3_t  moment;
 	
-	SVar*       pos[3];         ///< 関節変位（ヒンジ，スライダ）
-	RangeConS*  range[3];       ///< 関節角度の範囲拘束
+	V3Var*  pos_var;
+	QVar*   ori_var;
+	V3Var*  vel_var;
+	V3Var*  angvel_var;
+	V3Var*  acc_var;
+	V3Var*  angacc_var;
+
+	ForceCon*   force_con;
+	MomentCon*  moment_con;
+
+	vec3_t  cv;
+	vec3_t  cw;
 
 public:
-	void    AddVars         ();
-	void    DeleteVars      ();
-	void    AddCons         ();
-	void    DeleteCons      ();
-	void    MarkHandled     (IKBody* ref);
-	void    CalcJacobian    ();
-	void    CalcRelativePose();
-	void	Prepare         ();
-	void	CompFK          ();
+	void    Init   ();
+	void    AddVar ();
+	void    AddCon ();
+	void	Prepare();
+	void    Finish ();
+	void    Update ();
+	//void	CompFK ();
 
 public:
-	IKBody*	GetParent();
-	void    SetParent(IKBody* par, int _type);
+	IKBody*	 GetParent();
+	void     SetParent(IKBody* par, IKJoint* _joint);
+	IKJoint* GetJoint();
 
-	/// 親リンクに対する相対的な位置と向きを設定
-	void SetSocketPose(const pose_t& p);
-	void SetPlugPose(const pose_t& p);
+	void     SetMass(real_t m);
+	real_t   GetMass();
 
-	void GetSocketPose(pose_t& p);
-	void GetPlugPose(pose_t& p);
+	void     SetCenter(const vec3_t& c);
+	void     GetCenter(vec3_t& c);
 
 	/// 位置と向きの取得
 	void SetPose(const pose_t& p);
 	void GetPose(pose_t& p);
 
-	/// 関節角度を取得
-	real_t GetJointPos(uint i);
-	
-	/// 関節角度を設定
-	void SetJointPos(uint i, real_t _pos);
-	
-	/// 関節角度を固定
-	void LockPos(uint i, bool lock = true);
-	
-	/// 関節角度の範囲拘束を設定
-	void SetPosLimit(uint i, real_t lower, real_t upper);
-
 	void Draw(GRRenderIf* render);
 
-	IKBody(IKSolver* _ikSolver);
+	IKBody(IKSolver* _solver);
 };
 
 }

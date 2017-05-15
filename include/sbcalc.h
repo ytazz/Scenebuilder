@@ -26,6 +26,7 @@ struct Dimension{
 		L_T,		//< 速度
 		L_TT,		//< 加速度
 		R_T,		//< 角速度
+		R_TT,       //< 角加速度
 		ML_TT,		//< 力
 		MLL_TT,     //< モーメント
 		MLL,		//< 慣性モーメント

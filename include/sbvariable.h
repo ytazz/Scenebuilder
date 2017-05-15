@@ -28,9 +28,10 @@ public:
 
 	Solver*	 solver;
 	Links	 links;			///< links to constraints
-	bool	 locked;			///< locked or not
+	bool	 locked;		///< locked or not
 	uint	 type;			///< variable type
 	uint	 nelem;			///< number of elements
+	uint     index;
 	real_t   dmax, dmax2;    ///< upper limit of delta norm
 	real_t   weight;
 	vec3_t	 dx;            ///< delta
@@ -58,6 +59,8 @@ public:
 	void UpdateConjugate1(uint k, real_t  ddz );
 	void UpdateConjugate2(uint k, real_t  _dz );
 	void UpdateConjugate3(uint k, real_t  ddzd);
+
+	void RegisterDelta(const vvec_t& dxvec);
 	
 	virtual void	Reset ()            = 0;
 	virtual real_t	Get   (uint k)      = 0;
