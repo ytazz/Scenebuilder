@@ -14,20 +14,12 @@ IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3){
 		IKJoint* jnt = body->joints[i];
 		AddSLink(jnt->force_var);
 	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
-		AddSLink(handle->force_var);
-	}
 }
 void IKBody::ForceCon::CalcCoef(){
 	uint idx = 0;
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
 		((SLink*)links[idx++])->SetCoef(jnt->sockBody == body ? 1.0 : -1.0);
-	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
-		((SLink*)links[idx++])->SetCoef(-1.0);
 	}
 }
 void IKBody::ForceCon::CalcDeviation(){
@@ -38,7 +30,7 @@ void IKBody::ForceCon::CalcDeviation(){
 	}
 	for(uint i = 0; i < body->handles.size(); i++){
 		IKHandle* handle = body->handles[i];
-		y += -1.0 * handle->force_var->val;
+		y += -1.0 * handle->force;
 	}
 }
 
@@ -50,11 +42,6 @@ IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3){
 		AddXLink(jnt->force_var );
 		AddSLink(jnt->moment_var);
 	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
-		AddXLink(handle->force_var );
-		AddSLink(handle->moment_var);
-	}
 }
 void IKBody::MomentCon::CalcCoef(){
 	uint idx = 0;
@@ -62,11 +49,6 @@ void IKBody::MomentCon::CalcCoef(){
 		IKJoint* jnt = body->joints[i];
 		((XLink*)links[idx++])->SetCoef((jnt->sockBody == body ? 1.0 : -1.0) * (jnt->sockPosAbs - body->centerPosAbs));
 		((SLink*)links[idx++])->SetCoef( jnt->sockBody == body ? 1.0 : -1.0);
-	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
-		((XLink*)links[idx++])->SetCoef(-1.0 * (handle->sockPosAbs - body->centerPosAbs));
-		((SLink*)links[idx++])->SetCoef(-1.0);
 	}
 }
 void IKBody::MomentCon::CalcDeviation(){
@@ -77,7 +59,7 @@ void IKBody::MomentCon::CalcDeviation(){
 	}
 	for(uint i = 0; i < body->handles.size(); i++){
 		IKHandle* handle = body->handles[i];
-		y += -1.0 * ((handle->sockPosAbs - body->centerPosAbs) % handle->force_var->val + handle->moment_var->val);
+		y += -1.0 * ((handle->sockPosAbs - body->centerPosAbs) % handle->force + handle->moment);
 	}
 }
 

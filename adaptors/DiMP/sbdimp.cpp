@@ -12,7 +12,7 @@ AdaptorDiMP::AdaptorDiMP(){
 	syncTime = 0.0;
 }
 
-void AdaptorDiMP::Set(DiMP2::Graph* g){
+void AdaptorDiMP::Set(DiMP::Graph* g){
 	graph = g;
 }
 
@@ -31,7 +31,7 @@ int AdaptorDiMP::CreateObject(int id){
 	string name = addr.ToString();
 	
 	if(type == BodyProp::id){
-		DiMP2::Object* obj = new DiMP2::Object(graph, name);
+		DiMP::Object* obj = new DiMP::Object(graph, name);
 		RegAux(id, new BodyAux(obj));
 		return SupportState::Supported;
 	}
@@ -45,7 +45,7 @@ int AdaptorDiMP::CreateObject(int id){
 		AUTO(BodyAux*, bodyAux, GetAux(bodyId));
 		
 		// コネクタを作成
-		DiMP2::Connector* con = new DiMP2::Connector(bodyAux->obj);
+		DiMP::Connector* con = new DiMP::Connector(bodyAux->obj);
 		
 		RegAux(id, new ConnectorAux(bodyAux, con));
 		return SupportState::Supported;
@@ -57,13 +57,13 @@ int AdaptorDiMP::CreateObject(int id){
 		if(shapeProp->collision){
 			Aux* shape = 0;
 			if(type == BoxProp::id){
-				shape = new ShapeAux(new DiMP2::Box(graph, ((BoxProp*)prop)->size, name));
+				shape = new ShapeAux(new DiMP::Box(graph, ((BoxProp*)prop)->size, name));
 			}
 			else if(type == SphereProp::id){
-				shape = new ShapeAux(new DiMP2::Sphere(graph, ((SphereProp*)prop)->radius, name));
+				shape = new ShapeAux(new DiMP::Sphere(graph, ((SphereProp*)prop)->radius, name));
 			}
 			else if(type == CylinderProp::id){
-				shape = new ShapeAux(new DiMP2::Cylinder(graph, ((CylinderProp*)prop)->radius, ((CylinderProp*)prop)->height, name));
+				shape = new ShapeAux(new DiMP::Cylinder(graph, ((CylinderProp*)prop)->radius, ((CylinderProp*)prop)->height, name));
 			}
 			if(shape){
 				RegAux(id, shape);
@@ -128,13 +128,13 @@ int AdaptorDiMP::CreateObject(int id){
 		AUTO(ConnectorAux*, plugAux, GetAux(plugId));
 		
 		// create joint
-		DiMP2::Joint* jnt;
+		DiMP::Joint* jnt;
 		if(type == HingeProp::id)
-			jnt = new DiMP2::Hinge(sockAux->con, plugAux->con, 0, name);
+			jnt = new DiMP::Hinge(sockAux->con, plugAux->con, 0, name);
 		else if(type == SliderProp::id)
-			jnt = new DiMP2::Slider(sockAux->con, plugAux->con, 0, name);
+			jnt = new DiMP::Slider(sockAux->con, plugAux->con, 0, name);
 		else if(type == BalljointProp::id)
-			jnt = new DiMP2::Balljoint(sockAux->con, plugAux->con, 0, name);
+			jnt = new DiMP::Balljoint(sockAux->con, plugAux->con, 0, name);
 		else return false;
 		
 		JointAux* jointAux = new JointAux(jnt, sockAux, plugAux);
@@ -160,7 +160,7 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 	if(type == BodyProp::id){
 		AUTO(BodyAux*, bodyAux, GetAux(id));
 		AUTO(BodyProp*, bodyProp, prop);
-		DiMP2::Object* obj = bodyAux->obj;
+		DiMP::Object* obj = bodyAux->obj;
 		
 		if(cat & AttrCategory::Param){
 			if(download){
@@ -248,32 +248,32 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 	}
 }
 
-DiMP2::Object* AdaptorDiMP::GetObject(int id){
+DiMP::Object* AdaptorDiMP::GetObject(int id){
 	AUTO(BodyAux*, bodyAux, HandleByID(id, BodyProp::id));
 	return bodyAux->obj;
 }
 
-DiMP2::Object* AdaptorDiMP::GetObject(string name){
+DiMP::Object* AdaptorDiMP::GetObject(string name){
 	AUTO(BodyAux*, bodyAux, HandleByName(name, BodyProp::id));
 	return bodyAux->obj;
 }
 
-DiMP2::Joint* AdaptorDiMP::GetJoint(int id){
+DiMP::Joint* AdaptorDiMP::GetJoint(int id){
 	AUTO(JointAux*, jntAux, HandleByID(id, JointProp::id));
 	return jntAux->joint;
 }
 
-DiMP2::Joint* AdaptorDiMP::GetJoint(string name){
+DiMP::Joint* AdaptorDiMP::GetJoint(string name){
 	AUTO(JointAux*, jntAux, HandleByName(name, JointProp::id));
 	return jntAux->joint;
 }
 
-DiMP2::Geometry* AdaptorDiMP::GetGeometry(int id){
+DiMP::Geometry* AdaptorDiMP::GetGeometry(int id){
 	AUTO(ShapeAux*, shapeAux, HandleByID(id, ShapeProp::id));
 	return shapeAux->geo;
 }
 
-DiMP2::Geometry* AdaptorDiMP::GetGeometry(string name){
+DiMP::Geometry* AdaptorDiMP::GetGeometry(string name){
 	AUTO(ShapeAux*, shapeAux, HandleByName(name, ShapeProp::id));
 	return shapeAux->geo;
 }

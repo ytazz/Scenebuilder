@@ -51,6 +51,7 @@
     <ClInclude Include="include\sbpath.h" />
     <ClInclude Include="include\sbrandom.h" />
     <ClInclude Include="include\sbremote.h" />
+    <ClInclude Include="include\sbrollpitchyaw.h" />
     <ClInclude Include="include\sbscene.h" />
     <ClInclude Include="include\sbscenelocal.h" />
     <ClInclude Include="include\sbsceneremote.h" />
@@ -100,6 +101,7 @@
     <ClCompile Include="src\sbpath.cpp" />
     <ClCompile Include="src\sbrandom.cpp" />
     <ClCompile Include="src\sbremote.cpp" />
+    <ClCompile Include="src\sbrollpitchyaw.cpp" />
     <ClCompile Include="src\sbscene.cpp" />
     <ClCompile Include="src\sbscenelocal.cpp" />
     <ClCompile Include="src\sbsceneremote.cpp" />

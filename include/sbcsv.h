@@ -4,6 +4,8 @@
 
 #include <sbtokenizer.h>
 
+namespace Scenebuilder{;
+
 /* CSV読み込みクラス
 	- ファイルコンテンツを文字列としてトークナイズし，値を取得時に毎回型変換する．
 	- デリミタが連続した場合，１つの列として扱う
@@ -138,3 +140,5 @@ public:
 	}
 
 };
+
+}
