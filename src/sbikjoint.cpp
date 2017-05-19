@@ -166,8 +166,10 @@ IKJoint::IKJoint(IKSolver* _solver, int _type){
 		qdd_lock[i] = false;
 	}
 
-	force_var  = 0;
-	moment_var = 0;
+	for(int i = 0; i < 3; i++){
+		force_var [i] = 0;
+		moment_var[i] = 0;
+	}
 }
 
 void IKJoint::SetSocketBody(IKBody* _sockBody){
@@ -191,15 +193,17 @@ void IKJoint::GetPlugPose  (      pose_t& p){ p.Pos() = plugPos; p.Ori() = plugO
 real_t IKJoint::GetPos   (uint i){ return q  [i]; }
 real_t IKJoint::GetVel   (uint i){ return qd [i]; }
 real_t IKJoint::GetAcc   (uint i){ return qdd[i]; }
-real_t IKJoint::GetTorque(uint i){ return 0.0;    }
+real_t IKJoint::GetTorque(uint i){ return tau[i]; }
 
-void IKJoint::LockPos(uint i, bool lock){ q_lock  [i] = lock; }
-void IKJoint::LockVel(uint i, bool lock){ qd_lock [i] = lock; }
-void IKJoint::LockAcc(uint i, bool lock){ qdd_lock[i] = lock; }
+void IKJoint::LockPos   (uint i, bool lock){ q_lock  [i] = lock; }
+void IKJoint::LockVel   (uint i, bool lock){ qd_lock [i] = lock; }
+void IKJoint::LockAcc   (uint i, bool lock){ qdd_lock[i] = lock; }
+void IKJoint::LockTorque(uint i, bool lock){ tau_lock[i] = lock; }
 
-void IKJoint::SetInitialPos(uint i, real_t _q  ){ q_ini  [i] = _q  ; }
-void IKJoint::SetInitialVel(uint i, real_t _qd ){ qd_ini [i] = _qd ; }
-void IKJoint::SetInitialAcc(uint i, real_t _qdd){ qdd_ini[i] = _qdd; }
+void IKJoint::SetInitialPos   (uint i, real_t _q  ){ q_ini  [i] = _q  ; }
+void IKJoint::SetInitialVel   (uint i, real_t _qd ){ qd_ini [i] = _qd ; }
+void IKJoint::SetInitialAcc   (uint i, real_t _qdd){ qdd_ini[i] = _qdd; }
+void IKJoint::SetInitialTorque(uint i, real_t _tau){ tau_ini[i] = _tau; }
 
 void IKJoint::SetPosLimit(uint i, real_t lower, real_t upper){
 	q_limit[0][i] = lower;
@@ -233,8 +237,10 @@ void IKJoint::AddVar(){
 		qdd_var[i] = new SVar(solver);
 	}
 
-	force_var  = new V3Var(solver);
-	moment_var = new V3Var(solver);
+	for(int i = 0; i < 3; i++){
+		force_var [i] = new SVar(solver);
+		moment_var[i] = new SVar(solver);
+	}
 }
 
 void IKJoint::AddCon(){
@@ -254,11 +260,49 @@ void IKJoint::Prepare(){
 		qdd_var[i]->locked = (qdd_lock[i] || !(plugBody->parBody == sockBody && solver->mode == IKSolver::Mode::Acc));
 	}
 	
-	force_var ->val.clear();
-	moment_var->val.clear();
+	if(solver->mode == IKSolver::Mode::Force){
+		for(int i = 0; i < 3; i++){
+			force_var [i]->val = 0.0;
+			moment_var[i]->val = 0.0;
 
-	force_var ->locked = !(solver->mode == IKSolver::Mode::Force);
-	moment_var->locked = !(solver->mode == IKSolver::Mode::Force);
+			force_var [i]->locked = false;
+			moment_var[i]->locked = false;
+		}
+	
+		if(type == Type::Hinge){
+			moment_var[2]->val    = tau_ini [0];
+			moment_var[2]->locked = tau_lock[0];
+		}
+		if(type == Type::Slider){
+			force_var[2]->val    = tau_ini [0];
+			force_var[2]->locked = tau_lock[0]; 
+		}
+		if(type == Type::Balljoint){
+			moment_var[0]->val    = tau_ini [0];
+			moment_var[1]->val    = tau_ini [1];
+			moment_var[2]->val    = tau_ini [2];
+			moment_var[0]->locked = tau_lock[0];
+			moment_var[1]->locked = tau_lock[1];
+			moment_var[2]->locked = tau_lock[2];
+		}
+		if(type == Type::LineToLine){
+			force_var [2]->val = 0.0;
+			moment_var[0]->val = 0.0;
+			moment_var[1]->val = 0.0;
+			moment_var[2]->val = 0.0;
+
+			force_var [2]->locked = true;
+			moment_var[0]->locked = true;
+			moment_var[1]->locked = true;
+			moment_var[2]->locked = true;
+		}
+	}
+	else{
+		for(int i = 0; i < 3; i++){
+			force_var [i]->locked = true;
+			moment_var[i]->locked = true;
+		}
+	}
 
 	pos_con->enabled = (plugBody->parBody != sockBody && solver->mode == IKSolver::Mode::Pos);
 	vel_con->enabled = (plugBody->parBody != sockBody && solver->mode == IKSolver::Mode::Vel);
@@ -285,9 +329,23 @@ void IKJoint::Finish(){
 		}
 	}
 	if(solver->mode == IKSolver::Mode::Force){
-		force  = force_var ->val;
-		moment = moment_var->val;
-		DSTR << "f " << force << " m " << moment << endl;
+		for(int i = 0; i < 3; i++){
+			forceLocal [i] = force_var [i]->val;
+			momentLocal[i] = moment_var[i]->val;
+		}
+		if(type == Type::Hinge){
+			tau[0] = momentLocal[2];
+		}
+		if(type == Type::Slider){
+			tau[0] = forceLocal[2];
+		}
+		if(type == Type::Balljoint){
+			tau[0] = momentLocal[0];
+			tau[1] = momentLocal[1];
+			tau[2] = momentLocal[2];
+		}
+		force  = ori * forceLocal ;
+		moment = ori * momentLocal;
 	}
 }
 

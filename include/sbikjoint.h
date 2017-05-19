@@ -84,6 +84,7 @@ public:
 	
 	vec3_t	relPos;	            ///< ソケットに対するプラグの位置と向き
 	quat_t  relOri;
+	vec3_t  axis[3];
 	vec3_t	Jv[3], Jv_abs[3];	///< ヤコビアン（並進）
 	vec3_t  Jw[3], Jw_abs[3];	///< ヤコビアン（回転）
 
@@ -92,12 +93,16 @@ public:
 	vec3_t  q;
 	vec3_t  qd;
 	vec3_t  qdd;
+	vec3_t  tau;
+	vec3_t  forceLocal;
+	vec3_t  momentLocal;
 	vec3_t  force;
 	vec3_t  moment;
 
 	vec3_t  q_ini;
 	vec3_t  qd_ini;
 	vec3_t  qdd_ini;
+	vec3_t  tau_ini;
 
 	vec3_t  q_limit[2];
 	vec3_t  qd_limit[2];
@@ -105,12 +110,13 @@ public:
 	bool    q_lock  [3];
 	bool    qd_lock [3];
 	bool    qdd_lock[3];
+	bool    tau_lock[3];
 
 	SVar*   q_var  [3];             ///< 関節変位（ヒンジ，スライダ）
 	SVar*   qd_var [3];
 	SVar*   qdd_var[3];
-	V3Var*  force_var;
-	V3Var*  moment_var;
+	SVar*   force_var [3];
+	SVar*   moment_var[3];
 
 	PosCon* pos_con;
 	VelCon* vel_con;
@@ -131,21 +137,23 @@ public:
 	void GetSocketPose(pose_t& p);
 	void GetPlugPose(pose_t& p);
 
-	/// 関節角度を取得
+	/// 関節変数を取得
 	real_t GetPos   (uint i);
 	real_t GetVel   (uint i);
 	real_t GetAcc   (uint i);
 	real_t GetTorque(uint i);
 	
-	/// 関節角度を固定
-	void LockPos(uint i, bool lock = true);
-	void LockVel(uint i, bool lock = true);
-	void LockAcc(uint i, bool lock = true);
+	/// 関節変数を固定
+	void LockPos   (uint i, bool lock = true);
+	void LockVel   (uint i, bool lock = true);
+	void LockAcc   (uint i, bool lock = true);
+	void LockTorque(uint i, bool lock = true);
 	
 	/// IK計算の初期値を設定
-	void SetInitialPos(uint i, real_t _q  );
-	void SetInitialVel(uint i, real_t _qd );
-	void SetInitialAcc(uint i, real_t _qdd);
+	void SetInitialPos   (uint i, real_t _q  );
+	void SetInitialVel   (uint i, real_t _qd );
+	void SetInitialAcc   (uint i, real_t _qdd);
+	void SetInitialTorque(uint i, real_t _tau);
 
 	/// 関節角度の範囲拘束を設定
 	void SetPosLimit(uint i, real_t lower, real_t upper);

@@ -12,21 +12,27 @@ namespace Scenebuilder{;
 IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3){
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		AddSLink(jnt->force_var);
+		AddCLink(jnt->force_var[0]);
+		AddCLink(jnt->force_var[1]);
+		AddCLink(jnt->force_var[2]);
 	}
 }
 void IKBody::ForceCon::CalcCoef(){
 	uint idx = 0;
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		((SLink*)links[idx++])->SetCoef(jnt->sockBody == body ? 1.0 : -1.0);
+		((CLink*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0]);
+		((CLink*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1]);
+		((CLink*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2]);
 	}
 }
 void IKBody::ForceCon::CalcDeviation(){
 	y = body->force;
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->force_var->val;
+		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0] * jnt->force_var[0]->val;
+		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1] * jnt->force_var[1]->val;
+		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2] * jnt->force_var[2]->val;
 	}
 	for(uint i = 0; i < body->handles.size(); i++){
 		IKHandle* handle = body->handles[i];
@@ -39,23 +45,40 @@ void IKBody::ForceCon::CalcDeviation(){
 IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3){
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		AddXLink(jnt->force_var );
-		AddSLink(jnt->moment_var);
+		AddCLink(jnt->force_var [0]);
+		AddCLink(jnt->force_var [1]);
+		AddCLink(jnt->force_var [2]);
+		AddCLink(jnt->moment_var[0]);
+		AddCLink(jnt->moment_var[1]);
+		AddCLink(jnt->moment_var[2]);
 	}
 }
 void IKBody::MomentCon::CalcCoef(){
 	uint idx = 0;
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		((XLink*)links[idx++])->SetCoef((jnt->sockBody == body ? 1.0 : -1.0) * (jnt->sockPosAbs - body->centerPosAbs));
-		((SLink*)links[idx++])->SetCoef( jnt->sockBody == body ? 1.0 : -1.0);
+		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
+		vec3_t r    = jnt->sockPosAbs - body->centerPosAbs;
+		((CLink*)links[idx++])->SetCoef( sign * (r % jnt->axis[0]) );
+		((CLink*)links[idx++])->SetCoef( sign * (r % jnt->axis[1]) );
+		((CLink*)links[idx++])->SetCoef( sign * (r % jnt->axis[2]) );
+		((CLink*)links[idx++])->SetCoef( sign * jnt->axis[0]);
+		((CLink*)links[idx++])->SetCoef( sign * jnt->axis[1]);
+		((CLink*)links[idx++])->SetCoef( sign * jnt->axis[2]);
 	}
 }
 void IKBody::MomentCon::CalcDeviation(){
 	y = body->moment;
 	for(uint i = 0; i < body->joints.size(); i++){
 		IKJoint* jnt = body->joints[i];
-		y += (jnt->sockBody == body ? 1.0 : -1.0) * ((jnt->sockPosAbs - body->centerPosAbs) % jnt->force_var->val + jnt->moment_var->val);
+		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
+		vec3_t r    = jnt->sockPosAbs - body->centerPosAbs;
+		y += sign * (r % jnt->axis[0]) * jnt->force_var[0]->val;
+		y += sign * (r % jnt->axis[1]) * jnt->force_var[1]->val;
+		y += sign * (r % jnt->axis[2]) * jnt->force_var[2]->val;
+		y += sign * jnt->axis[0] * jnt->moment_var[0]->val;
+		y += sign * jnt->axis[1] * jnt->moment_var[1]->val;
+		y += sign * jnt->axis[2] * jnt->moment_var[2]->val;
 	}
 	for(uint i = 0; i < body->handles.size(); i++){
 		IKHandle* handle = body->handles[i];
@@ -135,8 +158,6 @@ void IKBody::Prepare(){
 	if(solver->mode == IKSolver::Mode::Force){
 		force  = mass * (centerAccAbs - solver->gravity); 
 		moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
-
-		DSTR << "bf " << force << " bm " << moment << endl;
 	}
 }
 
@@ -168,6 +189,9 @@ void IKBody::Update(){
 			parJoint->sockOriAbs = parBody->ori_var->val * parJoint->sockOri;
 			parJoint->plugPosAbs = parJoint->sockPosAbs + parJoint->sockOriAbs * parJoint->relPos;
 			parJoint->plugOriAbs = parJoint->sockOriAbs * parJoint->relOri;
+			parJoint->axis[0]    = parJoint->sockOriAbs * vec3_t(1.0, 0.0, 0.0);
+			parJoint->axis[1]    = parJoint->sockOriAbs * vec3_t(0.0, 1.0, 0.0);
+			parJoint->axis[2]    = parJoint->sockOriAbs * vec3_t(0.0, 0.0, 1.0);
 
 			ori_var->val = parJoint->plugOriAbs * parJoint->plugOri.Conjugated();
 			pos_var->val = parJoint->plugPosAbs - ori_var->val * parJoint->plugPos;
