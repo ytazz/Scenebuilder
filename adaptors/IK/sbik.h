@@ -51,6 +51,12 @@ public:
 		HandleAux(IKHandle* _handle, ConnectorAux* _sock);
 		virtual ~HandleAux();
 	};
+	struct JointHandleAux : Aux{
+		IKJointHandle*      ikJointHandle;
+		
+		JointHandleAux(IKJointHandle* _handle);
+		virtual ~JointHandleAux();
+	};
 	struct ComHandleAux : Aux{
 		IKComHandle*      ikComHandle;
 		vector<BodyAux*>  bodies;
@@ -61,24 +67,27 @@ public:
 	};
 
 public:
-	vector<BodyAux     *>	bodies    ;
-	vector<JointAux    *>	joints    ;
-	vector<HandleAux   *>	handles   ;
-	vector<ComHandleAux*>   comHandles;
+	vector<BodyAux       *>	bodies      ;
+	vector<JointAux      *>	joints      ;
+	vector<HandleAux     *>	handles     ;
+	vector<JointHandleAux*>	jointHandles;
+	vector<ComHandleAux  *> comHandles  ;
 
 	IKSolver            ikSolver;
 
 public:
 
 	/// 取得
-	IKBody     *  GetBody     (int    id  );
-	IKBody     *  GetBody     (string name);
-	IKJoint    *  GetJoint    (int    id  );
-	IKJoint    *  GetJoint    (string name);
-	IKHandle   *  GetHandle   (int    id  );
-	IKHandle   *  GetHandle   (string name);
-	IKComHandle*  GetComHandle(int    id  );
-	IKComHandle*  GetComHandle(string name);
+	IKBody       *  GetBody       (int    id  );
+	IKBody       *  GetBody       (string name);
+	IKJoint      *  GetJoint      (int    id  );
+	IKJoint      *  GetJoint      (string name);
+	IKHandle     *  GetHandle     (int    id  );
+	IKHandle     *  GetHandle     (string name);
+	IKJointHandle*  GetJointHandle(int    id  );
+	IKJointHandle*  GetJointHandle(string name);
+	IKComHandle  *  GetComHandle  (int    id  );
+	IKComHandle  *  GetComHandle  (string name);
 	
 	virtual int    CreateObject(int id);
 	virtual void   DeleteObject(int id);

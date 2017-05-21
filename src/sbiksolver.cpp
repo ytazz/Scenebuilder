@@ -75,6 +75,18 @@ void IKSolver::DeleteHandle(IKHandle* handle){
 	ready = false;
 }
 
+IKJointHandle* IKSolver::AddJointHandle(IKJoint* ikJoint){
+	IKJointHandle* handle = new IKJointHandle(this, ikJoint);
+	ikJointHandles.push_back(handle);
+	ready = false;
+	return handle;
+}
+
+void IKSolver::DeleteJointHandle(IKJointHandle* handle){
+	RemoveFromArray(ikJointHandles, handle);
+	ready = false;
+}
+
 IKComHandle* IKSolver::AddComHandle(){
 	IKComHandle* handle = new IKComHandle(this);
 	ikComHandles.push_back(handle);
@@ -90,20 +102,23 @@ void IKSolver::DeleteComHandle(IKComHandle* handle){
 void IKSolver::Init(){
 	timer.CountUS();
 
-	for(uint i = 0; i < ikBodies    .size(); i++) ikBodies    [i]->Init();
-	for(uint i = 0; i < ikJoints    .size(); i++) ikJoints    [i]->Init();
-	for(uint i = 0; i < ikHandles   .size(); i++) ikHandles   [i]->Init();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->Init();
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->Init();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->Init();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->Init();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Init();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Init();
 
-	for(uint i = 0; i < ikBodies    .size(); i++) ikBodies    [i]->AddVar();
-	for(uint i = 0; i < ikJoints    .size(); i++) ikJoints    [i]->AddVar();
-	for(uint i = 0; i < ikHandles   .size(); i++) ikHandles   [i]->AddVar();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->AddVar();
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->AddVar();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->AddVar();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->AddVar();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->AddVar();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->AddVar();
 
-	for(uint i = 0; i < ikBodies    .size(); i++) ikBodies    [i]->AddCon();
-	for(uint i = 0; i < ikJoints    .size(); i++) ikJoints    [i]->AddCon();
-	for(uint i = 0; i < ikHandles   .size(); i++) ikHandles   [i]->AddCon();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->AddCon();
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->AddCon();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->AddCon();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->AddCon();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->AddCon();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->AddCon();
 
 	Solver::Init();
 	ready = true;
@@ -114,10 +129,11 @@ void IKSolver::Init(){
 void IKSolver::Prepare(){
 	timer.CountUS();
 
-	for(uint i = 0; i < ikBodies.size    (); i++) ikBodies    [i]->Prepare();
-	for(uint i = 0; i < ikJoints.size    (); i++) ikJoints    [i]->Prepare();
-	for(uint i = 0; i < ikHandles.size   (); i++) ikHandles   [i]->Prepare();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->Prepare();
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->Prepare();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->Prepare();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->Prepare();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Prepare();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Prepare();
 
 	if(mode == Mode::Force){
 		forceTotal .clear();
@@ -135,10 +151,11 @@ void IKSolver::Prepare(){
 void IKSolver::Finish(){
 	timer.CountUS();
 
-	for(uint i = 0; i < ikBodies.size    (); i++) ikBodies    [i]->Finish();
-	for(uint i = 0; i < ikJoints.size    (); i++) ikJoints    [i]->Finish();
-	for(uint i = 0; i < ikHandles.size   (); i++) ikHandles   [i]->Finish();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->Finish();
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->Finish();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->Finish();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->Finish();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Finish();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Finish();
 
 	timeFinish = timer.CountUS();
 }
@@ -150,9 +167,10 @@ void IKSolver::Update(){
 		if(!ikBodies[i]->parBody)
 			ikBodies[i]->Update();
 	}
-	for(uint i = 0; i < ikJoints    .size(); i++) ikJoints    [i]->Update();
-	for(uint i = 0; i < ikHandles   .size(); i++) ikHandles   [i]->Update();
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->Update();
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->Update();
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->Update();
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Update();
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Update();
 
 	timeUpdate += timer.CountUS();
 }
@@ -225,10 +243,11 @@ void IKSolver::CalcDirection(){
 }
 	
 void IKSolver::Draw(GRRenderIf* render){
-	for(uint i = 0; i < ikBodies    .size(); i++) ikBodies    [i]->Draw(render);
-	for(uint i = 0; i < ikJoints    .size(); i++) ikJoints    [i]->Draw(render);
-	for(uint i = 0; i < ikHandles   .size(); i++) ikHandles   [i]->Draw(render);
-	for(uint i = 0; i < ikComHandles.size(); i++) ikComHandles[i]->Draw(render);
+	for(uint i = 0; i < ikBodies      .size(); i++) ikBodies      [i]->Draw(render);
+	for(uint i = 0; i < ikJoints      .size(); i++) ikJoints      [i]->Draw(render);
+	for(uint i = 0; i < ikHandles     .size(); i++) ikHandles     [i]->Draw(render);
+	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Draw(render);
+	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Draw(render);
 }
 
 }

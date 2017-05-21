@@ -30,40 +30,37 @@ public:
 	class PosCon : public Constraint{
 	public:
 		IKJoint*  joint;
-		vec3_t    des;
-		vec3_t    cur;
+		int       dir;
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		PosCon(IKJoint* jnt);
+		PosCon(IKJoint* jnt, int _dir);
 	};
 	class VelCon : public Constraint{
 	public:
 		IKJoint*  joint;
-		vec3_t    des;
-		vec3_t    cur;
+		int       dir;
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		VelCon(IKJoint* jnt);
+		VelCon(IKJoint* jnt, int _dir);
 	};
 	class AccCon : public Constraint{
 	public:
 		IKJoint* joint;
-		vec3_t    des;
-		vec3_t    cur;
+		int      dir;
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AccCon(IKJoint* jnt);
+		AccCon(IKJoint* jnt, int _dir);
 	};
 
 	IKSolver*  solver;
 	IKBody*    sockBody;
 	IKBody*    plugBody;
 	IKBody*    rootBody;       ///< sock側とplug側の共通の親
-	uint       type;
-	uint       ndof;           ///< 関節の自由度
+	int        type;
+	int        ndof;           ///< 関節の自由度
 	bool       revolutive[3];  ///< 回転自由度ならtrue 直動自由度ならfalse
 	
 	vec3_t	sockPos;			///< 親剛体に対するソケットの位置と向き
@@ -118,9 +115,9 @@ public:
 	SVar*   force_var [3];
 	SVar*   moment_var[3];
 
-	PosCon* pos_con;
-	VelCon* vel_con;
-	AccCon* acc_con;
+	PosCon* pos_con[3];
+	VelCon* vel_con[3];
+	AccCon* acc_con[3];
 	
 public:
 	void CalcJacobian    ();

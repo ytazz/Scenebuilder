@@ -11,11 +11,13 @@ namespace Scenebuilder{;
 class IKBody;
 class IKJoint;
 class IKHandle;
+class IKJointHandle;
 class IKComHandle;
-typedef vector< UTRef<IKBody     > > IKBodyRefs;
-typedef vector< UTRef<IKJoint    > > IKJointRefs;
-typedef vector< UTRef<IKHandle   > > IKHandleRefs;
-typedef vector< UTRef<IKComHandle> > IKComHandleRefs;
+typedef vector< UTRef<IKBody       > > IKBodyRefs;
+typedef vector< UTRef<IKJoint      > > IKJointRefs;
+typedef vector< UTRef<IKHandle     > > IKHandleRefs;
+typedef vector< UTRef<IKJointHandle> > IKJointHandleRefs;
+typedef vector< UTRef<IKComHandle  > > IKComHandleRefs;
 
 
 /** 逆運動学（inverse kinematics, IK）計算クラス
@@ -75,10 +77,11 @@ public:
 	int     timeFinish;
 	int     timeUpdate;
 	
-	IKBodyRefs       ikBodies;
-	IKJointRefs      ikJoints;
-	IKHandleRefs     ikHandles;
-	IKComHandleRefs  ikComHandles;
+	IKBodyRefs        ikBodies;
+	IKJointRefs       ikJoints;
+	IKHandleRefs      ikHandles;
+	IKJointHandleRefs ikJointHandles;
+	IKComHandleRefs   ikComHandles;
 
 	vec3_t  forceTotal;
 	vec3_t  momentTotal;
@@ -107,6 +110,9 @@ public:
 	/// 拘束を追加
 	IKHandle*   AddHandle   (IKBody* sockBody);
 	void        DeleteHandle(IKHandle* handle);
+
+	IKJointHandle*   AddJointHandle   (IKJoint* joint);
+	void             DeleteJointHandle(IKJointHandle* handle);
 
 	///
 	IKComHandle*  AddComHandle   ();

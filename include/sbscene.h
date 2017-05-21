@@ -717,6 +717,18 @@ struct IKProp : SpatialObjectProp{
 	}
 };
 
+struct IKJointProp : SceneObjectProp{
+	static int id;
+	
+	static string GetName(){ return "ikjoint"; }
+	static void Construct(Property* p){ new(p) IKJointProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(IKJointProp), &Construct, SceneObjectProp::id);
+		db->GetType(id)
+			->AddAttr("path", Primitive::Path, 1, 0);
+	}
+};
+
 struct IKComProp : SceneObjectProp{
 	static int id;
 	vec3_t	pos;

@@ -145,6 +145,76 @@ public:
 	IKHandle(IKSolver* _solver, IKBody* _body);
 };
 
+class IKJointHandle : public UTRefCount{
+public:
+	class PosCon : public Constraint{
+	public:
+		IKJointHandle* handle;
+		int idx;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		PosCon(IKJointHandle* h, int _idx);
+	};
+	class VelCon : public Constraint{
+	public:
+		IKJointHandle* handle;
+		int idx;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		VelCon(IKJointHandle* h, int _idx);
+	};
+	class AccCon : public Constraint{
+	public:
+		IKJointHandle* handle;
+		int idx;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AccCon(IKJointHandle* h, int _idx);
+	};
+	
+	IKSolver*   solver;
+	IKJoint*	joint;
+	
+	PosCon*     pos_con[3];
+	VelCon*     vel_con[3];
+	AccCon*     acc_con[3];
+
+	vec3_t  pos;
+	vec3_t  vel;
+	vec3_t  acc;
+
+	vec3_t  desPos;
+	vec3_t  desVel;
+	vec3_t  desAcc;
+
+	bool    enablePos[3];
+	bool    enableVel[3];
+	bool    enableAcc[3];
+
+public:
+	void SetDesiredPos(int i, real_t pos);
+	void SetDesiredVel(int i, real_t vel);
+	void SetDesiredAcc(int i, real_t acc);
+			
+	void EnablePos(int i, bool on = true);
+	void EnableVel(int i, bool on = true);
+	void EnableAcc(int i, bool on = true);
+
+	void Init   ();
+	void AddVar ();
+	void AddCon ();
+	void Prepare();
+	void Finish ();
+	void Update ();
+
+	void Draw(GRRenderIf* render);
+
+	IKJointHandle(IKSolver* _solver, IKJoint* _joint);
+};
+
 class IKComHandle : public UTRefCount{
 public:
 	struct BodyInfo{

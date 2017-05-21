@@ -152,12 +152,16 @@ void IKBody::Prepare(){
 	acc_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 	angacc_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 
-	force_con ->enabled = (solver->mode == IKSolver::Mode::Force);
-	moment_con->enabled = (solver->mode == IKSolver::Mode::Force);
-
 	if(solver->mode == IKSolver::Mode::Force){
 		force  = mass * (centerAccAbs - solver->gravity); 
 		moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
+
+		force_con ->enabled = (parBody != 0);
+		moment_con->enabled = (parBody != 0);
+	}
+	else{
+		force_con ->enabled = false;
+		moment_con->enabled = false;
 	}
 }
 
@@ -185,20 +189,17 @@ void IKBody::Update(){
 			parJoint->CalcRelativePose();
 			parJoint->CalcJacobian();
 		
-			parJoint->sockPosAbs = parBody->pos_var->val + parBody->ori_var->val * parJoint->sockPos;
-			parJoint->sockOriAbs = parBody->ori_var->val * parJoint->sockOri;
-			parJoint->plugPosAbs = parJoint->sockPosAbs + parJoint->sockOriAbs * parJoint->relPos;
-			parJoint->plugOriAbs = parJoint->sockOriAbs * parJoint->relOri;
-			parJoint->axis[0]    = parJoint->sockOriAbs * vec3_t(1.0, 0.0, 0.0);
-			parJoint->axis[1]    = parJoint->sockOriAbs * vec3_t(0.0, 1.0, 0.0);
-			parJoint->axis[2]    = parJoint->sockOriAbs * vec3_t(0.0, 0.0, 1.0);
-
-			ori_var->val = parJoint->plugOriAbs * parJoint->plugOri.Conjugated();
-			pos_var->val = parJoint->plugPosAbs - ori_var->val * parJoint->plugPos;
-			
-			centerPosAbs = pos_var->val + ori_var->val * center;
+			parJoint->sockOffsetAbs = parBody->ori_var->val * parJoint->sockPos;
+			parJoint->sockPosAbs    = parBody->pos_var->val + parJoint->sockOffsetAbs;
+			parJoint->sockOriAbs    = parBody->ori_var->val * parJoint->sockOri;
+			parJoint->plugPosAbs    = parJoint->sockPosAbs + parJoint->sockOriAbs * parJoint->relPos;
+			parJoint->plugOriAbs    = parJoint->sockOriAbs * parJoint->relOri;
+			ori_var->val            = parJoint->plugOriAbs * parJoint->plugOri.Conjugated();
+			parJoint->plugOffsetAbs = ori_var->val * parJoint->plugPos;
+			pos_var->val            = parJoint->plugPosAbs - parJoint->plugOffsetAbs;
+			centerPosAbs            = pos_var->val + ori_var->val * center;
 		
-			for(uint i = 0; i < parJoint->ndof; i++){
+			for(int i = 0; i < parJoint->ndof; i++){
 				parJoint->Jv_abs[i] = parJoint->sockOriAbs * parJoint->Jv[i];
 				parJoint->Jw_abs[i] = parJoint->sockOriAbs * parJoint->Jw[i];
 			}
@@ -221,7 +222,7 @@ void IKBody::Update(){
 			cv = vwp % (vwp % rpc);
 			cw = vec3_t();
 
-			for(uint i = 0; i < parJoint->ndof; i++){
+			for(int i = 0; i < parJoint->ndof; i++){
 				vec3_t vvj = parJoint->Jv_abs[i] * parJoint->qd_var[i]->val;
 				vec3_t vwj = parJoint->Jw_abs[i] * parJoint->qd_var[i]->val;
 				vec3_t rjc = pos_var->val - parJoint->sockPosAbs;
@@ -251,7 +252,7 @@ void IKBody::Update(){
 			acc_var   ->val = avp + awp % rpc + cv;
 			angacc_var->val = awp             + cw;
 
-			for(uint i = 0; i < parJoint->ndof; i++){
+			for(int i = 0; i < parJoint->ndof; i++){
 				vec3_t avj = parJoint->Jv_abs[i] * parJoint->qdd_var[i]->val;
 				vec3_t awj = parJoint->Jw_abs[i] * parJoint->qdd_var[i]->val;
 				vec3_t rjc = pos_var->val - parJoint->sockPosAbs;

@@ -66,6 +66,13 @@ AdaptorIK::HandleAux::~HandleAux(){
 		RemoveFromArray(sock->handles, this);
 }
 
+AdaptorIK::JointHandleAux::JointHandleAux(IKJointHandle* _handle){
+	ikJointHandle = _handle;
+}
+
+AdaptorIK::JointHandleAux::~JointHandleAux(){
+}
+
 AdaptorIK::ComHandleAux::ComHandleAux(IKComHandle* _handle){
 	ikComHandle = _handle;
 }
@@ -121,6 +128,16 @@ IKHandle*	AdaptorIK::GetHandle(int id){
 IKHandle*	AdaptorIK::GetHandle(string name){
 	AUTO(HandleAux*, handleAux, HandleByName(name, IKProp::id));
 	return handleAux->ikHandle;
+}
+
+IKJointHandle*	AdaptorIK::GetJointHandle(int id){
+	AUTO(JointHandleAux*, handleAux, HandleByID(id, IKJointProp::id));
+	return handleAux->ikJointHandle;
+}
+
+IKJointHandle*	AdaptorIK::GetJointHandle(string name){
+	AUTO(JointHandleAux*, handleAux, HandleByName(name, IKJointProp::id));
+	return handleAux->ikJointHandle;
 }
 
 IKComHandle* AdaptorIK::GetComHandle(int id){
@@ -257,6 +274,29 @@ int AdaptorIK::CreateObject(int id){
 
 		return SupportState::Supported;
 	}
+	else if(type == IKJointProp::id){
+		// get connectors
+		int jntId = scene->GetLink(id, "path");
+		
+		if(!IsValidID(jntId) || IsIgnored(jntId)){
+			Message::Error("%s: invalid link to joint", name.c_str());
+			return SupportState::Ignored;
+		}
+		if(!typedb->KindOf(scene->GetObjectType(jntId), JointProp::id)){
+			Message::Error("%s: joint must link to Joint", name.c_str());
+			return SupportState::Ignored;
+		}
+		if(IsUndefined(jntId))
+			return SupportState::Undefined;
+
+		AUTO(JointAux*, jntAux, GetAux(jntId));
+		
+		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle(jntAux->ikJoint));
+		RegAux(id, handleAux);
+		jointHandles.push_back(handleAux);
+
+		return SupportState::Supported;
+	}
 	else if(type == IKComProp::id){
 		vector<int>    bodies;
 		vector<int>    links;
@@ -309,6 +349,11 @@ void AdaptorIK::DeleteObject(int id){
 		AUTO(HandleAux*, handleAux, aux);
 		ikSolver.DeleteHandle(handleAux->ikHandle);
 		RemoveFromArray(handles, handleAux);
+	}
+	else if(type == IKJointProp::id){
+		AUTO(JointHandleAux*, jntHandleAux, aux);
+		ikSolver.DeleteJointHandle(jntHandleAux->ikJointHandle);
+		RemoveFromArray(jointHandles, jntHandleAux);
 	}
 	else if(type == IKComProp::id){
 		AUTO(ComHandleAux*, comHandleAux, aux);

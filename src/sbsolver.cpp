@@ -239,8 +239,12 @@ void Solver::CalcDirection(){
 			y2.resize(ny);
 			for(uint i = 0; i < dimcon; i++)
 				y2[i] = y[i];
+			//
+			//LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
+			vector<int> pivot;
+			pivot.resize(dimcon);
+			LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &J[0][0], dimcon, &pivot[0], &y2[0], dimcon);
 
-			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
 			dx.resize(dimvar);
 			for(uint i = 0; i < dimvar; i++)
 				dx[i] = -1.0 * y2[i];
