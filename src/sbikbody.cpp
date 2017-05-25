@@ -283,7 +283,7 @@ void IKBody::Draw(GRRenderIf* render){
 	p0 = pos;
 	render->DrawPoint(p0);
 
-	if(parBody){
+	/*if(parBody){
 		render->SetLineWidth(1.0f);
 		p0 = parBody ->pos;
 		p1 = parJoint->pos;
@@ -291,7 +291,7 @@ void IKBody::Draw(GRRenderIf* render){
 		p0 = pos;
 		p1 = parJoint->pos;
 		render->DrawLine(p0, p1);
-	}
+	}*/
 
 	glColor4fv((float*)solver->velColor.rgb);
 	p1 = p0 + solver->velScale * vel;

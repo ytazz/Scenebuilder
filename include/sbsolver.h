@@ -34,12 +34,20 @@ public:
 				GaussSeidel,
 			};
 		};
+		struct StepSize{
+			enum{
+				Max,
+				MinOrMax,
+				Bisection,
+			};
+		};
 	};
 	
 	struct Param{
 		bool    verbose;
 		int     methodMajor;
 		int     methodMinor;
+		int     methodStepSize;
 		int     numIterMajor;  ///< メジャループの反復回数
 		int     numIterMinor;  ///< マイナループの反復回数
 		real_t  minStepSize;

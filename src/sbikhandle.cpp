@@ -316,13 +316,17 @@ void IKHandle::Draw(GRRenderIf* render){
 	glColor4fv((float*)solver->handleColor.rgb);
 	render->SetPointSize(5.0f);
 
-	Vec3f p;
+	Vec3f p0, p1;
 	
-	p = pos;
-	render->DrawPoint(p);
+	p0 = pos;
+	render->DrawPoint(p0);
 
-	p = desPos;
-	render->DrawPoint(p);
+	p1 = desPos;
+	render->DrawPoint(p0);
+
+	p0 = body->pos;
+	p1 = pos;
+	render->DrawLine(p0, p1);
 }	
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

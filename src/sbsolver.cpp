@@ -20,6 +20,7 @@ Solver::Param::Param(){
 	verbose        = false;
 	methodMajor    = Solver::Method::Major::GaussNewton1;
 	methodMinor    = Solver::Method::Minor::GaussSeidel;
+	methodStepSize = Solver::Method::StepSize::Bisection;
 	numIterMajor   = 10;
 	numIterMinor   = 10;
 	minStepSize    =  0.01;
@@ -113,53 +114,66 @@ real_t Solver::CalcObjective(){
 real_t Solver::CalcStepSize(){
 	real_t amin = param.minStepSize;
 	real_t amax = param.maxStepSize;
-	if(amax - amin < param.cutoffStepSize)
-		return 0.5 * (amin + amax);
-
 	real_t a[3], aprobe;
 	real_t c[3], cprobe;
-	a[0] = amin;
-	c[0] = CalcUpdatedObjective(amin);
-	a[1] = a[2] = amax;
-	c[1] = c[2] = CalcUpdatedObjective(amax);
-	if(c[2] > c[0]){
-		while( c[1] >= c[0] && a[1] - a[0] > param.cutoffStepSize * (amax - amin) ){
-			a[1] = a[0] + 0.5*(a[1] - a[0]);
-			c[1] = CalcUpdatedObjective(a[1]);
-		}
+	
+	if(param.methodStepSize == Method::StepSize::Max){
+		return amax;
 	}
+	if(param.methodStepSize == Method::StepSize::MinOrMax){
+		c[0] = CalcUpdatedObjective(amin);
+		c[1] = CalcUpdatedObjective(amax);
+		if(c[0] < c[1])
+			return amin;
+		return amax;
+	}
+	if(param.methodStepSize == Method::StepSize::Bisection){
+		if(amax - amin < param.cutoffStepSize)
+			return 0.5 * (amin + amax);
 
-	while(a[2] - a[0] > param.cutoffStepSize){
-		if(a[1] - a[0] > a[2] - a[1]){
-			aprobe = 0.5 * (a[0] + a[1]);
-			cprobe = CalcUpdatedObjective(aprobe);
-			if(cprobe <= c[1]){
-				a[2] = a[1];
-				a[1] = aprobe;
-				c[2] = c[1];
-				c[1] = cprobe;
-			}
-			else{
-				a[0] = aprobe;
-				c[0] = cprobe;
+		a[0] = amin;
+		c[0] = CalcUpdatedObjective(amin);
+		a[1] = a[2] = amax;
+		c[1] = c[2] = CalcUpdatedObjective(amax);
+		if(c[2] > c[0]){
+			while( c[1] >= c[0] && a[1] - a[0] > param.cutoffStepSize * (amax - amin) ){
+				a[1] = a[0] + 0.5*(a[1] - a[0]);
+				c[1] = CalcUpdatedObjective(a[1]);
 			}
 		}
-		else{
-			aprobe = 0.5 * (a[1] + a[2]);
-			cprobe = CalcUpdatedObjective(aprobe);
-			if(cprobe < c[1]){
-				a[0] = a[1];
-				a[1] = aprobe;
-				c[0] = c[1];
-				c[1] = cprobe;
+
+		while(a[2] - a[0] > param.cutoffStepSize){
+			if(a[1] - a[0] > a[2] - a[1]){
+				aprobe = 0.5 * (a[0] + a[1]);
+				cprobe = CalcUpdatedObjective(aprobe);
+				if(cprobe <= c[1]){
+					a[2] = a[1];
+					a[1] = aprobe;
+					c[2] = c[1];
+					c[1] = cprobe;
+				}
+				else{
+					a[0] = aprobe;
+					c[0] = cprobe;
+				}
 			}
 			else{
-				a[2] = aprobe;
-				c[2] = cprobe;
+				aprobe = 0.5 * (a[1] + a[2]);
+				cprobe = CalcUpdatedObjective(aprobe);
+				if(cprobe < c[1]){
+					a[0] = a[1];
+					a[1] = aprobe;
+					c[0] = c[1];
+					c[1] = cprobe;
+				}
+				else{
+					a[2] = aprobe;
+					c[2] = cprobe;
+				}
 			}
 		}
+		return 0.5 * (a[0] + a[2]);
 	}
-	return 0.5 * (a[0] + a[2]);
 }
 
 void Solver::CalcDirection(){
@@ -239,12 +253,33 @@ void Solver::CalcDirection(){
 			y2.resize(ny);
 			for(uint i = 0; i < dimcon; i++)
 				y2[i] = y[i];
-			//
-			//LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
-			vector<int> pivot;
-			pivot.resize(dimcon);
-			LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &J[0][0], dimcon, &pivot[0], &y2[0], dimcon);
+			
+			// dgels
+			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
 
+			// dgelsd
+			//vector<real_t> S;
+			//S.resize(std::min(dimcon, dimvar));
+			//real_t rcond = 0.01;
+			//int    rank;
+			//static vector<real_t> work;
+			//static vector<int> iwork;
+			//const int lwork  = 100000;
+			//work.resize(lwork);
+			//iwork.resize(lwork);
+			//LAPACKE_dgelsd_work(LAPACK_COL_MAJOR, dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny,
+			//	&S[0], rcond, &rank,
+			//	&work[0], lwork, &iwork[0]);
+			//DSTR << "rank " << rank << endl;
+			
+			// dgesv
+			//vector<int> pivot;
+			//pivot.resize(dimcon);
+			//LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &JtrJ[0][0], dimcon, &pivot[0], &y2[0], dimcon);
+
+			// dposv
+			//LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &JtrJ[0][0], dimcon, &y2[0], dimcon);
+			
 			dx.resize(dimvar);
 			for(uint i = 0; i < dimvar; i++)
 				dx[i] = -1.0 * y2[i];

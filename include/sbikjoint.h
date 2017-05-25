@@ -26,6 +26,11 @@ public:
 			LineToLine,
 		};
 	};
+	struct Node{
+		IKBody* body;
+		bool    shared;
+		Link*   links[3];
+	};
 
 	class PosCon : public Constraint{
 	public:
@@ -118,6 +123,9 @@ public:
 	PosCon* pos_con[3];
 	VelCon* vel_con[3];
 	AccCon* acc_con[3];
+
+	vector<Node>  sockPath;
+	vector<Node>  plugPath;
 	
 public:
 	void CalcJacobian    ();

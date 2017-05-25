@@ -179,10 +179,11 @@ void IKSolver::CompPosIK(){
 	if(!ready)
 		Init();
 
-	mode = Mode::Pos;
-	param.numIterMajor = numIter;
-	param.minStepSize  = 1.0;
-	param.maxStepSize  = 1.0;
+	mode                 = Mode::Pos;
+	param.numIterMajor   = numIter;
+	param.methodStepSize = Method::StepSize::MinOrMax;
+	param.minStepSize    = 0.0;
+	param.maxStepSize    = 1.0;
 	
 	Prepare();
 	timeUpdate = 0;
@@ -195,9 +196,9 @@ void IKSolver::CompVelIK(){
 		Init();
 
 	mode = Mode::Vel;
-	param.numIterMajor = 1;
-	param.minStepSize  = 1.0;
-	param.maxStepSize  = 1.0;
+	param.numIterMajor   = 1;
+	param.methodStepSize = Method::StepSize::Max;
+	param.maxStepSize    = 1.0;
 
 	Prepare();
 	Solver::Solve();
@@ -209,9 +210,9 @@ void IKSolver::CompAccIK(){
 		Init();
 
 	mode = Mode::Acc;
-	param.numIterMajor = 1;
-	param.minStepSize  = 1.0;
-	param.maxStepSize  = 1.0;
+	param.numIterMajor   = 1;
+	param.methodStepSize = Method::StepSize::Max;
+	param.maxStepSize    = 1.0;
 
 	Prepare();
 	Solver::Solve();
@@ -223,9 +224,9 @@ void IKSolver::CompForceIK(){
 		Init();
 
 	mode = Mode::Force;
-	param.numIterMajor = 1;
-	param.minStepSize  = 1.0;
-	param.maxStepSize  = 1.0;
+	param.numIterMajor   = 1;
+	param.methodStepSize = Method::StepSize::Max;
+	param.maxStepSize    = 1.0;
 
 	Prepare();
 	Solver::Solve();
