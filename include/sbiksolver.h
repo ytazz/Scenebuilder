@@ -60,14 +60,30 @@ public:
 
 	int     numIter;
 	vec3_t  gravity;
+
 	Color   bodyColor;
-	Color   velColor;
-	Color   accColor;
-	Color   forceColor;
 	Color   handleColor;
+	Color   velColor;
+	Color   angvelColor;
+	Color   accColor;
+	Color   angaccColor;
+	Color   forceColor;
+	Color   momentColor;
+	
 	float   velScale;
+	float   angvelScale;
 	float   accScale;
+	float   angaccScale;
 	float   forceScale;
+	float   momentScale;
+
+	bool    showVel;
+	bool    showAngvel;
+	bool    showAcc;
+	bool    showAngacc;
+	bool    showForce;
+	bool    showMoment;
+	bool    showTorque;
 
 	int     mode;
 	bool    ready;

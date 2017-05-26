@@ -20,12 +20,12 @@ Solver::Param::Param(){
 	verbose        = false;
 	methodMajor    = Solver::Method::Major::GaussNewton1;
 	methodMinor    = Solver::Method::Minor::GaussSeidel;
-	methodStepSize = Solver::Method::StepSize::Bisection;
 	numIterMajor   = 10;
 	numIterMinor   = 10;
 	minStepSize    =  0.01;
 	maxStepSize    = 10.0;
 	cutoffStepSize =  0.001;
+	hastyStepSize  = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -117,63 +117,56 @@ real_t Solver::CalcStepSize(){
 	real_t a[3], aprobe;
 	real_t c[3], cprobe;
 	
-	if(param.methodStepSize == Method::StepSize::Max){
-		return amax;
-	}
-	if(param.methodStepSize == Method::StepSize::MinOrMax){
-		c[0] = CalcUpdatedObjective(amin);
-		c[1] = CalcUpdatedObjective(amax);
-		if(c[0] < c[1])
-			return amin;
-		return amax;
-	}
-	if(param.methodStepSize == Method::StepSize::Bisection){
-		if(amax - amin < param.cutoffStepSize)
-			return 0.5 * (amin + amax);
+	if(amax - amin < param.cutoffStepSize)
+		return 0.5 * (amin + amax);
 
-		a[0] = amin;
-		c[0] = CalcUpdatedObjective(amin);
-		a[1] = a[2] = amax;
-		c[1] = c[2] = CalcUpdatedObjective(amax);
-		if(c[2] > c[0]){
-			while( c[1] >= c[0] && a[1] - a[0] > param.cutoffStepSize * (amax - amin) ){
-				a[1] = a[0] + 0.5*(a[1] - a[0]);
-				c[1] = CalcUpdatedObjective(a[1]);
-			}
+	a[0] = amin;
+	c[0] = CalcUpdatedObjective(amin);
+	a[1] = a[2] = amax;
+	c[1] = c[2] = CalcUpdatedObjective(amax);
+	if(param.hastyStepSize && c[2] <= c[0])
+		return a[2];
+
+	if(c[2] > c[0]){
+		while( c[1] > c[0] && a[1] - a[0] > param.cutoffStepSize * (amax - amin) ){
+			a[1] = a[0] + 0.5*(a[1] - a[0]);
+			c[1] = CalcUpdatedObjective(a[1]);
 		}
+		if(param.hastyStepSize)
+			return a[1];
+	}
 
-		while(a[2] - a[0] > param.cutoffStepSize){
-			if(a[1] - a[0] > a[2] - a[1]){
-				aprobe = 0.5 * (a[0] + a[1]);
-				cprobe = CalcUpdatedObjective(aprobe);
-				if(cprobe <= c[1]){
-					a[2] = a[1];
-					a[1] = aprobe;
-					c[2] = c[1];
-					c[1] = cprobe;
-				}
-				else{
-					a[0] = aprobe;
-					c[0] = cprobe;
-				}
+	while(a[2] - a[0] > param.cutoffStepSize){
+		if(a[1] - a[0] > a[2] - a[1]){
+			aprobe = 0.5 * (a[0] + a[1]);
+			cprobe = CalcUpdatedObjective(aprobe);
+			if(cprobe <= c[1]){
+				a[2] = a[1];
+				a[1] = aprobe;
+				c[2] = c[1];
+				c[1] = cprobe;
 			}
 			else{
-				aprobe = 0.5 * (a[1] + a[2]);
-				cprobe = CalcUpdatedObjective(aprobe);
-				if(cprobe < c[1]){
-					a[0] = a[1];
-					a[1] = aprobe;
-					c[0] = c[1];
-					c[1] = cprobe;
-				}
-				else{
-					a[2] = aprobe;
-					c[2] = cprobe;
-				}
+				a[0] = aprobe;
+				c[0] = cprobe;
 			}
 		}
-		return 0.5 * (a[0] + a[2]);
+		else{
+			aprobe = 0.5 * (a[1] + a[2]);
+			cprobe = CalcUpdatedObjective(aprobe);
+			if(cprobe < c[1]){
+				a[0] = a[1];
+				a[1] = aprobe;
+				c[0] = c[1];
+				c[1] = cprobe;
+			}
+			else{
+				a[2] = aprobe;
+				c[2] = cprobe;
+			}
+		}
 	}
+	return 0.5 * (a[0] + a[2]);
 }
 
 void Solver::CalcDirection(){

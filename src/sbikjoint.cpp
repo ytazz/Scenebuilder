@@ -25,70 +25,9 @@ IKJoint::PosCon::PosCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solv
 			AddSLink(jnt->q_var[i]);
 		}
 	}
-
-	/*for(uint i = 0; i < joint->sockPath.size(); i++){
-		IKJoint::Node& node = joint->sockPath[i];
-		if(node.body->parBody){
-			IKJoint* jnt = node.body->parJoint;
-			for(int n = 0; n < jnt->ndof; n++){
-				node.links[n] = AddSLink(jnt->q_var[n]);
-			}
-		}
-		else{
-			node.links[0] = AddRLink(node.body->ori_var);
-		}
-	}
-
-	for(uint i = 0; i < joint->plugPath.size(); i++){
-		IKJoint::Node& node = joint->plugPath[i];
-		if(node.shared)
-			continue;
-
-		IKJoint* jnt = node.body->parJoint;
-		for(int n = 0; n < jnt->ndof; n++){
-			node.links[n] = AddSLink(jnt->q_var[n]);
-		}
-	}*/
 }
 
 void IKJoint::PosCon::CalcCoef(){
-	/*for(uint i = 0; i < joint->sockPath.size(); i++){
-		IKJoint::Node& node = joint->sockPath[i];
-		if(node.shared){
-			if(node.body->parBody){
-				IKJoint* jnt = node.body->parJoint;
-				for(int n = 0; n < jnt->ndof; n++){
-					((SLink*)node.links[n])->SetCoef(
-						joint->axis[dir] * (jnt->Jw_abs[n] % (joint->plugPosAbs - joint->sockPosAbs))
-					);
-				}
-			}
-			else{
-				((RLink*)node.links[0])->SetCoef( (joint->plugPosAbs - joint->sockPosAbs) % joint->axis[dir] );
-			}
-		}
-		else{
-			IKJoint* jnt = node.body->parJoint;
-			for(int n = 0; n < jnt->ndof; n++){
-				((SLink*)node.links[n])->SetCoef(
-					-1.0 * (joint->axis[dir] * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (joint->sockPosAbs - jnt->sockPosAbs)))
-				);
-			}
-		}
-	}
-
-	for(uint i = 0; i < joint->plugPath.size(); i++){
-		IKJoint::Node& node = joint->plugPath[i];
-		if(node.shared)
-			continue;
-
-		IKJoint* jnt = node.body->parJoint;
-		for(int n = 0; n < jnt->ndof; n++){
-			((SLink*)node.links[n])->SetCoef(
-				+1.0 * (joint->axis[dir] * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (joint->plugPosAbs - jnt->sockPosAbs)))
-			);
-		}
-	}*/
 	uint idx = 0;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -114,7 +53,7 @@ void IKJoint::PosCon::CalcDeviation(){
 
 IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1){
 	dir = _dir;
-	/*for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
+	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
 			AddSLink(jnt->qd_var[i]);
@@ -126,33 +65,36 @@ IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solv
 		for(int i = 0; i < jnt->ndof; i++){
 			AddSLink(jnt->qd_var[i]);
 		}
-	}*/
+	}
 }
 void IKJoint::VelCon::CalcCoef(){
 	uint idx = 0;
-	/*for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
+	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			((SLink*)links[idx++])->SetCoef(-1.0 * (joint->axis[dir] * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->sockPosAbs - jnt->sockPosAbs))) );
+			vec3_t r = joint->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs));
+			((SLink*)links[idx++])->SetCoef(-r[dir]);
 		}
 	}
 
 	for(IKBody* b = joint->plugBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			((SLink*)links[idx++])->SetCoef(+1.0 * (joint->axis[dir] * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs))) );
+			vec3_t r = joint->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs));
+			((SLink*)links[idx++])->SetCoef( r[dir]);
 		}
-	}*/
+	}
 }
 void IKJoint::VelCon::CalcDeviation(){
-	y[0] = joint->axis[dir] * (joint->plugVelAbs - joint->sockVelAbs);
+	vec3_t r = joint->sockOriAbs.Conjugated() * (joint->plugVelAbs - joint->sockVelAbs);
+	y[0] = r[dir];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1){
 	dir = _dir;
-	/*for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
+	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
 			AddSLink(jnt->qdd_var[i]);
@@ -164,26 +106,29 @@ IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solv
 		for(int i = 0; i < jnt->ndof; i++){
 			AddSLink(jnt->qdd_var[i]);
 		}
-	}*/
+	}
 }
 void IKJoint::AccCon::CalcCoef(){
 	uint idx = 0;
-	/*for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
+	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			((SLink*)links[idx++])->SetCoef(-1.0 * (joint->axis[dir] * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->sockPosAbs - jnt->sockPosAbs))) );
+			vec3_t r = joint->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs));
+			((SLink*)links[idx++])->SetCoef(-r[dir]);
 		}
 	}
 
 	for(IKBody* b = joint->plugBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			((SLink*)links[idx++])->SetCoef(+1.0 * (joint->axis[dir] * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs))) );
+			vec3_t r = joint->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (joint->plugPosAbs - jnt->sockPosAbs));
+			((SLink*)links[idx++])->SetCoef( r[dir]);
 		}
-	}*/
+	}
 }
 void IKJoint::AccCon::CalcDeviation(){
-	y[0] = joint->axis[dir] * (joint->plugAccAbs - joint->sockAccAbs);
+	vec3_t r = joint->sockOriAbs.Conjugated() * (joint->plugAccAbs - joint->sockAccAbs);
+	y[0] = r[dir];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -471,9 +416,9 @@ void IKJoint::Update(){
 			plugOriAbs    = plugBody->ori_var->val * plugOri;
 		}
 
-		//axis[0] = sockOriAbs * vec3_t(1.0, 0.0, 0.0);
-		//axis[1] = sockOriAbs * vec3_t(0.0, 1.0, 0.0);
-		//axis[2] = sockOriAbs * vec3_t(0.0, 0.0, 1.0);	
+		axis[0] = sockOriAbs * vec3_t(1.0, 0.0, 0.0);
+		axis[1] = sockOriAbs * vec3_t(0.0, 1.0, 0.0);
+		axis[2] = sockOriAbs * vec3_t(0.0, 0.0, 1.0);	
 	}
 	if(solver->mode == IKSolver::Mode::Vel){
 		sockVelAbs = sockBody->vel_var->val + sockBody->angvel_var->val % sockOffsetAbs;
@@ -548,7 +493,6 @@ void IKJoint::CalcRelativePose(){
 }
 
 void IKJoint::Draw(GRRenderIf* render){
-	
 	Vec3f p0, p1;
 	
 	glColor4fv((float*)solver->bodyColor.rgb);
@@ -560,10 +504,24 @@ void IKJoint::Draw(GRRenderIf* render){
 	p1 = plugBody->pos;
 	render->DrawLine(p0, p1);
 
-	glColor4fv((float*)solver->forceColor.rgb);
-	p0 = pos;
-	p1 = p0 + solver->forceScale * force;
-	render->DrawLine(p0, p1);
+	if(solver->showForce){
+		glColor4fv((float*)solver->forceColor.rgb);
+		p0 = pos;
+		p1 = p0 + solver->forceScale * force;
+		render->DrawLine(p0, p1);
+	}
+	if(solver->showMoment){
+		glColor4fv((float*)solver->momentColor.rgb);
+		p0 = pos;
+		p1 = p0 + solver->momentScale * moment;
+		render->DrawLine(p0, p1);
+	}
+	if(solver->showTorque){
+		glColor4fv((float*)solver->momentColor.rgb);
+		p0 = pos;
+		p1 = p0 + ori * vec3_t(0.0, 0.0, tau[0]);
+		render->DrawLine(p0, p1);
+	}
 
 }	
 

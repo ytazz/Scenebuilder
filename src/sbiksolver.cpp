@@ -17,15 +17,29 @@ IKSolver::IKSolver(){
 	param.methodMajor = Solver::Method::Major::GaussNewton1;
 	param.methodMinor = Solver::Method::Minor::Direct;
 
-	bodyColor  .name = "cyan"   ; bodyColor  .Init();
-	velColor   .name = "cyan"   ; velColor   .Init();
-	accColor   .name = "cyan"   ; accColor   .Init();
-	forceColor .name = "cyan"   ; forceColor .Init();
+	bodyColor  .name = "black"  ; bodyColor  .Init();
 	handleColor.name = "magenta"; handleColor.Init();
+	velColor   .name = "cyan"   ; velColor   .Init();
+	angvelColor.name = "green"  ; angvelColor.Init();
+	accColor   .name = "cyan"   ; accColor   .Init();
+	angaccColor.name = "green"  ; angaccColor.Init();
+	forceColor .name = "cyan"   ; forceColor .Init();
+	momentColor.name = "green"  ; momentColor.Init();
 
-	velScale   = 1.0f;
-	accScale   = 1.0f;
-	forceScale = 0.01f;
+	velScale    = 1.0f;
+	angvelScale = 1.0f;
+	accScale    = 1.0f;
+	angaccScale = 1.0f;
+	forceScale  = 0.01f;
+	momentScale = 0.01f;
+
+	showVel    = false;
+	showAngvel = false;
+	showAcc    = false;
+	showAngacc = false;
+	showForce  = false;
+	showMoment = false;
+	showTorque = false;
 
 	ready = false;
 }
@@ -181,9 +195,10 @@ void IKSolver::CompPosIK(){
 
 	mode                 = Mode::Pos;
 	param.numIterMajor   = numIter;
-	param.methodStepSize = Method::StepSize::MinOrMax;
 	param.minStepSize    = 0.0;
 	param.maxStepSize    = 1.0;
+	param.cutoffStepSize = 1.0e-10;
+	param.hastyStepSize  = true;
 	
 	Prepare();
 	timeUpdate = 0;
@@ -197,7 +212,7 @@ void IKSolver::CompVelIK(){
 
 	mode = Mode::Vel;
 	param.numIterMajor   = 1;
-	param.methodStepSize = Method::StepSize::Max;
+	param.minStepSize    = 1.0;
 	param.maxStepSize    = 1.0;
 
 	Prepare();
@@ -211,7 +226,7 @@ void IKSolver::CompAccIK(){
 
 	mode = Mode::Acc;
 	param.numIterMajor   = 1;
-	param.methodStepSize = Method::StepSize::Max;
+	param.minStepSize    = 1.0;
 	param.maxStepSize    = 1.0;
 
 	Prepare();
@@ -225,7 +240,7 @@ void IKSolver::CompForceIK(){
 
 	mode = Mode::Force;
 	param.numIterMajor   = 1;
-	param.methodStepSize = Method::StepSize::Max;
+	param.minStepSize    = 1.0;
 	param.maxStepSize    = 1.0;
 
 	Prepare();

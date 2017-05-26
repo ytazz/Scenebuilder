@@ -293,13 +293,26 @@ void IKBody::Draw(GRRenderIf* render){
 		render->DrawLine(p0, p1);
 	}*/
 
-	glColor4fv((float*)solver->velColor.rgb);
-	p1 = p0 + solver->velScale * vel;
-	render->DrawLine(p0, p1);
-
-	glColor4fv((float*)solver->accColor.rgb);
-	p1 = p0 + solver->accScale * acc;
-	render->DrawLine(p0, p1);
+	if(solver->showVel){
+		glColor4fv((float*)solver->velColor.rgb);
+		p1 = p0 + solver->velScale * vel;
+		render->DrawLine(p0, p1);
+	}
+	if(solver->showAngvel){
+		glColor4fv((float*)solver->angvelColor.rgb);
+		p1 = p0 + solver->angvelScale * angvel;
+		render->DrawLine(p0, p1);
+	}
+	if(solver->showAcc){
+		glColor4fv((float*)solver->accColor.rgb);
+		p1 = p0 + solver->accScale * acc;
+		render->DrawLine(p0, p1);
+	}
+	if(solver->showAngacc){
+		glColor4fv((float*)solver->angaccColor.rgb);
+		p1 = p0 + solver->angaccScale * angacc;
+		render->DrawLine(p0, p1);
+	}
 
 }
 
