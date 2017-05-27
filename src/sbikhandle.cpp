@@ -313,20 +313,22 @@ void IKHandle::Update(){
 }
 
 void IKHandle::Draw(GRRenderIf* render){
-	glColor4fv((float*)solver->handleColor.rgb);
-	render->SetPointSize(5.0f);
-
 	Vec3f p0, p1;
+
+	if(solver->showHandle){
+		glColor4fv((float*)solver->handleColor.rgb);
+		render->SetPointSize(5.0f);
 	
-	p0 = pos;
-	render->DrawPoint(p0);
+		p0 = pos;
+		render->DrawPoint(p0);
 
-	p1 = desPos;
-	render->DrawPoint(p0);
+		p1 = desPos;
+		render->DrawPoint(p0);
 
-	p0 = body->pos;
-	p1 = pos;
-	render->DrawLine(p0, p1);
+		p0 = body->pos;
+		p1 = pos;
+		render->DrawLine(p0, p1);
+	}
 }	
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -674,16 +676,18 @@ void IKComHandle::Update(){
 }
 
 void IKComHandle::Draw(GRRenderIf* render){
-	glColor4fv((float*)solver->handleColor.rgb);
-	render->SetPointSize(5.0f);
-
 	Vec3f p;
 	
-	p = pos;
-	render->DrawPoint(p);
+	if(solver->showHandle){
+		glColor4fv((float*)solver->handleColor.rgb);
+		render->SetPointSize(5.0f);
 
-	p = desPos;
-	render->DrawPoint(p);
+		p = pos;
+		render->DrawPoint(p);
+
+		p = desPos;
+		render->DrawPoint(p);
+	}
 }	
 
 }

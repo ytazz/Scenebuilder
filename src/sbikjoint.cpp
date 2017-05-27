@@ -495,15 +495,16 @@ void IKJoint::CalcRelativePose(){
 void IKJoint::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
-	glColor4fv((float*)solver->bodyColor.rgb);
-	render->SetLineWidth(1.0f);
-	p0 = pos;
-	p1 = sockBody->pos;
-	render->DrawLine(p0, p1);
-	p0 = pos;
-	p1 = plugBody->pos;
-	render->DrawLine(p0, p1);
-
+	if(solver->showJoint){
+		glColor4fv((float*)solver->jointColor.rgb);
+		render->SetLineWidth(1.0f);
+		p0 = pos;
+		p1 = sockBody->pos;
+		render->DrawLine(p0, p1);
+		p0 = pos;
+		p1 = plugBody->pos;
+		render->DrawLine(p0, p1);
+	}
 	if(solver->showForce){
 		glColor4fv((float*)solver->forceColor.rgb);
 		p0 = pos;

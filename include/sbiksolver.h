@@ -62,6 +62,7 @@ public:
 	vec3_t  gravity;
 
 	Color   bodyColor;
+	Color   jointColor;
 	Color   handleColor;
 	Color   velColor;
 	Color   angvelColor;
@@ -77,6 +78,9 @@ public:
 	float   forceScale;
 	float   momentScale;
 
+	bool    showBody;
+	bool    showJoint;
+	bool    showHandle;
 	bool    showVel;
 	bool    showAngvel;
 	bool    showAcc;

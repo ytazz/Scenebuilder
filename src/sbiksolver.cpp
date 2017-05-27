@@ -18,6 +18,7 @@ IKSolver::IKSolver(){
 	param.methodMinor = Solver::Method::Minor::Direct;
 
 	bodyColor  .name = "black"  ; bodyColor  .Init();
+	jointColor .name = "black"  ; jointColor .Init();
 	handleColor.name = "magenta"; handleColor.Init();
 	velColor   .name = "cyan"   ; velColor   .Init();
 	angvelColor.name = "green"  ; angvelColor.Init();
@@ -33,6 +34,9 @@ IKSolver::IKSolver(){
 	forceScale  = 0.01f;
 	momentScale = 0.01f;
 
+	showBody   = true;
+	showJoint  = true;
+	showHandle = true;
 	showVel    = false;
 	showAngvel = false;
 	showAcc    = false;

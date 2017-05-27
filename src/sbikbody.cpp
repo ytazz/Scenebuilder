@@ -277,22 +277,12 @@ void IKBody::Update(){
 void IKBody::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
-	glColor4fv((float*)solver->bodyColor.rgb);
-
-	render->SetPointSize(3.0f);
-	p0 = pos;
-	render->DrawPoint(p0);
-
-	/*if(parBody){
-		render->SetLineWidth(1.0f);
-		p0 = parBody ->pos;
-		p1 = parJoint->pos;
-		render->DrawLine(p0, p1);
+	if(solver->showBody){
+		glColor4fv((float*)solver->bodyColor.rgb);
+		render->SetPointSize(3.0f);
 		p0 = pos;
-		p1 = parJoint->pos;
-		render->DrawLine(p0, p1);
-	}*/
-
+		render->DrawPoint(p0);
+	}
 	if(solver->showVel){
 		glColor4fv((float*)solver->velColor.rgb);
 		p1 = p0 + solver->velScale * vel;
