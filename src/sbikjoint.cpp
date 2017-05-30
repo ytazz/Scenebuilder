@@ -520,7 +520,7 @@ void IKJoint::Draw(GRRenderIf* render){
 	if(solver->showTorque){
 		glColor4fv((float*)solver->momentColor.rgb);
 		p0 = pos;
-		p1 = p0 + ori * vec3_t(0.0, 0.0, tau[0]);
+		p1 = p0 + solver->momentScale * (ori * vec3_t(0.0, 0.0, tau[0]));
 		render->DrawLine(p0, p1);
 	}
 
