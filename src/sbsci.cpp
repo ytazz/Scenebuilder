@@ -109,7 +109,7 @@ size_t Sci::FlushTxBuffer(){
 		return 0;
 
 	DWORD nBytesWritten;
-	WriteFile(handle, (LPVOID)&txBuffer[0], txBuffer.size(), &nBytesWritten, 0);
+	WriteFile(handle, (LPVOID)&txBuffer[0], (DWORD)txBuffer.size(), &nBytesWritten, 0);
 
 	FlushFileBuffers(handle);
 	txBuffer.clear();

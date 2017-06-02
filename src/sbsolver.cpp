@@ -248,7 +248,7 @@ void Solver::CalcDirection(){
 				y2[i] = y[i];
 			
 			// dgels
-			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny);
+			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', (int)dimcon, (int)dimvar, 1, &J[0][0], (int)dimcon, &y2[0], (int)ny);
 
 			// dgelsd
 			//vector<real_t> S;

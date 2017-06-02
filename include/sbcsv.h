@@ -85,12 +85,12 @@ public:
 
 	/// 行数
 	uint	NumRow(){
-		return row.size();
+		return (uint)row.size();
 	}
 
 	/// i行目の列数
 	uint	NumCol(int i){
-		return row[i].col.size();
+		return (uint)row[i].col.size();
 	}
 
 	/// ラベル（1行目要素）が所定の文字列である列を探す

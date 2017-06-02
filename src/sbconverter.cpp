@@ -174,7 +174,8 @@ bool Converter::FromString(string_iterator_pair str, double& val, int dim){
 bool Converter::FromString(string_iterator_pair str, VVecf& val, int dim){
 	VVecd tmp;
 	if(FromString(str, tmp, dim)){
-		val = tmp;
+		for(uint i = 0; i < val.size(); i++)
+			val[i] = (float)tmp[i];
 		return true;
 	}
 	return false;

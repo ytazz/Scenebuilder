@@ -21,8 +21,10 @@ namespace Scenebuilder{;
 typedef unsigned char	byte;
 #endif
 
+#ifndef SB_UINT_DEFINED
 typedef unsigned short  ushort;
 typedef unsigned int	uint;
+#endif
 
 typedef PTM::VVector<float>     VVecf;
 typedef PTM::VVector<double>    VVecd;

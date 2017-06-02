@@ -95,7 +95,7 @@ void LoaderSTL::Parse(){
 			f.color = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 			for(int i = 0; i < 3; i++){
 				colTok.Next();
-				f.normal[i] = to_real(colTok.GetToken());
+				f.normal[i] = (float)to_real(colTok.GetToken());
 			}
 			facetOpen = true;
 		}
@@ -111,7 +111,7 @@ void LoaderSTL::Parse(){
 			LoaderSTL::Facet& f = facets.back();
 			for(int i = 0; i < 3; i++){
 				colTok.Next();
-				f.vertices[vertexIdx][i] = to_real(colTok.GetToken());
+				f.vertices[vertexIdx][i] = (float)to_real(colTok.GetToken());
 			}
 			vertexIdx++;
 		}
@@ -174,7 +174,7 @@ void LoaderSTL::Convert(Model* model, const Affinef& aff){
 			}
 		}
 
-		nmat = attrs.size();
+		nmat = (uint)attrs.size();
 		model->materials   .resize(nmat);
 		model->materialList.resize(nmat);
 		for(uint i = 0; i < nmat; i++){
