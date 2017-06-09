@@ -95,7 +95,7 @@ public:
 	udp::endpoint       remoteEp;
 	boost::thread       threadIoService;
 	int                 port;
-	byte                buf[1024];
+	byte                buf[1024*1024];
 	
 	UDPReceiveCallback* callback;
 
