@@ -23,7 +23,7 @@ public:
 		Send((const byte*)&val, sizeof(T));
 	}
 
-	 UDPSender();
+	 UDPSender(bool use_asio = true);
 	~UDPSender();
 };
 
@@ -41,7 +41,7 @@ public:
 	void Disconnect ();
 	void SetCallback(UDPReceiveCallback* cb);
 
-	 UDPReceiver();
+	 UDPReceiver(bool use_asio = true);
 	~UDPReceiver();
 };
 
