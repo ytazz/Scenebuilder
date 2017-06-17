@@ -393,7 +393,11 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				bodyAux->ikBody->SetPose(pose_t(tr.rot * bodyProp->trn + tr.trn, tr.rot * bodyProp->rot));
 			}
 			else{
-
+				quat_t qinv = tr.rot.Conjugated();
+				pose_t pose;
+				bodyAux->ikBody->GetPose(pose);
+				bodyProp->trn = qinv * (pose.Pos() - tr.trn);
+				bodyProp->rot = qinv *  pose.Ori();
 			}
 		}
 	}
