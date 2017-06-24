@@ -375,12 +375,14 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 		
 		if(cat & AttrCategory::Param){
 			if(download){
-				bodyAux->ikBody->mass   = bodyProp->mass;
-				bodyAux->ikBody->center = bodyProp->center;
+				bodyAux->ikBody->mass    = bodyProp->mass;
+				bodyAux->ikBody->inertia = bodyProp->inertia;
+				bodyAux->ikBody->center  = bodyProp->center;
 			}
 			else{
-				bodyProp->mass   = bodyAux->ikBody->mass;
-				bodyProp->center = bodyAux->ikBody->center;
+				bodyProp->mass    = bodyAux->ikBody->mass;
+				bodyProp->inertia = bodyAux->ikBody->inertia;
+				bodyProp->center  = bodyAux->ikBody->center;
 			}		
 		}
 		if(cat & AttrCategory::State){

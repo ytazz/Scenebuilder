@@ -153,9 +153,6 @@ void IKBody::Prepare(){
 	angacc_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 
 	if(solver->mode == IKSolver::Mode::Force){
-		force  = mass * (centerAccAbs - solver->gravity); 
-		moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
-
 		force_con ->enabled = (parBody != 0);
 		moment_con->enabled = (parBody != 0);
 	}
@@ -177,6 +174,18 @@ void IKBody::Finish(){
 	if(solver->mode == IKSolver::Mode::Acc){
 		acc    = acc_var   ->val;
 		angacc = angacc_var->val;
+
+		force  = mass * (centerAccAbs - solver->gravity);
+
+		quat_t q  = ori_var->val;
+		quat_t qc = q.Conjugated();
+		vec3_t a  = angacc_var->val;
+		vec3_t al = qc * a;
+		vec3_t w  = angvel_var->val;
+		vec3_t wl = qc * w;
+		vec3_t nl = inertia * al + wl % (inertia * wl);
+		moment    = q * nl;
+		//moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
 	}
 }
 

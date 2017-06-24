@@ -153,16 +153,6 @@ void IKSolver::Prepare(){
 	for(uint i = 0; i < ikJointHandles.size(); i++) ikJointHandles[i]->Prepare();
 	for(uint i = 0; i < ikComHandles  .size(); i++) ikComHandles  [i]->Prepare();
 
-	if(mode == Mode::Force){
-		forceTotal .clear();
-		momentTotal.clear();
-		for(uint i = 0; i < ikBodies.size(); i++){
-			IKBody* body = ikBodies[i];
-			forceTotal  += body->force;
-			momentTotal += body->moment;
-		}
-	}
-
 	timePrepare = timer.CountUS();
 }
 

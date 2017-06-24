@@ -103,9 +103,6 @@ public:
 	IKJointHandleRefs ikJointHandles;
 	IKComHandleRefs   ikComHandles;
 
-	vec3_t  forceTotal;
-	vec3_t  momentTotal;
-
 public:
 	
 	void Init   ();
