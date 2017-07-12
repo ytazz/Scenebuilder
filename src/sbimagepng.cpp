@@ -35,7 +35,7 @@ bool ImagePNG::Load(string filename){
 	png_init_io(png, file);
 
 	// 全部読む
-	png_read_png(png, info, 0, 0);
+	png_read_png(png, info, PNG_TRANSFORM_IDENTITY, 0);
 
 	// 情報取得
 	width    = png_get_image_width (png, info);
