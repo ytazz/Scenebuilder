@@ -242,6 +242,23 @@ void IKSolver::CompForceIK(){
 	Finish();
 }
 
+void IKSolver::CompInertia(const vec3_t& origin, mat3_t& I){
+	I.clear();
+	mat3_t R;
+	mat3_t Ib;
+	vec3_t r;
+	mat3_t rc;
+	for(uint i = 0; i < ikBodies.size(); i++){
+		IKBody* body = ikBodies[i];
+		r  = (body->pos - origin);
+		rc = mat3_t::Cross(r);
+		body->ori.ToMatrix(R);
+
+		I += (R * body->inertia * R.trans() - body->mass * rc * rc);
+
+	}
+}
+
 real_t IKSolver::CalcObjective(){
 	Update();
 	return Solver::CalcObjective();

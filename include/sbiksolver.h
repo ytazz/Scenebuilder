@@ -147,6 +147,9 @@ public:
 	 **/
 	//void	CompFK();
 
+	// 慣性行列を計算
+	void    CompInertia(const vec3_t& origin, mat3_t& I);
+
 	/// 描画
 	void Draw(GRRenderIf* render);
 
