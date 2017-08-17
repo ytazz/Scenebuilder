@@ -55,6 +55,13 @@ void SVG::Path::GetPoints(vector<Vec2f>& points){
 
 void SVG::Path::CalcBBox(){
 	const float inf = numeric_limits<float>::max();
+
+	if(segments.empty()){
+		bbmin.clear();
+		bbmax.clear();
+		return;
+	}
+
 	bbmin = Vec2f( inf,  inf);
 	bbmax = Vec2f(-inf, -inf);
 	for(uint i = 0; i < segments.size(); i++){
@@ -98,23 +105,48 @@ void SVG::LoadPath(Path* path, XMLNode* node){
 			str = tok.GetToken();
 			tok.Next();
 			// move_to, line_to
-			bool moveto = false, lineto = false, curveto = false, close = false;
-			bool rel;
+			bool moveto     = false;
+			bool lineto     = false;
+			bool curveto    = false;
+			bool close      = false;
+			bool vertical   = false;
+			bool horizontal = false;
+			bool rel        = false;
 			if(str == "m"){
 				moveto = true;
-				rel = true;
+				rel    = true;
 			}
 			if(str == "M"){
 				moveto = true;
-				rel = false;
+				rel    = false;
 			}
 			if(str == "l"){
 				lineto = true;
-				rel = true;
+				rel    = true;
 			}
 			if(str == "L"){
 				lineto = true;
-				rel = false;
+				rel    = false;
+			}
+			if(str == "h"){
+				lineto     = true;
+				rel        = true;
+				horizontal = true;
+			}
+			if(str == "H"){
+				lineto     = true;
+				rel        = false;
+				horizontal = true;
+			}
+			if(str == "v"){
+				lineto     = true;
+				rel        = true;
+				vertical   = true;
+			}
+			if(str == "V"){
+				lineto     = true;
+				rel        = false;
+				vertical   = true;
 			}
 			if(str == "c"){
 				curveto = true;
@@ -132,10 +164,22 @@ void SVG::LoadPath(Path* path, XMLNode* node){
 					// x, yが任意個つづく．文字列終端か非数値まで読む
 					Vec2f p;
 					while(true){
-						p.x = (float)to_real(tok.GetToken());
-						tok.Next();
-						p.y = (float)to_real(tok.GetToken());
-						tok.Next();
+						if(horizontal){
+							p.x = (float)to_real(tok.GetToken());
+							tok.Next();
+							p.y = 0.0f;
+						}
+						else if(vertical){
+							p.x = 0.0f;
+							p.y = (float)to_real(tok.GetToken());
+							tok.Next();
+						}
+						else{
+							p.x = (float)to_real(tok.GetToken());
+							tok.Next();
+							p.y = (float)to_real(tok.GetToken());
+							tok.Next();
+						}
 
 						if(!path->segments.empty()){
 							Segment& s = path->segments.back();
@@ -144,8 +188,18 @@ void SVG::LoadPath(Path* path, XMLNode* node){
 								s.c1 = s.p0 + p;
 							}
 							else{
-								s.p1 = p;
-								s.c1 = p;
+								if(horizontal){
+									s.p1 = Vec2f(p.x, s.p0.y);
+									s.c1 = Vec2f(p.x, s.p0.y);
+								}
+								else if(vertical){
+									s.p1 = Vec2f(s.p0.x, p.y);
+									s.c1 = Vec2f(s.p0.x, p.y);
+								}
+								else{
+									s.p1 = p;
+									s.c1 = p;
+								}
 							}
 
 							path->segments.push_back(Segment(s.p1, s.c1));

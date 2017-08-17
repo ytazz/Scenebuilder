@@ -222,6 +222,10 @@ void Solver::CalcDirection(){
 			int t1 = timer.CountUS();
 
 			//DSTR << "dimcon " << dimcon << " dimvar " << dimvar << endl;
+
+			// 変数あるいは拘束の数が不正
+			if(dimvar == 0 || dimcon == 0)
+				return;
 			
 			timer.CountUS();
 			J.resize(dimcon, dimvar);
