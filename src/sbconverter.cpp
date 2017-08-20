@@ -439,7 +439,7 @@ void Converter::FromBinary(const byte*& buf, string& val){
 	buf += n+1;
 }
 void Converter::FromBinary(const byte*& buf, VVecf& val){
-	size_t n = *(size_t*)buf;
+	uint n = *(uint*)buf;
 	val.resize(n);
 	for(uint i = 0; i < n; i++){
 		val[i] = *(float*)buf;
@@ -447,7 +447,7 @@ void Converter::FromBinary(const byte*& buf, VVecf& val){
 	}
 }
 void Converter::FromBinary(const byte*& buf, VVecd& val){
-	size_t n = *(size_t*)buf;
+	uint n = *(uint*)buf;
 	val.resize(n);
 	for(uint i = 0; i < n; i++){
 		val[i] = *(double*)buf;
@@ -470,14 +470,14 @@ void Converter::FromBinary(istream& is, string& val){
 	}
 }
 void Converter::FromBinary(istream& is, VVecf& val){
-	size_t n;
+	uint n;
 	FromBinary(is, n);
 	val.resize(n);
 	for(uint i = 0; i < n; i++)
 		FromBinary(is, val[i]);
 }
 void Converter::FromBinary(istream& is, VVecd& val){
-	size_t n;
+	uint n;
 	FromBinary(is, n);
 	val.resize(n);
 	for(uint i = 0; i < n; i++)
