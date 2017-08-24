@@ -49,6 +49,10 @@ void Sampler::Seed(int _seed){
 	impl->Seed(_seed);
 }
 
+bool Sampler::SampleBool(){
+	return (bool)SampleInt(0, 1);
+}
+
 int Sampler::SampleInt(int _min, int _max){
 	return impl->SampleInt(_min, _max);
 }
