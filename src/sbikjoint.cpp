@@ -10,7 +10,7 @@ const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::PosCon::PosCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1){
+IKJoint::PosCon::PosCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -51,7 +51,7 @@ void IKJoint::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1){
+IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -92,7 +92,7 @@ void IKJoint::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1){
+IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -266,15 +266,15 @@ void IKJoint::Init(){
 void IKJoint::AddVar(){
 	if(plugBody->parBody == sockBody){
 		for(int i = 0; i < ndof; i++){
-			q_var  [i] = new SVar(solver);
-			qd_var [i] = new SVar(solver);
-			qdd_var[i] = new SVar(solver);
+			q_var  [i] = new SVar(solver, ID(), 1.0);
+			qd_var [i] = new SVar(solver, ID(), 1.0);
+			qdd_var[i] = new SVar(solver, ID(), 1.0);
 		}
 	}
 
 	for(int i = 0; i < 3; i++){
-		force_var [i] = new SVar(solver);
-		moment_var[i] = new SVar(solver);
+		force_var [i] = new SVar(solver, ID(), 1.0);
+		moment_var[i] = new SVar(solver, ID(), 1.0);
 	}
 }
 

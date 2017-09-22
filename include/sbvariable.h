@@ -7,6 +7,40 @@ using namespace std;
 
 namespace Scenebuilder{;
 
+class ID{
+public:
+	int     type;
+	void*   owner;
+	void*   owner2;
+	string  name;
+
+	int Match(ID* id){
+		// tagが未指定のマスクは必ずマッチする
+		if(type == -1)
+			return 1;
+		// tag不一致
+		if(type != id->type)
+			return 0;
+		// tag一致, node未指定
+		if(!owner)
+			return 2;
+		// node不一致
+		if(owner != id->owner)
+			return 0;
+		// 全一致
+		return 3;
+	}
+
+	ID():type(-1), owner(0){}
+
+	ID(int _type, void* _owner = 0, void* _owner2 = 0, string _name = ""){
+		type   = _type ;
+		owner  = _owner;
+		owner2 = _owner2;
+		name   = _name ;
+	}
+};
+
 class	Solver;
 class	Link;
 
@@ -15,11 +49,12 @@ typedef std::vector< Link* >	Links;
 /**
 	拘束される変数
  */
-class Variable : public UTRefCount{
+class Variable : public UTRefCount, public ID{
 public:
 	/// variable types
 	enum{
 		Scalar = 1,
+		Vec2   = 2,
 		Vec3   = 3,
 		Quat   = 4,
 	};
@@ -29,9 +64,12 @@ public:
 	Solver*	 solver;
 	Links	 links;			///< links to constraints
 	bool	 locked;		///< locked or not
-	uint	 type;			///< variable type
-	uint	 nelem;			///< number of elements
-	uint     index;
+	int	     type;			///< variable type
+	int	     nelem;			///< number of elements
+	int      index;
+
+	real_t	scale, scale2, scale_inv, scale_inv2;	///< scaling factor, its inverse and squared inverse
+
 	real_t   dmax, dmax2;    ///< upper limit of delta norm
 	real_t   weight;
 	vec3_t	 dx;            ///< delta
@@ -41,6 +79,8 @@ public:
 public:
 	void Lock(bool on = true);
 	
+	void SetScale(real_t sc);
+
 	virtual void ResetState();
 	
 	void Prepare();
@@ -64,10 +104,9 @@ public:
 	
 	virtual void	Reset ()            = 0;
 	virtual real_t	Get   (uint k)      = 0;
-	virtual real_t	Norm  ()            = 0;
 	virtual void	Modify(real_t rate) = 0;
 
-	Variable(uint type, Solver* solver);
+	Variable(uint type, Solver* solver, ID _id, real_t _scale);
 };
 
 template<class T>
@@ -81,7 +120,7 @@ public:
 		val_tmp = val;
 	}
 
-	VariableImpl(uint _type, Solver* solver):Variable(_type, solver){}
+	VariableImpl(uint _type, Solver* solver, ID _id, real_t _scale):Variable(_type, solver, _id, _scale){}
 };
 
 /**
@@ -95,14 +134,32 @@ public:
 	virtual real_t Get(uint k){
 		return val;
 	}
-	virtual real_t Norm(){
-		return abs(val);
-	}
 	virtual void Modify(real_t alpha){
 		val = val_tmp + alpha * dx[0];
 	}
 
-	SVar(Solver* solver):VariableImpl(Variable::Scalar, solver){
+	SVar(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Scalar, solver, _id, _scale){
+		Reset();
+	}
+};
+
+/**
+	2D vector variable
+ */
+class V2Var : public VariableImpl<vec2_t>{
+public:
+	virtual void Reset(){
+		val    .clear();
+		val_tmp.clear();
+	}
+	virtual real_t Get(uint k){
+		return val[k];
+	}
+	virtual void Modify(real_t alpha){
+		val = val_tmp + alpha * dx;
+	}
+
+	V2Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec2, solver, _id, _scale){
 		Reset();
 	}
 };
@@ -119,14 +176,11 @@ public:
 	virtual real_t Get(uint k){
 		return val[k];
 	}
-	virtual real_t Norm(){
-		return val.norm();
-	}
 	virtual void Modify(real_t alpha){
 		val = val_tmp + alpha * dx;
 	}
 
-	V3Var(Solver* solver):VariableImpl(Variable::Vec3, solver){
+	V3Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec3, solver, _id, _scale){
 		Reset();
 	}
 };
@@ -143,15 +197,12 @@ public:
 	virtual real_t Get(uint k){
 		return val[k];
 	}
-	virtual real_t Norm(){
-		return ((vec4_t&)val).norm();
-	}
 	virtual void Modify(real_t alpha){
 		val = quat_t::Rot(alpha * dx) * val_tmp;
 		val.unitize();
 	}
 
-	QVar(Solver* solver):VariableImpl(Variable::Quat, solver){
+	QVar(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Quat, solver, _id, _scale){
 		Reset();
 	}
 };

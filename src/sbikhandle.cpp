@@ -9,16 +9,16 @@ namespace Scenebuilder{;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::PosCon::PosCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::PosCon::PosCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
-				AddCLink(b->parJoint->q_var[i]);
+				AddC3Link(b->parJoint->q_var[i]);
 			}
 		}
 		else{
-			AddSLink(b->pos_var);
-			AddXLink(b->ori_var);
+			AddSLink (b->pos_var);
+			AddX3Link(b->ori_var);
 		}
 	}
 }
@@ -28,12 +28,12 @@ void IKHandle::PosCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs)) );
+				((C3Link*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs)) );
 			}
 		}
 		else{
-			((SLink*)links[idx++])->SetCoef(-1.0);
-			((XLink*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
+			((SLink* )links[idx++])->SetCoef(-1.0);
+			((X3Link*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
 		}
 	}
 }
@@ -43,11 +43,11 @@ void IKHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::OriCon::OriCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::OriCon::OriCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
-				AddCLink(b->parJoint->q_var[i]);
+				AddC3Link(b->parJoint->q_var[i]);
 			}
 		}
 		else{
@@ -61,7 +61,7 @@ void IKHandle::OriCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
+				((C3Link*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
 			}
 		}
 		else{
@@ -76,16 +76,16 @@ void IKHandle::OriCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::VelCon::VelCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::VelCon::VelCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < handle->body->parJoint->ndof; i++){
-				AddCLink(b->parJoint->qd_var[i]);
+				AddC3Link(b->parJoint->qd_var[i]);
 			}
 		}
 		else{
-			AddSLink(b->vel_var   );
-			AddXLink(b->angvel_var);
+			AddSLink (b->vel_var   );
+			AddX3Link(b->angvel_var);
 		}
 	}
 
@@ -96,12 +96,12 @@ void IKHandle::VelCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs) ));
+				((C3Link*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs) ));
 			}
 		}
 		else{
-			((SLink*)links[idx++])->SetCoef(-1.0);
-			((XLink*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
+			((SLink* )links[idx++])->SetCoef(-1.0);
+			((X3Link*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
 		}
 	}
 }
@@ -111,11 +111,11 @@ void IKHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AngvelCon::AngvelCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::AngvelCon::AngvelCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
-				AddCLink(b->parJoint->qd_var[i]);
+				AddC3Link(b->parJoint->qd_var[i]);
 			}
 		}
 		else{
@@ -129,7 +129,7 @@ void IKHandle::AngvelCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
+				((C3Link*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
 			}
 		}
 		else{
@@ -143,16 +143,16 @@ void IKHandle::AngvelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AccCon::AccCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::AccCon::AccCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
-				AddCLink(b->parJoint->qdd_var[i]);
+				AddC3Link(b->parJoint->qdd_var[i]);
 			}
 		}
 		else{
-			AddSLink(b->acc_var   );
-			AddXLink(b->angacc_var);
+			AddSLink (b->acc_var   );
+			AddX3Link(b->angacc_var);
 		}
 	}
 }
@@ -162,12 +162,12 @@ void IKHandle::AccCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs) ));
+				((C3Link*)links[idx++])->SetCoef(-1.0 * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (handle->sockPosAbs - jnt->sockPosAbs) ));
 			}
 		}
 		else{
-			((SLink*)links[idx++])->SetCoef(-1.0);
-			((XLink*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
+			((SLink* )links[idx++])->SetCoef(-1.0);
+			((X3Link*)links[idx++])->SetCoef(handle->sockPosAbs - b->pos_var->val);
 		}
 	}
 }
@@ -177,11 +177,11 @@ void IKHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AngaccCon::AngaccCon(IKHandle* h):handle(h), Constraint(h->solver, 3){
+IKHandle::AngaccCon::AngaccCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
-				AddCLink(b->parJoint->qdd_var[i]);
+				AddC3Link(b->parJoint->qdd_var[i]);
 			}
 		}
 		else{
@@ -195,7 +195,7 @@ void IKHandle::AngaccCon::CalcCoef(){
 		if(b->parBody){
 			IKJoint* jnt = b->parJoint;
 			for(int i = 0; i < jnt->ndof; i++){
-				((CLink*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
+				((C3Link*)links[idx++])->SetCoef(-1.0 * jnt->Jw_abs[i]);
 			}
 		}
 		else{
@@ -333,7 +333,7 @@ void IKHandle::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1){
+IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(), 1.0){
 	AddSLink(handle->joint->q_var[idx]);
 }
 void IKJointHandle::PosCon::CalcCoef(){
@@ -345,7 +345,7 @@ void IKJointHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1){
+IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(), 1.0){
 	AddSLink(handle->joint->qd_var[idx]);
 }
 void IKJointHandle::VelCon::CalcCoef(){
@@ -357,7 +357,7 @@ void IKJointHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1){
+IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(), 1.0){
 	AddSLink(handle->joint->qdd_var[idx]);
 }
 void IKJointHandle::AccCon::CalcCoef(){
@@ -421,15 +421,15 @@ void IKJointHandle::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::PosCon::PosCon(IKComHandle* h):handle(h), Constraint(h->solver, 3){
+IKComHandle::PosCon::PosCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
-			AddCLink(jnt->q_var[n]);
+			AddC3Link(jnt->q_var[n]);
 		}
 	}
-	AddSLink(handle->root->pos_var);
-	AddXLink(handle->root->ori_var);
+	AddSLink (handle->root->pos_var);
+	AddX3Link(handle->root->ori_var);
 }
 void IKComHandle::PosCon::CalcCoef(){
 	uint idx = 0;
@@ -448,12 +448,12 @@ void IKComHandle::PosCon::CalcCoef(){
 				coef += -1.0 * mnorm * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs));
 			}
 
-			((CLink*)links[idx++])->SetCoef(coef);
+			((C3Link*)links[idx++])->SetCoef(coef);
 		}
 	}
 
-	((SLink*)links[idx++])->SetCoef(-1.0);
-	((XLink*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
+	((SLink* )links[idx++])->SetCoef(-1.0);
+	((X3Link*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
 
 }
 void IKComHandle::PosCon::CalcDeviation(){
@@ -462,15 +462,15 @@ void IKComHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::VelCon::VelCon(IKComHandle* h):handle(h), Constraint(h->solver, 3){
+IKComHandle::VelCon::VelCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
-			AddCLink(jnt->qd_var[n]);
+			AddC3Link(jnt->qd_var[n]);
 		}
 	}
-	AddSLink(handle->root->vel_var   );
-	AddXLink(handle->root->angvel_var);
+	AddSLink (handle->root->vel_var   );
+	AddX3Link(handle->root->angvel_var);
 }
 
 void IKComHandle::VelCon::CalcCoef(){
@@ -490,12 +490,12 @@ void IKComHandle::VelCon::CalcCoef(){
 				coef += -1.0 * mnorm * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs));
 			}
 
-			((CLink*)links[idx++])->SetCoef(coef);
+			((C3Link*)links[idx++])->SetCoef(coef);
 		}
 	}
 
-	((SLink*)links[idx++])->SetCoef(-1.0);
-	((XLink*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
+	((SLink* )links[idx++])->SetCoef(-1.0);
+	((X3Link*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
 }
 
 void IKComHandle::VelCon::CalcDeviation(){
@@ -504,15 +504,15 @@ void IKComHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::AccCon::AccCon(IKComHandle* h):handle(h), Constraint(h->solver, 3){
+IKComHandle::AccCon::AccCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
-			AddCLink(jnt->qdd_var[n]);
+			AddC3Link(jnt->qdd_var[n]);
 		}
 	}
-	AddSLink(handle->root->acc_var   );
-	AddXLink(handle->root->angacc_var);
+	AddSLink (handle->root->acc_var   );
+	AddX3Link(handle->root->angacc_var);
 }
 
 void IKComHandle::AccCon::CalcCoef(){
@@ -532,12 +532,12 @@ void IKComHandle::AccCon::CalcCoef(){
 				coef += -1.0 * mnorm * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs));
 			}
 
-			((CLink*)links[idx++])->SetCoef(coef);
+			((C3Link*)links[idx++])->SetCoef(coef);
 		}
 	}
 
-	((SLink*)links[idx++])->SetCoef(-1.0);
-	((XLink*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
+	((SLink* )links[idx++])->SetCoef(-1.0);
+	((X3Link*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
 }
 
 void IKComHandle::AccCon::CalcDeviation(){

@@ -7,8 +7,9 @@ namespace Scenebuilder{;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-LoaderSTL::LoaderSTL(bool _useColor){
+LoaderSTL::LoaderSTL(bool _useColor, bool _binary){
 	useColor  = _useColor;
+	binary    = _binary;
 	facetOpen = false;
 	vertexIdx = 0;
 	Clear();
@@ -60,8 +61,16 @@ void LoaderSTL::Parse(){
 	
 	// テキストSTLは一行目が"solid name". ただしnameはオプショナル
 	// solidで始まらない場合はバイナリとして読む
+	/*
 	str = colTok.GetToken();	
 	if(str != "solid"){
+		ParseBinary();
+		return;
+	}
+	*/
+	// バイナリSTLでも80byteヘッダが"solid"で始まる場合があるので
+	// テキストかバイナリかは手動で指定する
+	if(binary){
 		ParseBinary();
 		return;
 	}

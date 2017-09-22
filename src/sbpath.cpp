@@ -19,6 +19,11 @@ Path& Path::operator=(const string& p){
 	return *this;
 }
 
+Path& Path::operator+=(const Path& p1){
+	*this = *this + p1;
+	return *this;
+}
+
 void Path::ReplaceDelim(){
 	// windowsに合わせる
 	int n = (int)strlen(Delims());

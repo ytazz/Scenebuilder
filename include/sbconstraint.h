@@ -11,23 +11,29 @@ namespace Scenebuilder{;
 
 class Solver;
 class SLink;
-class XLink;
-class CLink;
-class RLink;
+class C2Link;
+class R2Link;
+class M2Link;
+class X3Link;
+class C3Link;
+class R3Link;
+class M3Link;
 
 /**
 	constraint base class
  */
-class Constraint : public UTRefCount{
+class Constraint : public UTRefCount, public ID{
 public:
 	typedef void (Constraint::*UpdateFunc)(uint k, real_t d);
 
 	Solver*		solver;
 	Links		links;		///< links to constrained variables
-	uint		nelem;
-	uint        index;
+	int         nelem;
+	int         level;      ///< priority level
+	int         index;
 	bool		enabled;			///< enabled constraint (controlled by user)
 	bool		active;				///< active constraint (task-related constraints, range constraints)
+	real_t		scale, scale2, scale_inv, scale2_inv;		///< scaling coefficient
 	
 	/** error correction rate
 		誤差修正率．
@@ -45,7 +51,7 @@ public:
 	 */
 	real_t	corrMax;
 
-	//vec3_t		e;			///< error value
+	vec3_t		e;			///< error value
 	//vec3_t		de;			///< change of error
 	//vec3_t		ded;		///< desired change of error
 
@@ -60,10 +66,16 @@ public:
 	ofstream	file;
 
 public:	
-	SLink*		AddSLink(Variable* var, real_t coef = 1.0);
-	XLink*		AddXLink(Variable* var);
-	CLink*		AddCLink(Variable* var, vec3_t coef = vec3_t((real_t)1.0, (real_t)1.0, (real_t)1.0));
-	RLink*		AddRLink(Variable* var);
+	SLink*		AddSLink (Variable* var, real_t coef = 1.0);
+	C2Link*		AddC2Link(Variable* var);
+	R2Link*		AddR2Link(Variable* var);
+	M2Link*		AddM2Link(Variable* var);
+	X3Link*		AddX3Link(Variable* var);
+	C3Link*		AddC3Link(Variable* var);
+	R3Link*		AddR3Link(Variable* var);
+	M3Link*		AddM3Link(Variable* var);
+
+	void SetPriority(uint newlv);
 
 	/// reset internal variables
 	void ResetState();
@@ -95,7 +107,7 @@ public:
 	 */
 	virtual void Project(real_t& l, uint k){}
 	
-	Constraint(Solver* solver, uint n);
+	Constraint(Solver* solver, uint n, ID _id = ID(), real_t _scale = 1.0);
 };
 
 /** fixation constraint for scalar
@@ -103,10 +115,11 @@ public:
 struct FixConS : Constraint{
 	real_t	desired;
 	virtual void CalcDeviation();
-	FixConS(Solver* solver, SVar* var);
+	FixConS(Solver* solver, ID id, SVar* var, real_t _scale);
 };
+
 struct MatchConS : Constraint{
-	MatchConS(Solver* solver, SVar* var0, SVar* var1);
+	MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale);
 };
 
 /** fixation constraint for vector3
@@ -114,10 +127,11 @@ struct MatchConS : Constraint{
 struct FixConV3 : Constraint{
 	vec3_t	desired;
 	virtual void CalcDeviation();
-	FixConV3(Solver* solver, V3Var* var);
+	FixConV3(Solver* solver, ID id, V3Var* var, real_t _scale);
 };
+
 struct MatchConV3 : Constraint{
-	MatchConV3(Solver* solver, V3Var* var0, V3Var* var1);
+	MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale);
 };
 
 /** fixation constraint for quaternion
@@ -125,13 +139,14 @@ struct MatchConV3 : Constraint{
 struct FixConQ : Constraint{
 	quat_t	desired;
 	virtual void CalcDeviation();
-	FixConQ(Solver* solver, QVar* var);
+	FixConQ(Solver* solver, ID id, QVar* var, real_t _scale);
 };
+
 /** fixation constraint for quaternion
  */
 struct MatchConQ : Constraint{
 	virtual void CalcDeviation();
-	MatchConQ(Solver* solver, QVar* var0, QVar* var1);
+	MatchConQ(Solver* solver, ID id, QVar* var0, QVar* var1, real_t _scale);
 };
 
 
@@ -144,7 +159,18 @@ struct RangeConS : Constraint{
 	virtual void CalcDeviation();
 	virtual void Project(real_t& l, uint k);
 
-	RangeConS(Solver* solver, SVar* var);
+	RangeConS(Solver* solver, ID id, SVar* var, real_t _scale);
+};
+
+class RangeConV3 : public Constraint{
+public:
+	vec3_t	_min, _max;
+	bool	on_lower[3], on_upper[3];
+
+	virtual void CalcDeviation();
+	virtual void Project(real_t& l, uint k);
+
+	RangeConV3(Solver* solver, ID id, V3Var* var, real_t _scale);
 };
 
 /**	range constraint for difference of scalar variables
@@ -156,7 +182,87 @@ struct DiffConS : Constraint{
 	virtual void CalcDeviation();
 	virtual void Project(real_t& l, uint k);
 
-	DiffConS(Solver* solver, SVar* var0, SVar* var1);
+	DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale);
+};
+
+/** general linear inequality constraint of scalar variables
+	A0 * x0 + A1 * x1 <= B
+ */
+/*struct LinearConS : Constraint{
+	
+};*/
+
+/** fix vector on plane
+	n^T (x - o) = 0
+	n: normal of plane
+	o: origin of plane
+ */
+class FixConPlane : public Constraint{
+public:
+	vec3_t	normal;
+	vec3_t  origin;
+	
+	virtual void CalcCoef();
+	virtual void CalcDeviation();
+	FixConPlane(Solver* solver, ID id, V3Var* var, real_t _scale);
+};
+
+class RangeConPlane : public Constraint{
+public:
+	vec3_t  normal;
+	vec3_t  origin;
+	real_t  _min, _max;
+	bool	on_lower, on_upper;
+
+	virtual void CalcCoef();
+	virtual void CalcDeviation();
+	virtual void Project(real_t& l, uint k);
+	RangeConPlane(Solver* solver, ID id, V3Var* var, real_t _scale);
+};
+
+/** complementarity constraint of scalar variables
+	x0 * x1 = 0
+ */
+class ComplConS : public Constraint{
+public:
+	virtual void CalcCoef();
+	virtual void CalcDeviation();
+
+	ComplConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale);
+};
+
+/** range constraint on euclidean distance
+	l <= ||x - y|| <= u
+ */
+class DistanceConV3 : public Constraint{
+public:
+	vec3_t	diff;
+	real_t	diff_norm;
+	real_t  _min, _max;
+	bool	on_lower, on_upper;
+
+	virtual void CalcCoef();
+	virtual void CalcDeviation();
+	virtual void Project(real_t& l, uint k);
+	DistanceConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale);
+};
+
+/**
+	C1 continuity constraint
+ */
+class C1ConS : public Constraint{
+public:
+	real_t h;
+
+	virtual void CalcCoef();
+	C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, SVar* v1, real_t _scale);
+};
+class C1ConV3 : public Constraint{
+public:
+	real_t h;
+
+	virtual void CalcCoef();
+	C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, V3Var* v1, real_t _scale);
 };
 
 }

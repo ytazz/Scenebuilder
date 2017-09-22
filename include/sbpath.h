@@ -45,8 +45,9 @@ public:
 	// creates current directory path
 	static Path Current();
 
-	Path& operator=(const char*   p);
-	Path& operator=(const string& p);
+	Path& operator= (const char*   p);
+	Path& operator= (const string& p);
+	Path& operator+=(const Path& p1 );
 
 	Path(){}
 	Path(const string& s);

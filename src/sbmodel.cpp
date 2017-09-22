@@ -82,7 +82,6 @@ Model::Model(){
 }
 
 void Model::CalcBound(){
-	Vec3f bbmin, bbmax;
 	float inf = numeric_limits<float>::max();
 	for(uint k = 0; k < 3; k++){
 		bbmin[k] =  inf;
@@ -158,7 +157,7 @@ bool ModelContainer::LoadModel(int id, const string& filename, MeshProp* meshPro
 	UTRef<ModelLoader> loader;
 	
 	if(ext == "stl")
-		loader = new LoaderSTL(meshProp->stl_color);
+		loader = new LoaderSTL(meshProp->stl_color, meshProp->stl_binary);
 	else if(ext == "3ds")
 		loader = new Loader3DS();
 	else if(ext == "obj")

@@ -20,12 +20,12 @@ Solver::Param::Param(){
 	verbose        = false;
 	methodMajor    = Solver::Method::Major::GaussNewton1;
 	methodMinor    = Solver::Method::Minor::GaussSeidel;
-	numIterMajor   = 10;
-	numIterMinor   = 10;
 	minStepSize    =  0.01;
 	maxStepSize    = 10.0;
 	cutoffStepSize =  0.001;
 	hastyStepSize  = false;
+
+	numIter.resize(10, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,39 +39,212 @@ Solver::State::State(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-Solver::Solver(){
+Solver::ConstraintInfo::ConstraintInfo(){
+	num        = 0;
+	numEnabled = 0;
+	numActive  = 0;
+	error      = 0.0;
+}
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+Solver::Solver(){
+	ready = false;
 }
 
 void Solver::AddVar(Variable* var){
 	var->solver = this;
 	vars.push_back(var);
+	ready = false;
 }
 
 void Solver::DeleteVar(Variable* var){
 	vars.erase(find(vars.begin(), vars.end(), var));
+	ready = false;
 }
 
 void Solver::AddCon(Constraint* con){
 	con->solver = this;
 	cons.push_back(con);
+	ready = false;
 }
 
 void Solver::DeleteCon(Constraint* con){
 	cons.erase(find(cons.begin(), cons.end(), con));
+	ready = false;
+}
+
+void Solver::SetPriority(ID mask, uint level){
+	//int match = 0;
+	//for(uint i = 0; i < cons.size(); i++){
+	//	Constraint* con = cons[i];
+	//	if(mask.Match(con)){
+	//		con->SetPriority(level);
+	//		match++;
+	//	}
+	//}
+	//if(match)
+	//	solver->ready = false;
+	//return match;
+	Request req;
+	req.type  = Request::Type::SetPriority;
+	req.mask  = mask;
+	req.level = level;
+	requests.push_back(req);
+	ready = false;
+}
+
+void Solver::Enable(ID mask, bool enable){
+	//int match = 0;
+	//for(uint i = 0; i < cons.size(); i++){
+	//	Constraint* con = cons[i];
+	//	if(mask.Match(con)){
+	//		con->enabled = enable;
+	//		match++;
+	//	}
+	//}
+	//return match;
+	Request req;
+	req.type   = Request::Type::Enable;
+	req.mask   = mask;
+	req.enable = enable;
+	requests.push_back(req);
+	ready = false;
+}
+
+void Solver::Lock(ID mask, bool lock){
+	//int match = 0;
+	//for(uint i = 0; i < vars.size(); i++){
+	//	Variable* var = vars[i];
+	//	if(mask.Match(var)){
+	//		var->Lock(lock);
+	//		match++;
+	//	}
+	//}
+	//return match;
+	Request req;
+	req.type   = Request::Type::Lock;
+	req.mask   = mask;
+	req.lock   = lock;
+	requests.push_back(req);
+	ready = false;
+}
+
+void Solver::SetCorrectionRate(ID mask, real_t rate, real_t lim){
+	//int match = 0;
+	//for(uint i = 0; i < cons.size(); i++){
+	//	Constraint* con = cons[i];
+	//	if(mask.Match(con)){
+	//		con->corrRate = rate;
+	//		con->corrMax  = lim;
+	//		match++;
+	//	}
+	//}
+	//return match;
+	Request req;
+	req.type   = Request::Type::SetCorrectionRate;
+	req.mask   = mask;
+	req.rate   = rate;
+	req.lim    = lim;
+	requests.push_back(req);
+	ready = false;
+}
+
+real_t Solver::CalcError(ID mask, bool sum_or_max){
+	real_t E = 0.0;
+	for(uint i = 0; i < cons.size(); i++){
+		Constraint* con = cons[i];
+		if(mask.Match(con) && con->enabled && con->active){
+			for(int k = 0; k < con->nelem; k++){
+				if(sum_or_max)
+					 E += con->e[k];
+				else E = std::max(E, con->e[k]);
+			}
+		}
+	}
+	return E;
 }
 
 void Solver::Clear(){
-	vars  .clear();
-	cons  .clear();
-	links .clear();
+	vars    .clear();
+	cons    .clear();
+	links   .clear();
 
 	state = State();
+}
+
+void Solver::Reset(){
+	for(uint i = 0; i < vars.size(); i++)
+		vars[i]->Reset();
 }
 
 void Solver::Init(){
 	//state.obj     = CalcObjective();
 	//state.objDiff = inf;
+
+	// リクエスト処理
+	for(uint i = 0; i < (uint)requests.size(); i++){
+		Request& req = requests[i];
+		for(uint j = 0; j < (uint)vars.size(); j++){
+			Variable* var = vars[j];
+			if(!req.mask.Match(var))
+				continue;
+			if(req.type == Request::Type::Lock)
+				var->locked = req.lock;
+		}
+		for(uint j = 0; j < (uint)cons.size(); j++){
+			Constraint* con = cons[j];
+			if(!req.mask.Match(con))
+				continue;
+			if(req.type == Request::Type::Enable){
+				con->enabled = req.enable;
+			}
+			if(req.type == Request::Type::SetPriority){
+				con->level = req.level;
+			}
+			if(req.type == Request::Type::SetCorrectionRate){
+				con->corrRate = req.rate;
+				con->corrMax  = req.lim;
+			}
+		}
+	}
+
+	// 優先度の最大値を求める
+	int maxLevel = 0;
+	int maxType  = 0;
+	for(uint i = 0; i < cons.size(); i++){
+		maxLevel = std::max(maxLevel, cons[i]->level);
+		maxType  = std::max(maxType , cons[i]->type );
+	}
+
+	infoType  .resize(maxType  + 1);
+	infoLevel .resize(maxLevel + 1);
+	cons_level.resize(maxLevel + 1);
+
+	// レベル数とmaxIterのサイズが合わせてデフォルト値をセット
+	//uint sz = (uint)maxIter.size();
+	//uint sznew = maxLevel+1;
+	//if(sz < sznew){
+	//	maxIter.resize(sznew);
+	//	for(uint i = sz; i < sznew; i++) 
+	//		maxIter[i] = maxIterDefault;
+	//}
+
+	// ログ有効時
+	//int i = Logging::MajorLoop;
+	//if(doLog[i]){
+	//	if(!file[i].is_open()){
+	//		file[i].open("log_major.csv");
+	//		LogLabel(i);
+	//	}
+	//	LogValue(i);
+	//}
+	//else{
+	//	if(file[i].is_open())
+	//		file[i].close();
+	//}
+
+	ready = true;
 }
 
 real_t Solver::CalcUpdatedObjective(real_t alpha){
@@ -102,7 +275,7 @@ real_t Solver::CalcObjective(){
 		
 		if(!con->active)
 			continue;
-		
+
 		obj += con->y.square();
 	}
 
@@ -129,7 +302,7 @@ real_t Solver::CalcStepSize(){
 
 	if(c[2] > c[0]){
 		while( c[1] > c[0] && a[1] - a[0] > param.cutoffStepSize * (amax - amin) ){
-			a[1] = a[0] + 0.5*(a[1] - a[0]);
+			a[1] = a[0] + 0.5 * (a[1] - a[0]);
 			c[1] = CalcUpdatedObjective(a[1]);
 		}
 		if(param.hastyStepSize)
@@ -173,21 +346,42 @@ void Solver::CalcDirection(){
 	timer.CountUS();
 	vars_unlocked.clear();
 	cons_active  .clear();
+	for(uint i = 0; i < (uint)cons_level.size(); i++)
+		cons_level[i].clear();
 
 	for(uint j = 0; j < vars.size(); j++){
 		Variable* var = vars[j];
 		if(!var->locked)
 			vars_unlocked.push_back(var);
 	}
+
+	for(uint i = 0; i < (uint)infoType .size(); i++) infoType [i] = ConstraintInfo();
+	for(uint i = 0; i < (uint)infoLevel.size(); i++) infoLevel[i] = ConstraintInfo();
+
 	for(uint i = 0; i < cons.size(); i++){
 		Constraint* con = cons[i];
-		if(!con->enabled) continue;
+		infoType [con->type ].num++;
+		infoLevel[con->level].num++;
+
+		if(con->enabled){
+			 infoType [con->type ].numEnabled++;
+			 infoLevel[con->level].numEnabled++;
+		}
+		else continue;
 
 		con->CalcCoef ();
 		con->CalcError();
 
-		if(con->active)
+		if(con->active){
+			infoType [con->type ].numActive++;
+			infoType [con->type ].error += con->y.norm();
+			
+			infoLevel[con->level].numActive++;
+			infoLevel[con->level].error += con->y.norm();
+
 			cons_active.push_back(con);
+			cons_level[con->level].push_back(con);
+		}
 	}
 	int timeCoef = timer.CountUS();
 	//DSTR << "tcoef " << timeCoef << endl;
@@ -198,7 +392,7 @@ void Solver::CalcDirection(){
 		}
 		for(uint i = 0; i < cons_active.size(); i++){
 			Constraint* con = cons_active[i];
-			for(uint k = 0; k < con->nelem; k++)
+			for(int k = 0; k < con->nelem; k++)
 				con->UpdateGradient(k);
 		}	
 	}
@@ -220,8 +414,6 @@ void Solver::CalcDirection(){
 				dimcon += con->nelem;
 			}
 			int t1 = timer.CountUS();
-
-			//DSTR << "dimcon " << dimcon << " dimvar " << dimvar << endl;
 
 			// 変数あるいは拘束の数が不正
 			if(dimvar == 0 || dimcon == 0)
@@ -300,10 +492,10 @@ void Solver::CalcDirection(){
 			for(uint i = 0; i < cons_active  .size(); i++) cons_active[i]->CalcCorrection();
 			for(uint i = 0; i < cons_active  .size(); i++) cons_active[i]->ResetState();
 
-			for(int n = 0; n < param.numIterMinor; n++){
+			for(int n = 0; n < param.numIter[0]; n++){
 				for(uint j = 0; j < vars.size(); j++){
 					Variable* var = vars[j];
-					for(uint k = 0; k < var->nelem; k++)
+					for(int k = 0; k < var->nelem; k++)
 						var->UpdateVar3(k);
 				}
 
@@ -314,7 +506,7 @@ void Solver::CalcDirection(){
 
 					for(uint i = 0; i < cons_active.size(); i++){
 						Constraint* con = cons_active[i];
-						for(uint k = 0; k < con->nelem; k++)
+						for(int k = 0; k < con->nelem; k++)
 							con->UpdateConjugate(k);
 					}
 
@@ -332,10 +524,10 @@ void Solver::CalcDirection(){
 		for(uint i = 0; i < cons_active.size(); i++){
 			cons_active[i]->ResetState();
 		}
-		for(int n = 0; n < param.numIterMinor; n++){
+		for(int n = 0; n < param.numIter[0]; n++){
 			for(uint i = 0; i < cons_active.size(); i++){
 				Constraint* con = cons_active[i];
-				for(uint k = 0; k < con->nelem; k++)
+				for(int k = 0; k < con->nelem; k++)
 					con->UpdateMultiplier(k);
 			}
 			if(param.methodMinor == Method::Minor::Jacobi){
@@ -344,15 +536,61 @@ void Solver::CalcDirection(){
 				}
 				for(uint j = 0; j < vars.size(); j++){
 					Variable* var = vars[j];
-					for(uint k = 0; k < var->nelem; k++)
+					for(int k = 0; k < var->nelem; k++)
 						var->UpdateError(k);
 				}
 			}
 		}
 	}
+	if(param.methodMajor == Method::Major::Prioritized){
+		for(int i = 0; i < (int)cons_active.size(); i++)
+			cons[i]->CalcCorrection();
+
+		for(int i = 0; i < (int)cons_active.size(); i++)
+			cons[i]->ResetState();
+
+		for(int L = (int)infoLevel.size()-1; L >= 0; L--){
+			timer.CountUS();
+	
+			for(int n = 1; n <= param.numIter[L]; n++){
+				for(int l = 0; l <= L; l++){
+					for(int i = 0; i < (int)cons_level[l].size(); i++){
+						Scenebuilder::Constraint* con = cons_level[l][i];
+						for(int k = 0; k < con->nelem; k++)
+							con->UpdateMultiplier(k);
+					}
+				}
+			
+				/*
+				// ガウス-ザイデルの並列計算
+				// 同一phase内（干渉しない拘束）は並列実行する
+				for(int phase = 0; phase < (int)cons_arranged.size(); phase++){
+					int ncon = (int)cons_arranged[phase].size();
+					#pragma omp parallel for if(ncon > 10)
+					for(int i = 0; i < ncon; i++){
+						Constraint* con = cons_arranged[phase][i];
+						if(!con->enabled)
+							continue;
+						if(!con->active)
+							continue;
+						if((int)con->level > l)
+							continue;
+						for(uint k = 0; k < con->nelem; k++)
+							con->UpdateMultiplierCorr(k);
+					}
+				}
+				*/
+			}
+
+			//DSTR << "level " << L << ": " << ptimer.CountUS() << endl;
+		}
+	}
 }
 
 void Solver::Step(){
+	if(!ready)
+		Init();
+
 	// 更新方向を計算
 	timer.CountUS();
 	for(uint j = 0; j < vars.size(); j++)
@@ -364,9 +602,6 @@ void Solver::Step(){
 	timer.CountUS();
 	state.stepSize = CalcStepSize();
 	state.timeStep = timer.CountUS();
-
-	//DSTR << " tdir "  << state.timeDir
-	//	 << " tstep " << state.timeStep << endl;
 
 	// 変数を更新
 	for(uint j = 0; j < vars.size(); j++){
@@ -380,11 +615,12 @@ void Solver::Step(){
 	if(param.verbose)
 		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
 	state.iterCount++;
-}
 
-void Solver::Solve(){
-	for(int n = 0; n < param.numIterMajor; n++)
-		Step();
+	// ログ有効時
+	//int i = Logging::MajorLoop;
+ 	//if(doLog[i]){
+	//	LogValue(i);
+	//}
 }
 
 }

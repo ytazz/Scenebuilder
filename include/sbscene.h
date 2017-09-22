@@ -379,18 +379,20 @@ struct MeshProp : ShapeProp{
 	vec3_t	    prismdir;		///< 角柱化の向き
 	vec3_t      mirror;         ///< 鏡像反転の方向
 	bool        stl_color;      ///< STLファイルから色情報を取得
+	bool        stl_binary;     ///< binary STL
 
 	static string GetName(){ return "mesh"; }
 	static void Construct(Property* p){ new(p) MeshProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(MeshProp), &Construct, ShapeProp::id);
 		db->GetType(id)
-			->AddAttr("filename" , Primitive::String, 256, OFFSET(MeshProp, filename ), ""           )
-			->AddAttr("scale"    , Primitive::Real,     1, OFFSET(MeshProp, scale    ), 0.0          )
-			->AddAttr("prism"    , Primitive::Bool,     1, OFFSET(MeshProp, prism    ), false        )
-			->AddAttr("prismdir" , Primitive::Vec3,     1, OFFSET(MeshProp, prismdir ), vec3_t(0,0,1))
-			->AddAttr("mirror"   , Primitive::Vec3,     1, OFFSET(MeshProp, mirror   ), vec3_t(0,0,0))
-			->AddAttr("stl_color", Primitive::Bool,     1, OFFSET(MeshProp, stl_color), false        );
+			->AddAttr("filename"  , Primitive::String, 256, OFFSET(MeshProp, filename  ), ""           )
+			->AddAttr("scale"     , Primitive::Real,     1, OFFSET(MeshProp, scale     ), 0.0          )
+			->AddAttr("prism"     , Primitive::Bool,     1, OFFSET(MeshProp, prism     ), false        )
+			->AddAttr("prismdir"  , Primitive::Vec3,     1, OFFSET(MeshProp, prismdir  ), vec3_t(0,0,1))
+			->AddAttr("mirror"    , Primitive::Vec3,     1, OFFSET(MeshProp, mirror    ), vec3_t(0,0,0))
+			->AddAttr("stl_color" , Primitive::Bool,     1, OFFSET(MeshProp, stl_color ), false        )
+			->AddAttr("stl_binary", Primitive::Bool,     1, OFFSET(MeshProp, stl_binary), true         );
 	}
 };
 
