@@ -191,7 +191,7 @@ void IKSolver::CompPosIK(){
 	param.numIterMajor   = numIter;
 	param.minStepSize    = 0.0;
 	param.maxStepSize    = 1.0;
-	param.cutoffStepSize = 1.0e-10;
+	param.cutoffStepSize = 0.0;
 	param.hastyStepSize  = true;
 	
 	Prepare();

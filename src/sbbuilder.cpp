@@ -10,6 +10,7 @@ int ImportProp::id;
 int ModuleProp::id;
 int LinkProp  ::id;
 int ForProp   ::id;
+int VarProp   ::id;
 
 //-------------------------------------------------------------------------------------------------
 
@@ -20,7 +21,8 @@ Builder::Attrs::Attrs(){
 
 Builder::Builder(){
 	scene = 0;
-	attrStack.push_back(Attrs());
+	//attrStack.push_back(Attrs());
+	ctxStack.push_back(Context());
 }
 
 Builder::~Builder(){
@@ -32,35 +34,46 @@ void Builder::Register(TypeDB* db){
 	ModuleProp::Register(db);
 	LinkProp  ::Register(db);
 	ForProp   ::Register(db);
+	VarProp   ::Register(db);
 }
 
 //-------------------------------------------------------------------------------------------------
 
 string Builder::GetAttrValue(string name){
 	string val;
-	Attrs::iterator it;
+	
 	// find in temporary attributes
-	it = tempAttr.find(name);
-	if(it != tempAttr.end())
-		val = it->second;
+	{
+		Attrs::iterator it = tempAttr.find(name);
+		if(it != tempAttr.end())
+			val = it->second;
+	}
 		
 	// if not found, find in global attributes
 	if(val.empty()){
-		for(AttrStack::reverse_iterator rit = attrStack.rbegin(); rit != attrStack.rend(); rit++){
-			it = rit->find(name);
-			if(it != rit->end())
+		for(ContextStack::reverse_iterator rit = ctxStack.rbegin(); rit != ctxStack.rend(); rit++){
+			Attrs::iterator it = rit->attrs.find(name);
+			if(it != rit->attrs.end()){
 				val = it->second;
+				break;
+			}
 		}
 	}
 	
-	// 登録されているループ変数を変数値に置換
-	for(Vars::iterator it = vars.begin(); it != vars.end(); it++){
-		string varname = string("$") + it->first;
-		string varval  = it->second;
-		size_t pos = val.find(varname);
-		if(pos == string::npos)
-			continue;
-		val.replace(pos, varname.size(), varval);
+	// 登録されている変数を変数値に置換
+	for(ContextStack::reverse_iterator rit = ctxStack.rbegin(); rit != ctxStack.rend(); rit++){
+		for(Vars::iterator it = rit->vars.begin(); it != rit->vars.end(); it++){
+			string varname = string("$") + it->first;
+			string varval  = it->second;
+			size_t pos = 0;
+			while(true){
+				pos = val.find(varname, pos);
+				if(pos == string::npos)
+					break;
+				val.replace(pos, varname.size(), varval);
+				pos++;
+			}
+		}
 	}
 
 	return val;
@@ -180,14 +193,14 @@ void Builder::Create(int typeId, string n){
 	tempAttr.clear();
 
 	// trnとrotは階層ごとのローカル座標なので，階層を下るたびに原点に設定する
-	attrStack.push_back(Attrs());
+	ctxStack.push_back(Context());
 }
 
 void Builder::End(){
 	// move focus to parent object
 	curObjId = scene->GetParent(curObjId);
 	// pop global attribute 
-	attrStack.pop_back();
+	ctxStack.pop_back();
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -198,7 +211,7 @@ void Builder::ProcessNode(int nodeId){
 	// "attr"タグの場合，XMLノードの属性をglobal attributeに加える
 	if(node->name == "attr"){
 		for(XMLNode::Attrs::iterator it = node->attrs.begin(); it != node->attrs.end(); it++)
-			attrStack.back()[it->first] = it->second;
+			ctxStack.back().attrs[it->first] = it->second;
 		return;
 	}
 
@@ -316,6 +329,13 @@ void Builder::ProcessNode(int nodeId){
 		// 変数削除
 		UnregisterVar(string(prop.var));
 	}
+	else if(type->id == VarProp::id){
+		VarProp prop;
+		FillProperty(type, &prop);
+
+		RegisterVar(string(prop.name));
+		SetVarValue(string(prop.name), prop.value);
+	}
 
 	// clear temporary attributes
 	tempAttr.clear();
@@ -324,22 +344,22 @@ void Builder::ProcessNode(int nodeId){
 void Builder::RegisterVar(string name){
 	if(name.empty())
 		return;
-	vars[name] = string();
+	ctxStack.back().vars[name] = string();
 }
 
 void Builder::UnregisterVar(string name){
 	if(name.empty())
 		return;
-	Vars::iterator it = vars.find(name);
-	vars.erase(it);
+	Vars::iterator it = ctxStack.back().vars.find(name);
+	ctxStack.back().vars.erase(it);
 }
 
 void Builder::SetVarValue(string name, int val){
 	if(name.empty())
 		return;
 	stringstream ss;
-	Vars::iterator it = vars.find(name);
-	if(it != vars.end()){
+	Vars::iterator it = ctxStack.back().vars.find(name);
+	if(it != ctxStack.back().vars.end()){
 		ss << val;
 		it->second = ss.str();
 	}
