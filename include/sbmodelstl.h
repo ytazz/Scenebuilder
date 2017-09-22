@@ -16,6 +16,7 @@ public:
 	};
 
 	bool            useColor;
+	bool            binary;
 	vector<Facet>	facets;
 
 	string		    name;
@@ -38,7 +39,7 @@ public:
 	virtual void Save   (const string& filename);
 	virtual void Convert(Model* model, const Affinef& aff);
 
-	LoaderSTL(bool _useColor);
+	LoaderSTL(bool _useColor, bool _binary);
 
 };
 

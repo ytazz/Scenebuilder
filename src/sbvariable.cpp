@@ -3,9 +3,10 @@
 
 namespace Scenebuilder{;
 
-Variable::Variable(uint _type, Solver* solver){
+Variable::Variable(uint _type, Solver* solver, ID _id, real_t _scale):ID(_id){
 	solver->AddVar(this);
-	
+	SetScale(_scale);
+
 	type = _type;
 	switch(type){
 	case Scalar:	nelem = 1; break;
@@ -22,6 +23,13 @@ Variable::Variable(uint _type, Solver* solver){
 
 void Variable::Lock(bool on){
 	locked = on;
+}
+
+void Variable::SetScale(real_t sc){
+	scale      = sc;
+	scale2     = sc*sc;
+	scale_inv  = (real_t)1.0/sc;
+	scale_inv2 = scale_inv*scale_inv;
 }
 
 void Variable::ResetState(){
@@ -46,7 +54,7 @@ void Variable::Prepare(){
 	}
 	
 	// 対角成分の逆数
-	for(uint k = 0; k < nelem; k++){
+	for(int k = 0; k < nelem; k++){
 		Jinv[k] = (1.0/(J[k] + eps));//(J[k] > eps ? (real_t)1.0/J[k] : (real_t)0.0);
 	}
 }
@@ -111,7 +119,7 @@ void Variable::UpdateConjugate3(uint k, real_t ddzd){
 }
 
 void Variable::RegisterDelta(const vvec_t& dxvec){
-	for(uint n = 0; n < nelem; n++)
+	for(int n = 0; n < nelem; n++)
 		dx[n] = dxvec[index+n];
 }
 

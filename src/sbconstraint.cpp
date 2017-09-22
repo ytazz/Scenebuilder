@@ -3,14 +3,18 @@
 
 namespace Scenebuilder{;
 
-Constraint::Constraint(Solver* solver, uint n){
-	nelem	= n;
-	index   = 0;
-	enabled = true;
-	active  = true;
-	
-	corrRate = 0.1;
-	corrMax  = FLT_MAX;
+Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
+	nelem	   = n;
+	level      = 0;
+	index      = 0;
+	enabled    = true;
+	active     = true;
+	scale      = _scale;
+	scale2     = scale * scale;
+	scale_inv  = 1.0 / scale;
+	scale2_inv = scale_inv * scale_inv;
+	corrRate   = 0.1;
+	corrMax    = FLT_MAX;
 
 	solver->AddCon(this);
 }
@@ -22,36 +26,68 @@ SLink* Constraint::AddSLink(Variable* var, real_t coef){
 	return link;
 }
 
-XLink* Constraint::AddXLink(Variable* var){
-	XLink* link = new XLink(var, this);
+C2Link* Constraint::AddC2Link(Variable* var){
+	C2Link* link = new C2Link(var, this);
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
-CLink* Constraint::AddCLink(Variable* var, vec3_t coef ){
-	CLink* link = new CLink(var, this, coef);
+R2Link* Constraint::AddR2Link(Variable* var){
+	R2Link* link = new R2Link(var, this);
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
-RLink* Constraint::AddRLink(Variable* var){
-	RLink* link = new RLink(var, this);
+M2Link* Constraint::AddM2Link(Variable* var){
+	M2Link* link = new M2Link(var, this);
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
+}
+
+X3Link* Constraint::AddX3Link(Variable* var){
+	X3Link* link = new X3Link(var, this);
+	link->Connect();
+	solver->links.push_back(link);
+	return link;
+}
+
+C3Link* Constraint::AddC3Link(Variable* var){
+	C3Link* link = new C3Link(var, this);
+	link->Connect();
+	solver->links.push_back(link);
+	return link;
+}
+
+R3Link* Constraint::AddR3Link(Variable* var){
+	R3Link* link = new R3Link(var, this);
+	link->Connect();
+	solver->links.push_back(link);
+	return link;
+}
+
+M3Link* Constraint::AddM3Link(Variable* var){
+	M3Link* link = new M3Link(var, this);
+	link->Connect();
+	solver->links.push_back(link);
+	return link;
+}
+
+void Constraint::SetPriority(uint newlv){
+	level = newlv;
 }
 
 void Constraint::CalcError(){
 	if(enabled){
 		CalcDeviation();
-		//for(uint k = 0; k < nelem; k++)
-		//	e[k] = 0.5 * y[k] * y[k];
+		for(int k = 0; k < nelem; k++)
+			e[k] = 0.5 * y[k] * y[k];
 	}
 	else{
 		y.clear();
-		//e.clear();
+		e.clear();
 	}
 }
 
@@ -62,7 +98,7 @@ void Constraint::CalcDeviation(){
 }
 
 void Constraint::RegisterDeviation(vvec_t& yvec){
-	for(uint n = 0; n < nelem; n++)
+	for(int n = 0; n < nelem; n++)
 		yvec[index+n] = y[n];
 }
 
@@ -84,7 +120,7 @@ void Constraint::CalcCorrection(){
 	}
 	
 	// 対角成分の逆数
-	for(uint k = 0; k < nelem; k++){
+	for(int k = 0; k < nelem; k++){
 		Jinv[k] = (J[k] > eps ? (real_t)1.0/J[k] : (real_t)0.0);
 	}
 
@@ -93,13 +129,13 @@ void Constraint::CalcCorrection(){
 	dyd = -corrRate * y;
 	const real_t dyd_lim = corrMax;
 	real_t dyd_max = 0.0;
-	for(uint k = 0; k < nelem; k++)
+	for(int k = 0; k < nelem; k++)
 		dyd_max = std::max(dyd_max, std::abs(dyd[k]));
 	
 	if(dyd_max > dyd_lim)
 		dyd *= (dyd_lim / dyd_max);
 
-	for(uint k = 0; k < nelem; k++){
+	for(int k = 0; k < nelem; k++){
 		for(uint i = 0; i < links.size(); i++){
 			links[i]->Backward(k, dyd[k], &Variable::UpdateConjugate3);
 		}
@@ -157,7 +193,7 @@ void Constraint::UpdateConjugate(uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConS::FixConS(Solver* solver, SVar* var):Constraint(solver, 1){
+FixConS::FixConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, _scale){
 	desired = 0.0;
 	AddSLink(var, 1.0);
 }
@@ -168,14 +204,14 @@ void FixConS::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConS::MatchConS(Solver* solver, SVar* var0, SVar* var1):Constraint(solver, 1){
+MatchConS::MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-FixConV3::FixConV3(Solver* solver, V3Var* var):Constraint(solver, 3){
+FixConV3::FixConV3(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 3, id, _scale){
 	AddSLink(var, 1.0);
 }
 
@@ -185,14 +221,14 @@ void FixConV3::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConV3::MatchConV3(Solver* solver, V3Var* var0, V3Var* var1):Constraint(solver, 3){
+MatchConV3::MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 3, id, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-FixConQ::FixConQ(Solver* solver, QVar* var):Constraint(solver, 3){
+FixConQ::FixConQ(Solver* solver, ID id, QVar* var, real_t _scale):Constraint(solver, 3, id, _scale){
 	AddSLink(var, 1.0);
 }
 
@@ -205,7 +241,7 @@ void FixConQ::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConQ::MatchConQ(Solver* solver, QVar* var0, QVar* var1):Constraint(solver, 3){
+MatchConQ::MatchConQ(Solver* solver, ID id, QVar* var0, QVar* var1, real_t _scale):Constraint(solver, 3, id, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
@@ -219,7 +255,7 @@ void MatchConQ::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConS::RangeConS(Solver* solver, SVar* var):Constraint(solver, 1){
+RangeConS::RangeConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, _scale){
 	AddSLink(var, 1.0);
 	real_t inf = numeric_limits<real_t>::max();
 	_min = -inf;
@@ -250,7 +286,43 @@ void RangeConS::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-DiffConS::DiffConS(Solver* solver, SVar* var0, SVar* var1):Constraint(solver, 1){
+RangeConV3::RangeConV3(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 3, id, _scale){
+	AddSLink(var, 1.0);
+	real_t inf = numeric_limits<real_t>::max();
+	for(int i = 0; i < 3; i++){
+		_min    [i] = -inf;
+		_max    [i] =  inf;
+		on_lower[i] = false;
+		on_upper[i] = false;
+	}
+}
+
+void RangeConV3::CalcDeviation(){
+	active = false;
+	for(int i = 0; i < 3; i++){
+		real_t s = ((V3Var*)links[0]->var)->val[i];
+		on_lower[i] = (s < _min[i]);
+		on_upper[i] = (s > _max[i]);
+		active |= on_lower[i] | on_upper[i];
+		if(on_lower[i])
+			y[i] = s - _min[i];
+		if(on_upper[i])
+			y[i] = s - _max[i];
+	}
+}
+
+void RangeConV3::Project(real_t& l, uint k){
+	if(on_upper[k] && l > 0.0)
+		l = 0.0;
+	if(on_lower[k] && l < 0.0)
+		l = 0.0;
+	if(!on_upper[k] && !on_lower[k])
+		l = 0.0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+DiffConS::DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 	real_t inf = numeric_limits<real_t>::max();
@@ -278,6 +350,144 @@ void DiffConS::Project(real_t& l, uint k){
 		l = 0.0;
 	if(!on_upper && !on_lower)
 		l = 0.0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+FixConPlane::FixConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddR3Link(var);
+}
+
+void FixConPlane::CalcCoef(){
+	((R3Link*)links[0])->SetCoef(normal);
+}
+
+void FixConPlane::CalcDeviation(){
+	y[0] = normal * ( ((V3Var*)links[0]->var)->val - origin);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+RangeConPlane::RangeConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddR3Link(var);
+	normal = vec3_t(0.0, 1.0, 0.0);
+	origin = vec3_t();
+	real_t inf = numeric_limits<real_t>::max();
+	_min = -inf;
+	_max =  inf;
+	on_lower = false;
+	on_upper = false;
+}
+
+void RangeConPlane::CalcCoef(){
+	((R3Link*)links[0])->SetCoef(normal);
+}
+
+void RangeConPlane::CalcDeviation(){
+	real_t s = normal * ( ((V3Var*)links[0]->var)->val - origin);
+	on_lower = (s < _min);
+	on_upper = (s > _max);
+	active = on_lower | on_upper;
+	if(on_lower)
+		y[0] = s - _min;
+	if(on_upper)
+		y[0] = s - _max;
+}
+
+void RangeConPlane::Project(real_t& l, uint k){
+	if(on_upper && l > 0.0)
+		l = 0.0;
+	if(on_lower && l < 0.0)
+		l = 0.0;
+	if(!on_upper && !on_lower)
+		l = 0.0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+ComplConS::ComplConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddSLink(var0);
+	AddSLink(var1);
+}
+
+void ComplConS::CalcCoef(){
+	((SLink*)links[0])->SetCoef(((SVar*)links[1]->var)->val);
+	((SLink*)links[1])->SetCoef(((SVar*)links[0]->var)->val);
+}
+
+void ComplConS::CalcDeviation(){
+	y[0] = ((SVar*)links[0]->var)->val * ((SVar*)links[1]->var)->val;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+DistanceConV3::DistanceConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddR3Link(var0);
+	AddR3Link(var1);
+}
+
+void DistanceConV3::CalcCoef(){
+	diff = ((V3Var*)links[0]->var)->val - ((V3Var*)links[1]->var)->val;
+	diff_norm = diff.norm();
+	const real_t eps = 1.0e-10;
+	if(diff_norm < eps){
+		((R3Link*)links[0])->SetCoef( diff);
+		((R3Link*)links[1])->SetCoef(-diff);
+	}
+	else{
+		((R3Link*)links[0])->SetCoef( diff/diff_norm);
+		((R3Link*)links[1])->SetCoef(-diff/diff_norm);
+	}
+}
+
+void DistanceConV3::CalcDeviation(){
+	on_lower = (diff_norm < _min);
+	on_upper = (diff_norm > _max);
+	active = on_lower | on_upper;
+	if(on_lower)
+		y[0] = diff_norm - _min;
+	if(on_upper)
+		y[0] = diff_norm - _max;
+}
+
+void DistanceConV3::Project(real_t& l, uint k){
+	if(on_upper && l > 0.0)
+		l = 0.0;
+	if(on_lower && l < 0.0)
+		l = 0.0;
+	if(!on_upper && !on_lower)
+		l = 0.0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+C1ConS::C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, SVar* v1, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddSLink(p0);
+	AddSLink(v0);
+	AddSLink(p1);
+	AddSLink(v1);
+}
+void C1ConS::CalcCoef(){
+	((SLink*)links[0])->SetCoef(-1.0);
+	((SLink*)links[1])->SetCoef(-0.5 * h);
+	((SLink*)links[2])->SetCoef( 1.0);
+	((SLink*)links[3])->SetCoef(-0.5 * h);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+C1ConV3::C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, V3Var* v1, real_t _scale):Constraint(solver, 3, id, _scale){
+	AddSLink(p0);
+	AddSLink(v0);
+	AddSLink(p1);
+	AddSLink(v1);
+}
+void C1ConV3::CalcCoef(){
+	uint i = 0;
+	((SLink*)links[i++])->SetCoef(-1.0);
+	((SLink*)links[i++])->SetCoef(-0.5*h);
+	((SLink*)links[i++])->SetCoef( 1.0);
+	((SLink*)links[i++])->SetCoef(-0.5*h);
 }
 
 }

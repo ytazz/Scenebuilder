@@ -19,13 +19,13 @@ void SLink::SetCoef(real_t k){
 }
 
 void SLink::AddRowSqr(vec3_t& v){
-	for(uint k = 0; k < con->nelem; k++)
-		v[k] += coefsqr;
+	for(int k = 0; k < con->nelem; k++)
+		v[k] += coefsqr * var->scale2;
 }
 
 void SLink::AddColSqr(vec3_t& v){
-	for(uint k = 0; k < var->nelem; k++)
-		v[k] += coefsqr;
+	for(int k = 0; k < var->nelem; k++)
+		v[k] += coefsqr * var->scale2;
 }
 
 void SLink::AddError(){
@@ -37,24 +37,24 @@ void SLink::AddError(){
 void SLink::RegisterCoef(vmat_t& J){
 	uint i = con->index;
 	uint j = var->index;
-	for(uint n = 0; n < con->nelem; n++)
+	for(int n = 0; n < con->nelem; n++)
 		J[i+n][j+n] = coef;
 }	
 
-/*void SLink::UpdateVar(uint k, real_t dl){
-	var->UpdateVar(k, coef * dl);
-}
-void SLink::UpdateGradient(uint k, real_t de){
-	var->UpdateGradient(k, coef * de);
-}
-void SLink::UpdateError(uint k, real_t ddx, bool propagate){
-	con->UpdateError(k, coef * ddx, propagate);
-}*/
 void SLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(k, coef * d);
 }
+
 void SLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(k, coef * d);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void V2Link::SetCoef(vec2_t k){
+	coef = k;
+	for(uint i = 0; i < 2; i++)
+		coefsqr[i] = k[i]*k[i];
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -67,23 +67,23 @@ void V3Link::SetCoef(vec3_t k){
 
 //-------------------------------------------------------------------------------------------------
 
-void XLink::AddRowSqr(vec3_t& v){
-	v[0] += (coefsqr[2] + coefsqr[1]);
-	v[1] += (coefsqr[2] + coefsqr[0]);
-	v[2] += (coefsqr[1] + coefsqr[0]);
+void X3Link::AddRowSqr(vec3_t& v){
+	v[0] += (coefsqr[2] + coefsqr[1]) * var->scale2;
+	v[1] += (coefsqr[2] + coefsqr[0]) * var->scale2;
+	v[2] += (coefsqr[1] + coefsqr[0]) * var->scale2;
 }
 
-void XLink::AddColSqr(vec3_t& v){
-	v[0] += coefsqr[2] + coefsqr[1];
-	v[1] += coefsqr[2] + coefsqr[0];
-	v[2] += coefsqr[1] + coefsqr[0];
+void X3Link::AddColSqr(vec3_t& v){
+	v[0] += (coefsqr[2] + coefsqr[1]) * var->scale2;
+	v[1] += (coefsqr[2] + coefsqr[0]) * var->scale2;
+	v[2] += (coefsqr[1] + coefsqr[0]) * var->scale2;
 }
 
-void XLink::AddError(){
+void X3Link::AddError(){
 	con->y += coef % ((V3Var*)var)->val;
 }
 
-void XLink::RegisterCoef(vmat_t& J){
+void X3Link::RegisterCoef(vmat_t& J){
 	uint i = con->index;
 	uint j = var->index;
 	J[i+0][j+0] =  0.0    ; J[i+0][j+1] = -coef[2]; J[i+0][j+2] =  coef[1];
@@ -91,49 +91,7 @@ void XLink::RegisterCoef(vmat_t& J){
 	J[i+2][j+0] = -coef[1]; J[i+2][j+1] =  coef[0]; J[i+2][j+2] =  0.0    ;
 }	
 
-/*void XLink::UpdateVar(uint k, real_t dl){
-	if(k == 0){
-		var->UpdateVar(1, -coef[2] * dl);
-		var->UpdateVar(2,  coef[1] * dl);
-	}
-	else if(k == 1){
-		var->UpdateVar(0,  coef[2] * dl);
-		var->UpdateVar(2, -coef[0] * dl);
-	}
-	else{
-		var->UpdateVar(0, -coef[1] * dl);
-		var->UpdateVar(1,  coef[0] * dl);
-	}
-}
-void XLink::UpdateGradient(uint k, real_t dde){
-	if(k == 0){
-		var->UpdateGradient(1, -coef[2] * dde);
-		var->UpdateGradient(2,  coef[1] * dde);
-	}
-	else if(k == 1){
-		var->UpdateGradient(0,  coef[2] * dde);
-		var->UpdateGradient(2, -coef[0] * dde);
-	}
-	else{
-		var->UpdateGradient(0, -coef[1] * dde);
-		var->UpdateGradient(1,  coef[0] * dde);
-	}
-}
-void XLink::UpdateError(uint k, real_t ddx, bool propagate){
-	if(k == 0){
-		con->UpdateError(1,  coef[2] * ddx, propagate);
-		con->UpdateError(2, -coef[1] * ddx, propagate);
-	}
-	else if(k == 1){
-		con->UpdateError(0, -coef[2] * ddx, propagate);
-		con->UpdateError(2,  coef[0] * ddx, propagate);
-	}
-	else{
-		con->UpdateError(0,  coef[1] * ddx, propagate);
-		con->UpdateError(1, -coef[0] * ddx, propagate);
-	}
-}*/
-void XLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void X3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 	if(k == 0){
 		(con->*func)(1,  coef[2] * d);
 		(con->*func)(2, -coef[1] * d);
@@ -147,7 +105,8 @@ void XLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 		(con->*func)(1, -coef[0] * d);
 	}
 }
-void XLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
+
+void X3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
 	if(k == 0){
 		(var->*func)(1, -coef[2] * d);
 		(var->*func)(2,  coef[1] * d);
@@ -164,23 +123,56 @@ void XLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
 
 //-------------------------------------------------------------------------------------------------
 
-void CLink::AddRowSqr(vec3_t& v){
-	v[0] += coefsqr[0];
-	v[1] += coefsqr[1];
-	v[2] += coefsqr[2];
+void C2Link::AddRowSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[1] += coefsqr[1] * var->scale2;
 }
 
-void CLink::AddColSqr(vec3_t& v){
-	v[0] += coefsqr[0];
-	v[0] += coefsqr[1];
-	v[0] += coefsqr[2];
+void C2Link::AddColSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[0] += coefsqr[1] * var->scale2;
 }
 
-void CLink::AddError(){
+void C2Link::AddError(){
+	con->y[0] += coef[0] * ((SVar*)var)->val;
+	con->y[1] += coef[1] * ((SVar*)var)->val;
+}
+
+void C2Link::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	J[i+0][j] = coef[0];
+	J[i+1][j] = coef[1];
+}	
+
+void C2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[0] * d);
+	(con->*func)(1, coef[1] * d);
+}
+
+void C2Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+	(var->*func)(0, coef[k] * d);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void C3Link::AddRowSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[1] += coefsqr[1] * var->scale2;
+	v[2] += coefsqr[2] * var->scale2;
+}
+
+void C3Link::AddColSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[0] += coefsqr[1] * var->scale2;
+	v[0] += coefsqr[2] * var->scale2;
+}
+
+void C3Link::AddError(){
 	con->y += coef * ((SVar*)var)->val;
 }
 
-void CLink::RegisterCoef(vmat_t& J){
+void C3Link::RegisterCoef(vmat_t& J){
 	uint i = con->index;
 	uint j = var->index;
 	J[i+0][j] = coef[0];
@@ -188,45 +180,67 @@ void CLink::RegisterCoef(vmat_t& J){
 	J[i+2][j] = coef[2];
 }	
 
-/*void CLink::UpdateVar(uint k, real_t dl){
-	var->UpdateVar(0, coef[k] * dl);
-}
-void CLink::UpdateGradient(uint k, real_t dde){
-	var->UpdateGradient(0, coef[k] * dde);
-}
-void CLink::UpdateError(uint k, real_t ddx, bool propagate){
-	con->UpdateError(0, coef[0] * ddx, propagate);
-	con->UpdateError(1, coef[1] * ddx, propagate);
-	con->UpdateError(2, coef[2] * ddx, propagate);
-}*/
-void CLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void C3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[0] * d);
 	(con->*func)(1, coef[1] * d);
 	(con->*func)(2, coef[2] * d);
 }
-void CLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
+
+void C3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[k] * d);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-void RLink::AddRowSqr(vec3_t& v){
-	v[0] += coefsqr[0];
-	v[0] += coefsqr[1];
-	v[0] += coefsqr[2];
+void R2Link::AddRowSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[0] += coefsqr[1] * var->scale2;
 }
 
-void RLink::AddColSqr(vec3_t& v){
-	v[0] += coefsqr[0];
-	v[1] += coefsqr[1];
-	v[2] += coefsqr[2];
+void R2Link::AddColSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[1] += coefsqr[1] * var->scale2;
 }
 
-void RLink::AddError(){
+void R2Link::AddError(){
+	con->y[0] += coef * ((V2Var*)var)->val;
+}
+
+void R2Link::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	J[i][j+0] = coef[0];
+	J[i][j+1] = coef[1];
+}	
+
+void R2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[k] * d);
+}
+
+void R2Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+	(var->*func)(0, coef[0] * d);
+	(var->*func)(1, coef[1] * d);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void R3Link::AddRowSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[0] += coefsqr[1] * var->scale2;
+	v[0] += coefsqr[2] * var->scale2;
+}
+
+void R3Link::AddColSqr(vec3_t& v){
+	v[0] += coefsqr[0] * var->scale2;
+	v[1] += coefsqr[1] * var->scale2;
+	v[2] += coefsqr[2] * var->scale2;
+}
+
+void R3Link::AddError(){
 	con->y[0] += coef * ((V3Var*)var)->val;
 }
 
-void RLink::RegisterCoef(vmat_t& J){
+void R3Link::RegisterCoef(vmat_t& J){
 	uint i = con->index;
 	uint j = var->index;
 	J[i][j+0] = coef[0];
@@ -234,26 +248,105 @@ void RLink::RegisterCoef(vmat_t& J){
 	J[i][j+2] = coef[2];
 }	
 
-/*void RLink::UpdateVar(uint k, real_t dl){
-	var->UpdateVar(0, coef[0] * dl);
-	var->UpdateVar(1, coef[1] * dl);
-	var->UpdateVar(2, coef[2] * dl);
-}
-void RLink::UpdateGradient(uint k, real_t dde){
-	var->UpdateGradient(0, coef[0] * dde);
-	var->UpdateGradient(1, coef[1] * dde);
-	var->UpdateGradient(2, coef[2] * dde);
-}
-void RLink::UpdateError(uint k, real_t ddx, bool propagate){
-	con->UpdateError(0, coef[k] * ddx, propagate);
-}*/
-void RLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void R3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[k] * d);
 }
-void RLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
+
+void R3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[0] * d);
 	(var->*func)(1, coef[1] * d);
 	(var->*func)(2, coef[2] * d);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void M2Link::SetCoef(const mat2_t& m){
+	coef = m;
+	for(uint i = 0; i < 2; i++)for(uint j = 0; j < 2; j++)
+		coefsqr[i][j] = coef[i][j]*coef[i][j];
+}
+
+void M2Link::AddColSqr(vec3_t& v){
+	v[0] += (coefsqr[0][0] + coefsqr[1][0]) * var->scale2;
+	v[1] += (coefsqr[0][1] + coefsqr[1][1]) * var->scale2;
+}
+
+void M2Link::AddRowSqr(vec3_t& v){
+	v[0] += (coefsqr[0][0] + coefsqr[0][1]) * var->scale2;
+	v[1] += (coefsqr[1][0] + coefsqr[1][1]) * var->scale2;
+}
+
+void M2Link::AddError(){
+	con->y[0] += coef.row(0) * ((V2Var*)var)->val;
+	con->y[1] += coef.row(1) * ((V2Var*)var)->val;
+}
+
+void M2Link::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	for(int ii = 0; ii < 2; ii++)for(int jj = 0; jj < 2; jj++)
+		J[i+ii][j+jj] = coef[ii][jj];
+}	
+
+void M2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[0][k] * d);
+	(con->*func)(1, coef[1][k] * d);
+}
+
+void M2Link::Backward(uint k, real_t d, Variable  ::UpdateFunc func){
+	(var->*func)(0, coef[k][0] * d);
+	(var->*func)(1, coef[k][1] * d);
+}
+
+vec2_t M2Link::Backward(vec2_t v){
+	return coef.trans() * v;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void M3Link::SetCoef(const mat3_t& m){
+	coef = m;
+	for(uint i = 0; i < 3; i++)for(uint j = 0; j < 3; j++)
+		coefsqr[i][j] = coef[i][j]*coef[i][j];
+}
+
+void M3Link::AddColSqr(vec3_t& v){
+	v[0] += (coefsqr[0][0] + coefsqr[1][0] + coefsqr[2][0]) * var->scale2;
+	v[1] += (coefsqr[0][1] + coefsqr[1][1] + coefsqr[2][1]) * var->scale2;
+	v[2] += (coefsqr[0][2] + coefsqr[1][2] + coefsqr[2][2]) * var->scale2;
+}
+
+void M3Link::AddRowSqr(vec3_t& v){
+	v[0] += (coefsqr[0][0] + coefsqr[0][1] + coefsqr[0][2]) * var->scale2;
+	v[1] += (coefsqr[1][0] + coefsqr[1][1] + coefsqr[1][2]) * var->scale2;
+	v[2] += (coefsqr[2][0] + coefsqr[2][1] + coefsqr[2][2]) * var->scale2;
+}
+
+void M3Link::AddError(){
+	con->y += coef * ((V3Var*)var)->val;
+}
+
+void M3Link::RegisterCoef(vmat_t& J){
+	uint i = con->index;
+	uint j = var->index;
+	for(int ii = 0; ii < 3; ii++)for(int jj = 0; jj < 3; jj++)
+		J[i+ii][j+jj] = coef[ii][jj];
+}	
+
+void M3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[0][k] * d);
+	(con->*func)(1, coef[1][k] * d);
+	(con->*func)(2, coef[2][k] * d);
+}
+
+void M3Link::Backward(uint k, real_t d, Variable  ::UpdateFunc func){
+	(var->*func)(0, coef[k][0] * d);
+	(var->*func)(1, coef[k][1] * d);
+	(var->*func)(2, coef[k][2] * d);
+}
+
+vec3_t M3Link::Backward(vec3_t v){
+	return coef.trans() * v;
 }
 
 }
