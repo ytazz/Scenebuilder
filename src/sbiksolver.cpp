@@ -196,7 +196,7 @@ void IKSolver::CompPosIK(){
 	Prepare();
 	timeUpdate = 0;
 	for(int i = 0; i < numIter; i++)
-		Solver::Solve();
+		Solver::Step();
 	Finish();
 }
 
