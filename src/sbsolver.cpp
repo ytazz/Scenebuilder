@@ -544,10 +544,10 @@ void Solver::CalcDirection(){
 	}
 	if(param.methodMajor == Method::Major::Prioritized){
 		for(int i = 0; i < (int)cons_active.size(); i++)
-			cons[i]->CalcCorrection();
+			cons_active[i]->CalcCorrection();
 
 		for(int i = 0; i < (int)cons_active.size(); i++)
-			cons[i]->ResetState();
+			cons_active[i]->ResetState();
 
 		for(int L = (int)infoLevel.size()-1; L >= 0; L--){
 			timer.CountUS();

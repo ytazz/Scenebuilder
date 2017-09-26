@@ -110,40 +110,40 @@ public:
 	Constraint(Solver* solver, uint n, ID _id, real_t _scale);
 };
 
-/** fixation constraint for scalar
+/** fixation constraint
  */
 struct FixConS : Constraint{
 	real_t	desired;
 	virtual void CalcDeviation();
 	FixConS(Solver* solver, ID id, SVar* var, real_t _scale);
 };
-
-struct MatchConS : Constraint{
-	MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale);
+struct FixConV2 : Constraint{
+	vec2_t	desired;
+	virtual void CalcDeviation();
+	FixConV2(Solver* solver, ID id, V2Var* var, real_t _scale);
 };
-
-/** fixation constraint for vector3
- */
 struct FixConV3 : Constraint{
 	vec3_t	desired;
 	virtual void CalcDeviation();
 	FixConV3(Solver* solver, ID id, V3Var* var, real_t _scale);
 };
-
-struct MatchConV3 : Constraint{
-	MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale);
-};
-
-/** fixation constraint for quaternion
- */
 struct FixConQ : Constraint{
 	quat_t	desired;
 	virtual void CalcDeviation();
 	FixConQ(Solver* solver, ID id, QVar* var, real_t _scale);
 };
 
-/** fixation constraint for quaternion
+/** matching constraint
  */
+struct MatchConS : Constraint{
+	MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale);
+};
+struct MatchConV2 : Constraint{
+	MatchConV2(Solver* solver, ID id, V2Var* var0, V2Var* var1, real_t _scale);
+};
+struct MatchConV3 : Constraint{
+	MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale);
+};
 struct MatchConQ : Constraint{
 	virtual void CalcDeviation();
 	MatchConQ(Solver* solver, ID id, QVar* var0, QVar* var1, real_t _scale);
@@ -161,7 +161,16 @@ struct RangeConS : Constraint{
 
 	RangeConS(Solver* solver, ID id, SVar* var, real_t _scale);
 };
+class RangeConV2 : public Constraint{
+public:
+	vec2_t	_min, _max;
+	bool	on_lower[2], on_upper[2];
 
+	virtual void CalcDeviation();
+	virtual void Project(real_t& l, uint k);
+
+	RangeConV2(Solver* solver, ID id, V2Var* var, real_t _scale);
+};
 class RangeConV3 : public Constraint{
 public:
 	vec3_t	_min, _max;

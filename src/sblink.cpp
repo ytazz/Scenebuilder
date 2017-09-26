@@ -29,9 +29,16 @@ void SLink::AddColSqr(vec3_t& v){
 }
 
 void SLink::AddError(){
-	if(con->nelem == 1)
-		 con->y[0] += coef * ((SVar *)var)->val;
-	else con->y    += coef * ((V3Var*)var)->val;
+	if(con->nelem == 1){
+		con->y[0] += coef * ((SVar *)var)->val;
+	}
+	else if(con->nelem == 2){
+		con->y[0] += coef * ((V2Var*)var)->val[0];
+		con->y[1] += coef * ((V2Var*)var)->val[1];
+	}
+	else{
+		con->y += coef * ((V3Var*)var)->val;
+	}
 }
 
 void SLink::RegisterCoef(vmat_t& J){

@@ -10,6 +10,7 @@ Variable::Variable(uint _type, Solver* solver, ID _id, real_t _scale):ID(_id){
 	type = _type;
 	switch(type){
 	case Scalar:	nelem = 1; break;
+	case Vec2:      nelem = 2; break;
 	case Vec3:		nelem = 3; break;
 	case Quat:
 	default:		nelem = 3; break;
