@@ -80,6 +80,23 @@ struct ForProp : Property{
 	}
 };
 
+/** Varプロパティ
+	- 変数を定義する
+ */
+struct VarProp : Property{
+	static int id;
+	str256_t	name ;
+	real_t      value;
+	
+	static string GetName(){ return "var"; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(VarProp));
+		db->GetType(id)
+		  ->AddAttr("name"  , Primitive::String, 256, OFFSET(VarProp, name ))
+	      ->AddAttr("value" , Primitive::Real  , 1  , OFFSET(VarProp, value));
+	}
+};
+
 /**	Builder
 
     XMLに記述されたシーン情報をもとにシーンオブジェクトを生成する
@@ -89,15 +106,22 @@ protected:
 	struct Attrs : map<string, string>{
 		Attrs();
 	};
-	typedef vector<Attrs>	AttrStack;
-
 	struct Vars : map<string, string>{
 	};
 
+	struct Context{
+		Attrs attrs;
+		Vars  vars;
+	};
+	struct ContextStack : public vector<Context>{
+
+	};
+
 	string		baseFilename;
-	AttrStack	attrStack;		///< stack of attributes
+	//AttrStack	attrStack;		///< stack of attributes
 	Attrs		tempAttr;		///< temporary attributes
-	Vars		vars;			///< loop variables
+	//Vars		vars;			///< loop variables
+	ContextStack ctxStack;
 	
 	/// tree of XML nodes
 	stack< UTRef<XML> >		xmlStack;

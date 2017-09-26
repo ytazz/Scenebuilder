@@ -138,7 +138,7 @@ public:
 		val = val_tmp + alpha * dx[0];
 	}
 
-	SVar(Solver* solver, ID _id, real_t _scale):VariableImpl(Variable::Scalar, solver, _id, _scale){
+	SVar(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Scalar, solver, _id, _scale){
 		Reset();
 	}
 };
@@ -160,7 +160,7 @@ public:
 		val[1] = val_tmp[1] + alpha * dx[1];
 	}
 
-	V2Var(Solver* solver, ID _id, real_t _scale):VariableImpl(Variable::Vec2, solver, _id, _scale){
+	V2Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec2, solver, _id, _scale){
 		Reset();
 	}
 };
@@ -181,7 +181,7 @@ public:
 		val = val_tmp + alpha * dx;
 	}
 
-	V3Var(Solver* solver, ID _id, real_t _scale):VariableImpl(Variable::Vec3, solver, _id, _scale){
+	V3Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec3, solver, _id, _scale){
 		Reset();
 	}
 };
@@ -203,7 +203,7 @@ public:
 		val.unitize();
 	}
 
-	QVar(Solver* solver, ID _id, real_t _scale):VariableImpl(Variable::Quat, solver, _id, _scale){
+	QVar(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Quat, solver, _id, _scale){
 		Reset();
 	}
 };

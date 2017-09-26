@@ -190,13 +190,13 @@ void IKSolver::CompPosIK(){
 	mode                 = Mode::Pos;
 	param.minStepSize    = 0.0;
 	param.maxStepSize    = 1.0;
-	param.cutoffStepSize = 1.0e-10;
+	param.cutoffStepSize = 0.0;
 	param.hastyStepSize  = true;
 	
 	Prepare();
 	timeUpdate = 0;
 	for(int i = 0; i < numIter; i++)
-		Solver::Solve();
+		Solver::Step();
 	Finish();
 }
 

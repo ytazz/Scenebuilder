@@ -172,9 +172,6 @@ public:
 	/// one step update
 	void Step();
 
-	/// solve
-	void Solve();
-
 	/// deletes all variables and constraints
 	void Clear();
 

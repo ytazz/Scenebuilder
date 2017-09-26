@@ -107,7 +107,7 @@ public:
 	 */
 	virtual void Project(real_t& l, uint k){}
 	
-	Constraint(Solver* solver, uint n, ID _id, real_t _scale);
+	Constraint(Solver* solver, uint n, ID _id = ID(), real_t _scale = 1.0);
 };
 
 /** fixation constraint

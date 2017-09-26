@@ -45,8 +45,8 @@ public:
 	static bool FromString(string_iterator_pair str, char*  val, size_t len);
 	static bool FromString(string_iterator_pair str, string     &  val);
 	static bool FromString(string_iterator_pair str, bool       &  val);
-	static bool FromString(string_iterator_pair str, int        &  val);
-	static bool FromString(string_iterator_pair str, uint       &  val);
+	static bool FromString(string_iterator_pair str, int        &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, uint       &  val, int dim = Dimension::None);
 	static bool FromString(string_iterator_pair str, float      &  val, int dim = Dimension::None);
 	static bool FromString(string_iterator_pair str, double     &  val, int dim = Dimension::None);
 	static bool FromString(string_iterator_pair str, VVecf      &  val, int dim = Dimension::None);

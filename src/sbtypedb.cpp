@@ -39,7 +39,7 @@ bool AttrInfo::FromString(string_iterator_pair str, Property* prop){
 	switch(primId){
 	case Primitive::String : return Converter::FromString(str,  (char   *)pos, len);
 	case Primitive::Bool   : return Converter::FromString(str, *(bool   *)pos     );
-	case Primitive::Int    : return Converter::FromString(str, *(int    *)pos     );
+	case Primitive::Int    : return Converter::FromString(str, *(int    *)pos, dim);
 	case Primitive::Real   : return Converter::FromString(str, *(real_t *)pos, dim);
 	case Primitive::Vec2   : return Converter::FromString(str, *(vec2_t *)pos, dim);
 	case Primitive::Vec3   : return Converter::FromString(str, *(vec3_t *)pos, dim);

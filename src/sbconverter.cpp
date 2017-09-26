@@ -135,9 +135,10 @@ bool Converter::FromString(string_iterator_pair str, bool& val){
 	return false;
 }
 
-bool Converter::FromString(string_iterator_pair str, int& val){
+bool Converter::FromString(string_iterator_pair str, int& val, int dim){
 	try{
-		val = to_int(str);
+		//val = to_int(str);
+		val = (int)Calc()(eat_white(str), dim);
 		return true;
 	}
 	catch(SyntaxError&){
@@ -145,8 +146,8 @@ bool Converter::FromString(string_iterator_pair str, int& val){
 	}
 }
 
-bool Converter::FromString(string_iterator_pair str, uint& val){
-	return FromString(str, (int&)val);
+bool Converter::FromString(string_iterator_pair str, uint& val, int dim){
+	return FromString(str, (int&)val, dim);
 }
 
 /* 実数値
