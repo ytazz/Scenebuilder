@@ -204,9 +204,13 @@ void FixConS::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConS::MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
-	AddSLink(var0, -1.0);
-	AddSLink(var1,  1.0);
+FixConV2::FixConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, _scale){
+	AddSLink(var, 1.0);
+}
+
+void FixConV2::CalcDeviation(){
+	y[0] = ((V2Var*)links[0]->var)->val[0] - desired[0];
+	y[1] = ((V2Var*)links[0]->var)->val[1] - desired[1];
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -221,13 +225,6 @@ void FixConV3::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConV3::MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 3, id, _scale){
-	AddSLink(var0, -1.0);
-	AddSLink(var1,  1.0);
-}
-
-//-------------------------------------------------------------------------------------------------
-
 FixConQ::FixConQ(Solver* solver, ID id, QVar* var, real_t _scale):Constraint(solver, 3, id, _scale){
 	AddSLink(var, 1.0);
 }
@@ -237,6 +234,27 @@ void FixConQ::CalcDeviation(){
 	quat_t q1 = ((QVar*)links[0]->var)->val;
 	quat_t qerror = q0.Conjugated() * q1;
 	y = q0 * (qerror.Theta() * qerror.Axis());
+}
+
+//-------------------------------------------------------------------------------------------------
+
+MatchConS::MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddSLink(var0, -1.0);
+	AddSLink(var1,  1.0);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+MatchConV2::MatchConV2(Solver* solver, ID id, V2Var* var0, V2Var* var1, real_t _scale):Constraint(solver, 2, id, _scale){
+	AddSLink(var0, -1.0);
+	AddSLink(var1,  1.0);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+MatchConV3::MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 3, id, _scale){
+	AddSLink(var0, -1.0);
+	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -281,6 +299,42 @@ void RangeConS::Project(real_t& l, uint k){
 	if(on_lower && l < 0.0)
 		l = 0.0;
 	if(!on_upper && !on_lower)
+		l = 0.0;
+}
+
+//-------------------------------------------------------------------------------------------------
+
+RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, _scale){
+	AddSLink(var, 1.0);
+	real_t inf = numeric_limits<real_t>::max();
+	for(int i = 0; i < 2; i++){
+		_min    [i] = -inf;
+		_max    [i] =  inf;
+		on_lower[i] = false;
+		on_upper[i] = false;
+	}
+}
+
+void RangeConV2::CalcDeviation(){
+	active = false;
+	for(int i = 0; i < 2; i++){
+		real_t s = ((V2Var*)links[0]->var)->val[i];
+		on_lower[i] = (s < _min[i]);
+		on_upper[i] = (s > _max[i]);
+		active |= on_lower[i] | on_upper[i];
+		if(on_lower[i])
+			y[i] = s - _min[i];
+		if(on_upper[i])
+			y[i] = s - _max[i];
+	}
+}
+
+void RangeConV2::Project(real_t& l, uint k){
+	if(on_upper[k] && l > 0.0)
+		l = 0.0;
+	if(on_lower[k] && l < 0.0)
+		l = 0.0;
+	if(!on_upper[k] && !on_lower[k])
 		l = 0.0;
 }
 

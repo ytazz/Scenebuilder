@@ -156,7 +156,8 @@ public:
 		return val[k];
 	}
 	virtual void Modify(real_t alpha){
-		val = val_tmp + alpha * dx;
+		val[0] = val_tmp[0] + alpha * dx[0];
+		val[1] = val_tmp[1] + alpha * dx[1];
 	}
 
 	V2Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec2, solver, _id, _scale){
