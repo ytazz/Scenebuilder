@@ -16,7 +16,7 @@ using namespace Spr;
 		  ＊Springheadでは形状（CDShape）自体が物性を持つため
  **/
 extern "C"{
-typedef void (*SetParamFunc              )(void* jnt, const string& name, double value);
+typedef void (*SetParamFunc              )(void* jnt, const char* name, double value);
 typedef bool (*IsCyclicFunc              )(void* jnt);
 typedef void (*GetMovableAxesFunc        )(void* jnt, int* n, int* indices);
 typedef void (*CompBiasFunc              )(void* jnt, double* dbv , double* dbw , const double* prel, const double* qrel, const double* vrel, const double* wrel);
@@ -99,7 +99,7 @@ protected:
 
 		void Init();
 
-		virtual void SetParam              (PHGenericJointIf* jnt, const string& name, double value);
+		virtual void SetParam              (PHGenericJointIf* jnt, const char* name, double value);
 		virtual bool IsCyclic              (PHGenericJointIf* jnt);
 		virtual void GetMovableAxes        (PHGenericJointIf* jnt, int& n, int* indices);
 		virtual void CompBias              (PHGenericJointIf* jnt, Vec3d&  dbv, Vec3d&  dbw, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);

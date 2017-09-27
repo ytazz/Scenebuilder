@@ -1,6 +1,7 @@
 ﻿#include <sbiksolver.h>
 #include <sbikbody.h>
 #include <sbikjoint.h>
+#include <sbmessage.h>
 
 #include <GL/glew.h>
 
@@ -10,7 +11,7 @@ const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::PosCon::PosCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
+IKJoint::PosCon::PosCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(0, 0, 0, ""), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -51,7 +52,7 @@ void IKJoint::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
+IKJoint::VelCon::VelCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(0, 0, 0, ""), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -92,7 +93,7 @@ void IKJoint::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(), 1.0){
+IKJoint::AccCon::AccCon(IKJoint* jnt, int _dir):joint(jnt), Constraint(jnt->solver, 1, ID(0, 0, 0, ""), 1.0){
 	dir = _dir;
 	for(IKBody* b = joint->sockBody; b != joint->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
@@ -222,34 +223,9 @@ void IKJoint::SetVelLimit(uint i, real_t lower, real_t upper){
 }
 
 void IKJoint::Init(){
-	/*for(IKBody* b = sockBody; b != 0; b = b->parBody){
-		Node n;
-		n.body   = b;
-		n.shared = false;
-		sockPath.push_back(n);
-	}
-	for(IKBody* b = plugBody; b != 0; b = b->parBody){
-		Node n;
-		n.body   = b;
-		n.shared = false;
-
-		bool found = false;
-		uint i;
-		for(i = 0; i < sockPath.size(); i++){
-			if(sockPath[i].body == b){
-				found = true;
-				break;
-			}
-		}
-		if(found){
-			n.shared = true;
-			sockPath[i].shared = true;
-		}
-
-		plugPath.push_back(n);
-	}*/
 	rootBody = sockBody;
-	while(true){
+	bool found = false;
+	while(rootBody->parBody){
 		bool found = false;
 		for(IKBody* b = plugBody; b != 0; b = b->parBody){
 			if(b == rootBody){
@@ -261,24 +237,35 @@ void IKJoint::Init(){
 			break;
 		rootBody = rootBody->parBody;
 	}
+
+	if(!found){
+		Message::Error("sock and plug must belong to the same tree");
+		rootBody = 0;
+	}
 }
 
 void IKJoint::AddVar(){
+	if(!rootBody)
+		return;
+
 	if(plugBody->parBody == sockBody){
 		for(int i = 0; i < ndof; i++){
-			q_var  [i] = new SVar(solver, ID(), 1.0);
-			qd_var [i] = new SVar(solver, ID(), 1.0);
-			qdd_var[i] = new SVar(solver, ID(), 1.0);
+			q_var  [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
+			qd_var [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
+			qdd_var[i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
 		}
 	}
 
 	for(int i = 0; i < 3; i++){
-		force_var [i] = new SVar(solver, ID(), 1.0);
-		moment_var[i] = new SVar(solver, ID(), 1.0);
+		force_var [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
+		moment_var[i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
 	}
 }
 
 void IKJoint::AddCon(){
+	if(!rootBody)
+		return;
+
 	if(plugBody->parBody != sockBody){
 		for(int i = 0; i < 3; i++){
 			pos_con[i] = new PosCon(this, i);
@@ -289,6 +276,9 @@ void IKJoint::AddCon(){
 }
 
 void IKJoint::Prepare(){
+	if(!rootBody)
+		return;
+
 	if(plugBody->parBody == sockBody){
 		for(int i = 0; i < ndof; i++){
 			q_var  [i]->val = q_ini  [i];
@@ -361,6 +351,9 @@ void IKJoint::Prepare(){
 }
 
 void IKJoint::Finish(){
+	if(!rootBody)
+		return;
+
 	if(solver->mode == IKSolver::Mode::Pos){
 		if(plugBody->parBody == sockBody){
 			for(int i = 0; i < ndof; i++){
@@ -406,6 +399,9 @@ void IKJoint::Finish(){
 }
 
 void IKJoint::Update(){
+	if(!rootBody)
+		return;
+
 	if(solver->mode == IKSolver::Mode::Pos){
 		if(type == Type::LineToLine){
 			sockOffsetAbs = sockBody->ori_var->val * sockPos;
@@ -431,6 +427,9 @@ void IKJoint::Update(){
 }
 
 void IKJoint::CalcJacobian(){
+	if(!rootBody)
+		return;
+
 	if(type == Type::Hinge){
 		Jv[0] = vec3_t();
 		Jw[0] = vec3_t(0.0, 0.0, 1.0);
@@ -464,6 +463,9 @@ void IKJoint::CalcJacobian(){
 }
 
 void IKJoint::CalcRelativePose(){
+	if(!rootBody)
+		return;
+
 	if(type == Type::Hinge){
 		relPos.clear();
 		relOri = quat_t::Rot(q_var[0]->val, 'z');

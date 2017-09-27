@@ -194,7 +194,7 @@ void AdaptorSprPH::GenericJointCallback::Init(){
 	hCompRelativeVelocity   = (CompRelativeVelocityFunc  )GetProcAddress((HMODULE)hDll, "CompRelativeVelocityFunc"  );
 }
 
-void AdaptorSprPH::GenericJointCallback::SetParam(PHGenericJointIf* jnt, const string& name, double value){
+void AdaptorSprPH::GenericJointCallback::SetParam(PHGenericJointIf* jnt, const char* name, double value){
 	if(hSetParam)
 		return hSetParam(jnt, name, value);
 }
@@ -607,7 +607,7 @@ int AdaptorSprPH::CreateObject(int id){
 				phGenJoint->SetCallback(&jnt->callback);
 				uint n = (uint)paramnames.size();
 				for(uint i = 0; i < n; i++)
-					phGenJoint->SetParam(paramnames[i], paramvalues[i]);
+					phGenJoint->SetParam(paramnames[i].c_str(), paramvalues[i]);
 			}
 
 			RegAux(id, jnt);
