@@ -9,17 +9,17 @@ namespace Scenebuilder{;
 
 class ID{
 public:
-	int     type;
+	int     tag;
 	void*   owner;
 	void*   owner2;
 	string  name;
 
 	int Match(ID* id){
 		// tagが未指定のマスクは必ずマッチする
-		if(type == -1)
+		if(tag == -1)
 			return 1;
 		// tag不一致
-		if(type != id->type)
+		if(tag != id->tag)
 			return 0;
 		// tag一致, node未指定
 		if(!owner)
@@ -31,10 +31,10 @@ public:
 		return 3;
 	}
 
-	ID():type(-1), owner(0){}
+	ID():tag(-1), owner(0){}
 
-	ID(int _type, void* _owner = 0, void* _owner2 = 0, string _name = ""){
-		type   = _type ;
+	ID(int _tag, void* _owner = 0, void* _owner2 = 0, string _name = ""){
+		tag    = _tag;
 		owner  = _owner;
 		owner2 = _owner2;
 		name   = _name ;

@@ -61,6 +61,13 @@ public:
 		State();
 	};
 
+	struct VariableInfo{
+		int  num;
+		int  numLocked;
+
+		VariableInfo();
+	};
+
 	struct ConstraintInfo{
 		int     num;
 		int     numEnabled;
@@ -106,8 +113,9 @@ public:
 	vvec_t          Jtry;
 	vvec_t          dx;
 
-	vector<ConstraintInfo>  infoType;		///< sum for each constraint category
-	vector<ConstraintInfo>  infoLevel;		///< sum for each priority level
+	vector<VariableInfo>    varInfoType;
+	vector<ConstraintInfo>  conInfoType;		///< sum for each constraint category
+	vector<ConstraintInfo>  conInfoLevel;		///< sum for each priority level
 
 	bool  ready;
 

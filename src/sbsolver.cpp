@@ -39,6 +39,13 @@ Solver::State::State(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+Solver::VariableInfo::VariableInfo(){
+	num       = 0;
+	numLocked = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 Solver::ConstraintInfo::ConstraintInfo(){
 	num        = 0;
 	numEnabled = 0;
@@ -210,16 +217,20 @@ void Solver::Init(){
 	}
 
 	// 優先度の最大値を求める
-	int maxLevel = 0;
-	int maxType  = 0;
-	for(uint i = 0; i < cons.size(); i++){
-		maxLevel = std::max(maxLevel, cons[i]->level);
-		maxType  = std::max(maxType , cons[i]->type );
+	int maxVarType  = 0;
+	int maxConType  = 0;
+	int maxConLevel = 0;
+	for(int j = 0; j < (int)vars.size(); j++){
+		maxVarType = std::max(maxVarType, vars[j]->tag);
 	}
-
-	infoType  .resize(maxType  + 1);
-	infoLevel .resize(maxLevel + 1);
-	cons_level.resize(maxLevel + 1);
+	for(int i = 0; i < (int)cons.size(); i++){
+		maxConType  = std::max(maxConType , cons[i]->tag  );
+		maxConLevel = std::max(maxConLevel, cons[i]->level);
+	}
+	varInfoType .resize(maxVarType  + 1);
+	conInfoType .resize(maxConType  + 1);
+	conInfoLevel.resize(maxConLevel + 1);
+	cons_level  .resize(maxConLevel + 1);
 
 	// レベル数とmaxIterのサイズが合わせてデフォルト値をセット
 	//uint sz = (uint)maxIter.size();
@@ -355,17 +366,24 @@ void Solver::CalcDirection(){
 			vars_unlocked.push_back(var);
 	}
 
-	for(uint i = 0; i < (uint)infoType .size(); i++) infoType [i] = ConstraintInfo();
-	for(uint i = 0; i < (uint)infoLevel.size(); i++) infoLevel[i] = ConstraintInfo();
+	for(int i = 0; i < (int)varInfoType .size(); i++) varInfoType [i] = VariableInfo();
+	for(int i = 0; i < (int)conInfoType .size(); i++) conInfoType [i] = ConstraintInfo();
+	for(int i = 0; i < (int)conInfoLevel.size(); i++) conInfoLevel[i] = ConstraintInfo();
 
-	for(uint i = 0; i < cons.size(); i++){
+	for(int i = 0; i < (int)vars.size(); i++){
+		Variable* var = vars[i];
+		varInfoType[var->tag].num++;
+		if(var->locked)
+			varInfoType[var->tag].numLocked++;
+	}
+	for(int i = 0; i < (int)cons.size(); i++){
 		Constraint* con = cons[i];
-		infoType [con->type ].num++;
-		infoLevel[con->level].num++;
+		conInfoType [con->tag  ].num++;
+		conInfoLevel[con->level].num++;
 
 		if(con->enabled){
-			 infoType [con->type ].numEnabled++;
-			 infoLevel[con->level].numEnabled++;
+			conInfoType [con->tag  ].numEnabled++;
+			conInfoLevel[con->level].numEnabled++;
 		}
 		else continue;
 
@@ -373,11 +391,11 @@ void Solver::CalcDirection(){
 		con->CalcError();
 
 		if(con->active){
-			infoType [con->type ].numActive++;
-			infoType [con->type ].error += con->y.norm();
+			conInfoType [con->tag ].numActive++;
+			conInfoType [con->tag ].error += con->y.norm();
 			
-			infoLevel[con->level].numActive++;
-			infoLevel[con->level].error += con->y.norm();
+			conInfoLevel[con->level].numActive++;
+			conInfoLevel[con->level].error += con->y.norm();
 
 			cons_active.push_back(con);
 			cons_level[con->level].push_back(con);
@@ -549,7 +567,7 @@ void Solver::CalcDirection(){
 		for(int i = 0; i < (int)cons_active.size(); i++)
 			cons_active[i]->ResetState();
 
-		for(int L = (int)infoLevel.size()-1; L >= 0; L--){
+		for(int L = (int)conInfoLevel.size()-1; L >= 0; L--){
 			timer.CountUS();
 	
 			for(int n = 1; n <= param.numIter[L]; n++){
