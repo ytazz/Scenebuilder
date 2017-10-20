@@ -225,8 +225,8 @@ void IKJoint::SetVelLimit(uint i, real_t lower, real_t upper){
 void IKJoint::Init(){
 	rootBody = sockBody;
 	bool found = false;
-	while(rootBody->parBody){
-		bool found = false;
+	while(rootBody){
+		found = false;
 		for(IKBody* b = plugBody; b != 0; b = b->parBody){
 			if(b == rootBody){
 				found = true;
