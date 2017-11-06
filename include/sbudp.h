@@ -29,7 +29,7 @@ public:
 
 class UDPReceiveCallback{
 public:
-	virtual void OnReceive(const byte* buf, size_t len) = 0;
+	virtual void OnUDPReceive(const byte* buf, size_t len) = 0;
 };
 
 class UDPReceiver{

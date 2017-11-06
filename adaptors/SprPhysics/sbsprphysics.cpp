@@ -30,6 +30,8 @@ AdaptorSprPH::BodyAux::~BodyAux(){
 		RemoveFromArray(groups[i]->bodies, this);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AdaptorSprPH::ConnectorAux::ConnectorAux(BodyAux* b):body(b){
 	body->cons.push_back(this);
 }
@@ -52,6 +54,8 @@ AdaptorSprPH::ConnectorAux::~ConnectorAux(){
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AdaptorSprPH::MaterialAux& AdaptorSprPH::MaterialAux::operator=(PhysicalMaterialProp& prop){
 	mat.density = (float)prop.density;
 	mat.e       = (float)prop.cor;
@@ -59,6 +63,13 @@ AdaptorSprPH::MaterialAux& AdaptorSprPH::MaterialAux::operator=(PhysicalMaterial
 	mat.mu      = (float)prop.dynamic_friction;
 	mat.spring  = (float)prop.spring;
 	mat.damper  = (float)prop.damper;
+
+	if(prop.velocity_field_mode == "none"    ) mat.velocityFieldMode = PHMaterial::VelocityField::NONE;
+	if(prop.velocity_field_mode == "linear"  ) mat.velocityFieldMode = PHMaterial::VelocityField::LINEAR;
+	if(prop.velocity_field_mode == "cylinder") mat.velocityFieldMode = PHMaterial::VelocityField::CYLINDER;
+	mat.velocityFieldAxis      = prop.velocity_field_axis;
+	mat.velocityFieldMagnitude = prop.velocity_field_magnitude;
+
 	return *this;
 }
 
@@ -66,6 +77,8 @@ AdaptorSprPH::MaterialAux::~MaterialAux(){
 	for(uint i = 0; i < attaches.size(); i++)
 		attaches[i]->mat = 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AdaptorSprPH::ShapeAux::ShapeAux(){
 
@@ -75,6 +88,8 @@ AdaptorSprPH::ShapeAux::~ShapeAux(){
 	for(uint i = 0; i < attaches.size(); i++)
 		attaches[i]->shape = 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AdaptorSprPH::AttachAux::AttachAux(ShapeAux* s, ConnectorAux* c, MaterialAux* m, int ib, int ie):shape(s), con(c), mat(m), idxBegin(ib), idxEnd(ie){
 	con  ->attaches.push_back(this);
@@ -91,6 +106,8 @@ AdaptorSprPH::AttachAux::~AttachAux(){
 	if(mat)
 		RemoveFromArray(shape->attaches, this);
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AdaptorSprPH::GenericJointCallback::GenericJointCallback(){
 	hDll                    = 0;
@@ -111,6 +128,8 @@ AdaptorSprPH::GenericJointCallback::~GenericJointCallback(){
 		FreeLibrary((HMODULE)hDll);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AdaptorSprPH::JointAux::JointAux(PHJointIf* j, ConnectorAux* s, ConnectorAux* p):joint(j), sock(s), plug(p){
 	sock->joints.push_back(this);
 	plug->joints.push_back(this);		
@@ -123,9 +142,13 @@ AdaptorSprPH::JointAux::~JointAux(){
 		RemoveFromArray(plug->joints, this);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 AdaptorSprPH::GearAux::GearAux(PHGearIf* g){
 	gear = g;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 AdaptorSprPH::ContactGroupAux::~ContactGroupAux(){
 	for(uint i = 0; i < bodies.size(); i++)
@@ -156,12 +179,13 @@ void AdaptorSprPH::AttachAux::OnChange(Aux* caller){
 			// 物性の変化を反映
 			for(uint i = 0; i < shape->shapes.size(); i++){
 				CDShapeIf* sh = shape->shapes[i];
-				sh->SetDensity        (mat->mat.density);
-				sh->SetElasticity     (mat->mat.e      );
-				sh->SetStaticFriction (mat->mat.mu0    );
-				sh->SetDynamicFriction(mat->mat.mu     );
+				//sh->SetDensity        (mat->mat.density);
+				//sh->SetElasticity     (mat->mat.e      );
+				//sh->SetStaticFriction (mat->mat.mu0    );
+				//sh->SetDynamicFriction(mat->mat.mu     );
 				//sh->SetContactSpring  (mat->mat.spring );
 				//sh->SetContactDamper  (mat->mat.damper );
+				sh->SetMaterial(mat->mat);
 			}
 		}
 		// 質量の再計算
@@ -418,10 +442,13 @@ int AdaptorSprPH::CreateObject(int id){
 		return SupportState::Supported;
 	}
 	else if(type == AttachProp::id){
+		AUTO(AttachProp*, attProp, prop);
+			
 		// get PHSolid and CDShape
 		int shapeId = scene->GetLink(id, "shape");
 		int conId   = scene->GetLink(id, "connector");
 		int matId   = scene->GetLink(id, "pmat");
+		
 		if(!IsValidID(shapeId) || IsIgnored(shapeId)){
 			return SupportState::Ignored;
 		}
@@ -447,7 +474,7 @@ int AdaptorSprPH::CreateObject(int id){
 		AUTO(ShapeAux*    , shapeAux, GetAux(shapeId));
 		AUTO(ConnectorAux*, conAux  , GetAux(conId  ));
 		AUTO(MaterialAux* , matAux  , GetAux(matId  ));
-		
+
 		// assign shape (pose will be set later)
 		int idxBegin = conAux->body->solid->NShape();
 		for(uint i = 0; i < shapeAux->shapes.size(); i++)
@@ -455,7 +482,9 @@ int AdaptorSprPH::CreateObject(int id){
 		//conAux->body->solid->AddShapes(&shapeAux->shapes[0], &shapeAux->shapes[0] + shapeAux->shapes.size());
 		int idxEnd = conAux->body->solid->NShape();
 
-		RegAux(id, new AttachAux(shapeAux, conAux, matAux, idxBegin, idxEnd));
+		AttachAux* attAux = new AttachAux(shapeAux, conAux, matAux, idxBegin, idxEnd);
+
+		RegAux(id, attAux);
 		Message::Extra("created AttachAux for %s", name.c_str());
 		
 		return SupportState::Supported;

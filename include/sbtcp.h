@@ -20,16 +20,14 @@ public:
 
 	   送信バイト数が0なら再度受信，0以外なら送信開始
 	 */
-	virtual void OnRead(const byte* rxBuf, size_t rxLen, byte* txBuf, size_t& txLen) = 0;
+	virtual void OnTCPServerReceive(const byte* rxBuf, size_t  rxLen, byte* txBuf, size_t& txLen) = 0;
 
 };
 
 class TCPClientCallback{
 public:
-	virtual void OnRead(const byte* buf, size_t len) = 0;
+	virtual void OnTCPClientReceive(const byte* buf, size_t len) = 0;
 };
-
-
 
 class TCPServer{
 public:
@@ -37,14 +35,14 @@ public:
 
 public:
 	/// start running
-	void Run(int port);
+	void Start(int port);
 
 	/// stop
 	void Stop();
 
 	void SetCallback(TCPServerCallback* cb);
 
-	 TCPServer();
+	 TCPServer(bool use_asio = true);
 	~TCPServer();
 };
 
@@ -63,7 +61,7 @@ public:
 		Send((const byte*)&val, sizeof(T));
 	}
 
-	 TCPClient();
+	 TCPClient(bool use_asio = true);
 	~TCPClient();
 };
 

@@ -34,6 +34,36 @@ class ModelSTL;
 
 class AdaptorSprPH : public Adaptor{
 protected:
+	struct GenericJointCallback : public PHGenericJointCallback{
+		void*			           hDll;
+		SetParamFunc               hSetParam;
+		IsCyclicFunc               hIsCyclic;
+		GetMovableAxesFunc         hGetMovableAxes;
+		CompBiasFunc               hCompBias;
+		CompErrorFunc              hCompError;
+		UpdateJointStateFunc       hUpdateJointState;
+		CompJointJacobianFunc      hCompJointJacobian;
+		CompJointCoriolisAccelFunc hCompJointCoriolisAccel;
+		CompRelativePositionFunc   hCompRelativePosition;
+		CompRelativeVelocityFunc   hCompRelativeVelocity;
+
+		void Init();
+
+		virtual void SetParam              (PHGenericJointIf* jnt, const char* name, double value);
+		virtual bool IsCyclic              (PHGenericJointIf* jnt);
+		virtual void GetMovableAxes        (PHGenericJointIf* jnt, int& n, int* indices);
+		virtual void CompBias              (PHGenericJointIf* jnt, Vec3d&  dbv, Vec3d&  dbw, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);
+		virtual void CompError             (PHGenericJointIf* jnt, Vec3d&  Bv , Vec3d&  Bw , const Vec3d& prel, const Quaterniond& qrel                                      );
+		virtual void UpdateJointState      (PHGenericJointIf* jnt, double& pos, double& vel, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);
+		virtual void CompJointJacobian     (PHGenericJointIf* jnt, Vec3d& Jv  , Vec3d&       Jw  , double pos            );
+		virtual void CompJointCoriolisAccel(PHGenericJointIf* jnt, Vec3d& cv  , Vec3d&       cw  , double pos, double vel);
+		virtual void CompRelativePosition  (PHGenericJointIf* jnt, Vec3d& prel, Quaterniond& qrel, double pos            );
+		virtual void CompRelativeVelocity  (PHGenericJointIf* jnt, Vec3d& vrel, Vec3d&       wrel, double pos, double vel);
+
+		 GenericJointCallback();
+		~GenericJointCallback();
+	};
+
 	struct ConnectorAux;
 	struct AttachAux;
 	struct JointAux;
@@ -83,35 +113,6 @@ protected:
 		void OnChange(Aux* caller);
 		AttachAux(ShapeAux* s, ConnectorAux* c, MaterialAux* m, int ib, int ie);
 		virtual ~AttachAux();
-	};
-	struct GenericJointCallback : public PHGenericJointCallback{
-		void*			           hDll;
-		SetParamFunc               hSetParam;
-		IsCyclicFunc               hIsCyclic;
-		GetMovableAxesFunc         hGetMovableAxes;
-		CompBiasFunc               hCompBias;
-		CompErrorFunc              hCompError;
-		UpdateJointStateFunc       hUpdateJointState;
-		CompJointJacobianFunc      hCompJointJacobian;
-		CompJointCoriolisAccelFunc hCompJointCoriolisAccel;
-		CompRelativePositionFunc   hCompRelativePosition;
-		CompRelativeVelocityFunc   hCompRelativeVelocity;
-
-		void Init();
-
-		virtual void SetParam              (PHGenericJointIf* jnt, const char* name, double value);
-		virtual bool IsCyclic              (PHGenericJointIf* jnt);
-		virtual void GetMovableAxes        (PHGenericJointIf* jnt, int& n, int* indices);
-		virtual void CompBias              (PHGenericJointIf* jnt, Vec3d&  dbv, Vec3d&  dbw, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);
-		virtual void CompError             (PHGenericJointIf* jnt, Vec3d&  Bv , Vec3d&  Bw , const Vec3d& prel, const Quaterniond& qrel                                      );
-		virtual void UpdateJointState      (PHGenericJointIf* jnt, double& pos, double& vel, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);
-		virtual void CompJointJacobian     (PHGenericJointIf* jnt, Vec3d& Jv  , Vec3d&       Jw  , double pos            );
-		virtual void CompJointCoriolisAccel(PHGenericJointIf* jnt, Vec3d& cv  , Vec3d&       cw  , double pos, double vel);
-		virtual void CompRelativePosition  (PHGenericJointIf* jnt, Vec3d& prel, Quaterniond& qrel, double pos            );
-		virtual void CompRelativeVelocity  (PHGenericJointIf* jnt, Vec3d& vrel, Vec3d&       wrel, double pos, double vel);
-
-		 GenericJointCallback();
-		~GenericJointCallback();
 	};
 	struct JointAux : Aux{
 		PHJointIf*		joint;

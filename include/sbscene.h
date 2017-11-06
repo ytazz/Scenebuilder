@@ -194,18 +194,24 @@ struct PhysicalMaterialProp : SceneObjectProp{
 	real_t  dynamic_friction; ///< dynamic friction coefficient
 	real_t  spring;           ///< contact spring
 	real_t  damper;           ///< contact damper
+	str32_t velocity_field_mode;
+	vec3_t  velocity_field_axis;
+	real_t  velocity_field_magnitude;
 
 	static string GetName(){ return "pmat"; }
 	static void Construct(Property* p){ new(p) PhysicalMaterialProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PhysicalMaterialProp), &Construct, SceneObjectProp::id);
 		db->GetType(id)
-			->AddAttr("density"         , Primitive::Real, 1, OFFSET(PhysicalMaterialProp, density         ), 1.0, AttrCategory::Param, Dimension::M_LLL)
-			->AddAttr("cor"             , Primitive::Real, 1, OFFSET(PhysicalMaterialProp, cor             ), 0.3, AttrCategory::Param)
-			->AddAttr("static_friction" , Primitive::Real, 1, OFFSET(PhysicalMaterialProp, static_friction ), 0.3, AttrCategory::Param)
-			->AddAttr("dynamic_friction", Primitive::Real, 1, OFFSET(PhysicalMaterialProp, dynamic_friction), 0.3, AttrCategory::Param)
-			->AddAttr("spring"          , Primitive::Real, 1, OFFSET(PhysicalMaterialProp, spring          ), 0.0, AttrCategory::Param)
-			->AddAttr("damper"          , Primitive::Real, 1, OFFSET(PhysicalMaterialProp, damper          ), 0.0, AttrCategory::Param);
+			->AddAttr("density"                 , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, density                 ), 1.0                  , AttrCategory::Param, Dimension::M_LLL)
+			->AddAttr("cor"                     , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, cor                     ), 0.3                  , AttrCategory::Param)
+			->AddAttr("static_friction"         , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, static_friction         ), 0.3                  , AttrCategory::Param)
+			->AddAttr("dynamic_friction"        , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, dynamic_friction        ), 0.3                  , AttrCategory::Param)
+			->AddAttr("spring"                  , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, spring                  ), 0.0                  , AttrCategory::Param)
+			->AddAttr("damper"                  , Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, damper                  ), 0.0                  , AttrCategory::Param)
+			->AddAttr("velocity_field_mode"     , Primitive::String, 32, OFFSET(PhysicalMaterialProp, velocity_field_mode     ), ""                   , AttrCategory::Param)
+			->AddAttr("velocity_field_axis"     , Primitive::Vec3  ,  1, OFFSET(PhysicalMaterialProp, velocity_field_axis     ), vec3_t(0.0, 0.0, 0.0), AttrCategory::Param)
+			->AddAttr("velocity_field_magnitude", Primitive::Real  ,  1, OFFSET(PhysicalMaterialProp, velocity_field_magnitude), 0.0                  , AttrCategory::Param);
 	}
 };
 
@@ -433,7 +439,7 @@ struct AttachProp : SceneObjectProp{
 	static int id;
 
 	str256_t	bone;
-
+	
 	static string GetName(){ return "attach"; }
 	static void Construct(Property* p){ new(p) AttachProp; }
 	static void Register(TypeDB* db){
@@ -445,7 +451,7 @@ struct AttachProp : SceneObjectProp{
 			->AddAttr("pmat"     , Primitive::Path, 1, 0)
 			->AddAttr("light"    , Primitive::Path, 1, 0)
 			->AddAttr("camera"   , Primitive::Path, 1, 0)
-			->AddAttr("bone"     , Primitive::String, 256, OFFSET(AttachProp, bone), "", AttrCategory::Param);
+			->AddAttr("bone"     , Primitive::String, 256, OFFSET(AttachProp, bone    ), "", AttrCategory::Param);
 	}
 };
 

@@ -182,7 +182,7 @@ public:
 		}
 		
 		if(callback)
-			callback->OnReceive(buf, len);
+			callback->OnUDPReceive(buf, len);
 
 		sock->async_receive_from(boost::asio::buffer(buf), remoteEp, boost::bind(&UDPReceiverImplAsio::OnReceive, this, _1, _2));
 	}
@@ -225,7 +225,7 @@ public:
 		while(!evDisconnect.IsSet()){
 			int len = recv(sock, (char*)&buffer[0], buffer.size(), 0);
 			if(len > 0)
-				callback->OnReceive(&buffer[0], len);
+				callback->OnUDPReceive(&buffer[0], len);
 		}
 	}
 
