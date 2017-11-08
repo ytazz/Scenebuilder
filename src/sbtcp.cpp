@@ -72,13 +72,15 @@ public:
 
 class TCPClientImpl{
 public:
+	TCPClient*         owner;
 	string             host;
 	int                port;
 
+	byte               rxBuf[1024*1024];
+	size_t             rxLen;
+	
 	volatile bool      connecting;
 	volatile bool      connected;
-	size_t             receivedLen;
-	byte               buf[1024*1024];
 	
 	TCPClientCallback* callback;
 
@@ -273,11 +275,13 @@ public:
 		if(err == boost::asio::error::operation_aborted){
 			return;
 		}
+
+		rxLen = len;
 		
 		if(callback)
-			callback->OnTCPClientReceive(buf, len);
+			callback->OnTCPClientReceive(rxBuf, rxLen);
 
-		sock->async_receive(boost::asio::buffer(buf), boost::bind(&TCPClientImplAsio::OnReceive, this, _1, _2));
+		sock->async_receive(boost::asio::buffer(rxBuf), boost::bind(&TCPClientImplAsio::OnReceive, this, _1, _2));
 	}
 
 public:
@@ -308,7 +312,7 @@ public:
 			return false;
 		}
 		
-		sock->async_receive(boost::asio::buffer(buf), boost::bind(&TCPClientImplAsio::OnReceive, this, _1, _2));
+		sock->async_receive(boost::asio::buffer(rxBuf), boost::bind(&TCPClientImplAsio::OnReceive, this, _1, _2));
 		
 		return true;
 
@@ -471,14 +475,37 @@ public:
 	virtual ~TCPServerImplWinsock(){}
 };
 
-class TCPClientImplWinsock : public TCPClientImpl{
+class TCPClientImplWinsock : public TCPClientImpl, public Thread{
 public:
 	WSADATA      wsaData;
 	sockaddr_in  si;
 	SOCKET       sock;
+	bool         running;
+	Event        evStop;
 
 public:
+	virtual void Func(){
+		fd_set  fd;
+		timeval to;
+		while(!evStop.IsSet()){
+			fd.fd_count = 1;
+			fd.fd_array[0] = sock;
+			to.tv_sec  = 0;
+			to.tv_usec = 1000*owner->receiveInterval;
+			if(select(0, &fd, 0, 0, &to)){
+				rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
+				Message::Extra("client: %d byte received", rxLen);
+
+				if(callback)
+					callback->OnTCPClientReceive(rxBuf, rxLen);
+			}
+		}
+	}
+
 	virtual bool Connect(const char* _host, int _port){
+		if(running)
+			Disconnect();
+
 		host = _host;
 		port = _port;
 
@@ -500,18 +527,30 @@ public:
 			return false;
 		}
 
+		Run();
+
 		return true;
 
 	}
 	virtual void Disconnect(){
+		if(!running)
+			return;
+
+		evStop.Set();
+		Join();
+
 		closesocket(sock);
+
+		running = false;
 	}
 	virtual void Send(const byte* data, size_t len){
 		int txSent = ::send(sock, (char*)data, len, 0);
 		Message::Extra("client: %d bytes sent", txSent);
 	}
 
-	TCPClientImplWinsock(){}
+	TCPClientImplWinsock(){
+		evStop.Create(true);
+	}
 	virtual ~TCPClientImplWinsock(){}
 };
 
@@ -546,9 +585,12 @@ void TCPServer::SetCallback(TCPServerCallback* cb){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 TCPClient::TCPClient(bool use_asio){
+	receiveInterval = 100;
+
 	if(use_asio)
 		 impl = new TCPClientImplAsio();
 	else impl = new TCPClientImplWinsock();
+	impl->owner = this;
 }
 
 TCPClient::~TCPClient(){
