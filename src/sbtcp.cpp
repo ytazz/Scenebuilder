@@ -356,16 +356,31 @@ public:
 				fd.fd_array[0] = sock;
 				to.tv_sec  = 0;
 				to.tv_usec = 1000*server->owner->receiveInterval;
-				if(select(0, &fd, 0, 0, &to)){
-					rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
-					Message::Extra("session %d: %d byte received", GetID(), rxLen);
+				int ret = select(0, &fd, 0, 0, &to);
+				if(ret == 0){
+					// timeout expired
+				}
+				else if(ret == SOCKET_ERROR){
+					Message::Error("session %d: select failed", GetID());
+				}
+				else{
+					ret = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
+					if(ret == SOCKET_ERROR){
+						Message::Error("session %d: recv failed", GetID());
+					}
+					else{
+						rxLen = ret;
+						Message::Extra("session %d: %d byte received", GetID(), rxLen);
 
-					if(server->callback)
-						server->callback->OnTCPServerReceive(rxBuf, rxLen, txBuf, txLen);
+						if(rxLen > 0){
+							if(server->callback)
+								server->callback->OnTCPServerReceive(rxBuf, rxLen, txBuf, txLen);
 
-					if(txLen > 0){
-						int txSent = ::send(sock, (char*)txBuf, (int)txLen, 0);
-						Message::Extra("session %d: %d bytes sent", GetID(), txSent);
+							if(txLen > 0){
+								int txSent = ::send(sock, (char*)txBuf, (int)txLen, 0);
+								Message::Extra("session %d: %d bytes sent", GetID(), txSent);
+							}
+						}
 					}
 				}
 			}
