@@ -33,6 +33,9 @@ class TCPServer{
 public:
 	TCPServerImpl* impl;
 
+	int  listenInterval;    ///< polling interval for listen [ms] (for Winsock)
+	int  receiveInterval;   ///< polling interval for recv   [ms] (for Winsock)
+
 public:
 	/// start running
 	void Start(int port);

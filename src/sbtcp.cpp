@@ -344,16 +344,26 @@ public:
 
 public:
 	virtual void Func(){
-		while(!evStop.IsSet()){				
-			rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
-			Message::Extra("session %d: %d byte received", GetID(), rxLen);
+		while(!evStop.IsSet()){			
+			fd_set  fd;
+			timeval to;
+			while(!evStop.IsSet()){
+				fd.fd_count = 1;
+				fd.fd_array[0] = sock;
+				to.tv_sec  = 0;
+				to.tv_usec = 1000*server->owner->receiveInterval;
+				if(select(0, &fd, 0, 0, &to)){
+					rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
+					Message::Extra("session %d: %d byte received", GetID(), rxLen);
 
-			if(server->callback)
-				server->callback->OnTCPServerReceive(rxBuf, rxLen, txBuf, txLen);
+					if(server->callback)
+						server->callback->OnTCPServerReceive(rxBuf, rxLen, txBuf, txLen);
 
-			if(txLen > 0){
-				int txSent = ::send(sock, (char*)txBuf, txLen, 0);
-				Message::Extra("session %d: %d bytes sent", GetID(), txSent);
+					if(txLen > 0){
+						int txSent = ::send(sock, (char*)txBuf, (int)txLen, 0);
+						Message::Extra("session %d: %d bytes sent", GetID(), txSent);
+					}
+				}
 			}
 		}
 	}
@@ -368,7 +378,9 @@ public:
 		Message::Out("session %d: stopped", GetID());
 	}
 
-	TCPSessionImplWinsock(TCPServerImpl* _server, int _id):TCPSessionImpl(_server, _id){}
+	TCPSessionImplWinsock(TCPServerImpl* _server, int _id):TCPSessionImpl(_server, _id){
+		evStop.Create(true);
+	}
 	virtual ~TCPSessionImplWinsock(){}
 
 };
@@ -390,17 +402,26 @@ public:
 				break;
 			}
 		
-			UTRef<TCPSessionImplWinsock> s = new TCPSessionImplWinsock(this, (int)sessions.size());
-			
-			if((s->sock = ::accept(sock, NULL, NULL)) == INVALID_SOCKET){
-				Message::Error("accept failed");
-				closesocket(sock);
-				WSACleanup();
-				break;
+			fd_set  fd;
+			timeval to;
+			while(!evStop.IsSet()){
+				fd.fd_count = 1;
+				fd.fd_array[0] = sock;
+				to.tv_sec  = 0;
+				to.tv_usec = 1000*owner->listenInterval;
+				if(select(0, &fd, 0, 0, &to)){
+					UTRef<TCPSessionImplWinsock> s = new TCPSessionImplWinsock(this, (int)sessions.size());
+					if((s->sock = ::accept(sock, NULL, NULL)) == INVALID_SOCKET){
+						Message::Error("accept failed");
+						closesocket(sock);
+						WSACleanup();
+						break;
+					}
+					sessions.push_back(s);
+					s->Start();
+					break;
+				}
 			}
-
-			sessions.push_back(s);
-			s->Start();
 		}
 	}
 
@@ -444,7 +465,9 @@ public:
 		sessions.clear();
 	}
 
-	TCPServerImplWinsock(){}
+	TCPServerImplWinsock(){
+		evStop.Create(true);
+	}
 	virtual ~TCPServerImplWinsock(){}
 };
 
@@ -495,6 +518,9 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 TCPServer::TCPServer(bool use_asio){
+	listenInterval  = 100;
+	receiveInterval = 100;
+
 	if(use_asio)
 		 impl = new TCPServerImplAsio();
 	else impl = new TCPServerImplWinsock();
