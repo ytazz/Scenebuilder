@@ -352,7 +352,14 @@ public:
 				fd.fd_array[0] = sock;
 				to.tv_sec  = 0;
 				to.tv_usec = 1000*server->owner->receiveInterval;
-				if(select(0, &fd, 0, 0, &to)){
+				int ret = select(0, &fd, 0, 0, &to);
+				if(ret == 0){
+					// timeout expired
+				}
+				else if(ret == SOCKET_ERROR){
+					Message::Extra("session %d: recv failed", GetID());
+				}
+				else{
 					rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
 					Message::Extra("session %d: %d byte received", GetID(), rxLen);
 
