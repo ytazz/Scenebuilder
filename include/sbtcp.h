@@ -51,7 +51,9 @@ public:
 
 class TCPClient{
 public:
-	TCPClientImpl* impl;	
+	TCPClientImpl* impl;
+
+	int  receiveInterval;
 
 public:
 	bool Connect    (const char* host, int port);
