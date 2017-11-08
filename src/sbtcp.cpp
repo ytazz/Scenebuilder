@@ -508,11 +508,19 @@ public:
 			to.tv_sec  = 0;
 			to.tv_usec = 1000*owner->receiveInterval;
 			if(select(0, &fd, 0, 0, &to)){
-				rxLen = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
-				Message::Extra("client: %d byte received", rxLen);
+				int ret = ::recv(sock, (char*)rxBuf, sizeof(rxBuf), 0);
+				if(ret == SOCKET_ERROR){
+					Message::Error("client: recv failed");
+				}
+				else{
+					rxLen = ret;
+					Message::Extra("client: %d byte received", rxLen);
 
-				if(callback)
-					callback->OnTCPClientReceive(rxBuf, rxLen);
+					if(rxLen > 0){
+						if(callback)
+							callback->OnTCPClientReceive(rxBuf, rxLen);
+					}
+				}
 			}
 		}
 	}
