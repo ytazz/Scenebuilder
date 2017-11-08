@@ -35,7 +35,7 @@ struct Buffer : vector<byte>{
 		idx += offset;
 	}
 	void SeekFromHead(uint offset){
-		if(idx > (int)size())
+		if(offset > (int)size())
 			throw InvalidOperation();
 		idx = offset;
 	}
