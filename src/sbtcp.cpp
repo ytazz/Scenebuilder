@@ -405,6 +405,9 @@ public:
 	}
 
 	virtual void Start(int _port){
+		if(running)
+			Stop();
+
 		port = _port;
 
 		if(WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
@@ -422,14 +425,20 @@ public:
 		si.sin_port        = htons(port);
 		::bind(sock, (sockaddr*)&si, sizeof(si));
 
-		Run();		
+		Run();
+
+		running = true;
 	}
 
 	virtual void Stop(){
+		if(!running)
+			return;
+
 		for(uint i = 0; i < sessions.size(); i++)
 			sessions[i]->Stop();
 
 		evStop.Set();
+		WSACleanup();
 		Join();
 
 		sessions.clear();
