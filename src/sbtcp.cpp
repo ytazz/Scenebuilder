@@ -549,6 +549,7 @@ public:
 	}
 
 	TCPClientImplWinsock(){
+		running = false;
 		evStop.Create(true);
 	}
 	virtual ~TCPClientImplWinsock(){}
