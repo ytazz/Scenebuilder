@@ -91,7 +91,7 @@ public:
 
 	virtual bool Connect    (const char* _host, int _port) = 0;
 	virtual void Disconnect () = 0;
-	virtual void Send       (const byte* data, size_t len) = 0;
+	virtual bool Send       (const byte* data, size_t len) = 0;
 
 	TCPClientImpl(){
 		callback = 0;
@@ -326,10 +326,11 @@ public:
 		delete sock;
 		sock = 0;
 	}
-	virtual void Send(const byte* data, size_t len){
+	virtual bool Send(const byte* data, size_t len){
 		if(!sock)
-			return;
+			return false;
 		sock->send(boost::asio::buffer(data, len));
+		return true;
 	}
 
 	TCPClientImplAsio(){
@@ -566,9 +567,28 @@ public:
 
 		running = false;
 	}
-	virtual void Send(const byte* data, size_t len){
+	virtual bool Send(const byte* data, size_t len){
+		fd_set  fd;
+		timeval to;
+		
+		fd.fd_count = 1;
+		fd.fd_array[0] = sock;
+		to.tv_sec  = 0;
+		to.tv_usec = 1000*owner->sendTimeout;
+		int ret = select(0, 0, &fd, 0, &to);
+		if(ret == 0){
+			// timeout expired
+			Message::Error("client: select timed out");
+			return false;
+		}
+		if(ret == SOCKET_ERROR){
+			Message::Error("client: select failed");
+			return false;
+		}
+		
 		int txSent = ::send(sock, (char*)data, len, 0);
 		Message::Extra("client: %d bytes sent", txSent);
+		return true;
 	}
 
 	TCPClientImplWinsock(){
@@ -610,6 +630,7 @@ void TCPServer::SetCallback(TCPServerCallback* cb){
 
 TCPClient::TCPClient(bool use_asio){
 	receiveInterval = 100;
+	sendTimeout     = 100;
 
 	if(use_asio)
 		 impl = new TCPClientImplAsio();
@@ -629,8 +650,8 @@ void TCPClient::Disconnect(){
 	impl->Disconnect();
 }
 
-void TCPClient::Send(const byte* buf, size_t len){
-	impl->Send(buf, len);
+bool TCPClient::Send(const byte* buf, size_t len){
+	return impl->Send(buf, len);
 }
 
 void TCPClient::SetCallback(TCPClientCallback* cb){

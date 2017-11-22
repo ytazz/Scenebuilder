@@ -54,11 +54,12 @@ public:
 	TCPClientImpl* impl;
 
 	int  receiveInterval;
+	int  sendTimeout;
 
 public:
 	bool Connect    (const char* host, int port);
 	void Disconnect ();
-	void Send       (const byte* buf, size_t len);
+	bool Send       (const byte* buf, size_t len);
 	void SetCallback(TCPClientCallback* cb);
 
 	template<class T>
