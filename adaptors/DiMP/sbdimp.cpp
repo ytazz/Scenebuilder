@@ -65,6 +65,9 @@ int AdaptorDiMP::CreateObject(int id){
 			else if(type == CylinderProp::id){
 				shape = new ShapeAux(new DiMP::Cylinder(graph, ((CylinderProp*)prop)->radius, ((CylinderProp*)prop)->height, name));
 			}
+			else if(type == MeshProp::id){
+
+			}
 			if(shape){
 				RegAux(id, shape);
 				return SupportState::Supported;
