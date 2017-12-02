@@ -27,8 +27,11 @@ protected:
 		ConnectorAux(BodyAux* b, DiMP::Connector* c):body(b), con(c){}
 	};
 	struct ShapeAux : Aux{
-		DiMP::Geometry*  geo;
-		ShapeAux(DiMP::Geometry* g):geo(g){}
+		vector<DiMP::Geometry*>  geos;
+		string  filename;
+
+		ShapeAux(){}
+		ShapeAux(DiMP::Geometry* g){ geos.push_back(g); }
 	};
 	struct AttachAux : Aux{
 		ShapeAux*		shape;
@@ -52,8 +55,9 @@ public:
 	DiMP::Object*   GetObject  (string name);
 	DiMP::Joint*    GetJoint   (int    id  );
 	DiMP::Joint*    GetJoint   (string name);
-	DiMP::Geometry* GetGeometry(int    id  );
-	DiMP::Geometry* GetGeometry(string name);
+	
+	std::pair<DiMP::Geometry*, size_t> GetGeometry(int    id  );
+	std::pair<DiMP::Geometry*, size_t> GetGeometry(string name);
 	
 	virtual int		CreateObject(int id);
 	virtual void	DeleteObject(int id);

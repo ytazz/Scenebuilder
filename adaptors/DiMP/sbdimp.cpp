@@ -1,5 +1,6 @@
 ﻿#include "sbdimp.h"
 #include <sbmessage.h>
+#include <sbmodel.h>
 
 #define AUTO(T, X, EXP) T X = static_cast<T>(EXP)
 
@@ -55,7 +56,7 @@ int AdaptorDiMP::CreateObject(int id){
 
 		// 衝突判定形状
 		if(shapeProp->collision){
-			Aux* shape = 0;
+			ShapeAux* shape = 0;
 			if(type == BoxProp::id){
 				shape = new ShapeAux(new DiMP::Box(graph, ((BoxProp*)prop)->size, name));
 			}
@@ -66,7 +67,31 @@ int AdaptorDiMP::CreateObject(int id){
 				shape = new ShapeAux(new DiMP::Cylinder(graph, ((CylinderProp*)prop)->radius, ((CylinderProp*)prop)->height, name));
 			}
 			else if(type == MeshProp::id){
+				AUTO(MeshProp*, meshProp, prop);
+			
+				// 衝突判定用でなければ無視
+				if(!meshProp->collision)
+					return SupportState::Ignored;
 
+				// モデルコンテナから取得
+				Model* model = models->GetModel(id);
+				if(!model){
+					Message::Error("model %s not found in the container", (const char*)meshProp->filename);
+					return SupportState::Ignored;
+				}
+				
+				shape = new ShapeAux();
+				if(meshProp->convex){
+					DiMP::Geometry* geo = new DiMP::Mesh(graph, name);
+					for(uint i = 0; i < model->meshSolid.size(); i++){
+						Mesh& mesh = model->meshSolid[i];
+						for(uint j = 0; j < mesh.positions.size(); j++){
+						}
+					}
+					shape->geos.push_back(geo);
+				}
+				else{
+				}
 			}
 			if(shape){
 				RegAux(id, shape);
@@ -100,7 +125,7 @@ int AdaptorDiMP::CreateObject(int id){
 		AUTO(ShapeAux*, shapeAux, GetAux(shapeId));
 		AUTO(ConnectorAux*, conAux, GetAux(conId));
 
-		conAux->con->geos.Add(shapeAux->geo);
+		conAux->con->geos.Add(&shapeAux->geos[0], shapeAux->geos.size());
 		RegAux(id, new AttachAux(shapeAux, conAux));
 		return SupportState::Supported;
 	}
@@ -212,11 +237,44 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 
 	}
 	else if(typedb->KindOf(type, ShapeProp::id)){
+		AUTO(ShapeAux*, shapeAux, GetAux(id));
 		if(type == BoxProp::id){
+			AUTO(BoxProp*, boxProp, prop);
+			AUTO(DiMP::Box*, box, shapeAux->geos[0]);
+			if(cat & AttrCategory::Param){
+				if(download){
+					box->size = boxProp->size;
+				}
+				else{
+					boxProp->size = box->size;
+				}
+			}
 		}
 		else if(type == SphereProp::id){
+			AUTO(SphereProp*, sphereProp, prop);
+			AUTO(DiMP::Sphere*, sphere, shapeAux->geos[0]);
+			if(cat & AttrCategory::Param){
+				if(download){
+					sphere->radius = sphereProp->radius;
+				}
+				else{
+					sphereProp->radius = sphere->radius;
+				}
+			}
 		}
 		else if(type == CylinderProp::id){
+			AUTO(CylinderProp*, cylinderProp, prop);
+			AUTO(DiMP::Cylinder*, cylinder, shapeAux->geos[0]);
+			if(cat & AttrCategory::Param){
+				if(download){
+					cylinder->radius = cylinderProp->radius;
+					cylinder->length = cylinderProp->height;
+				}
+				else{
+					cylinderProp->radius = cylinder->radius;
+					cylinderProp->height = cylinder->length;
+				}
+			}
 		}
 	}
 	else if(typedb->KindOf(type, JointProp::id)){
@@ -271,14 +329,14 @@ DiMP::Joint* AdaptorDiMP::GetJoint(string name){
 	return jntAux->joint;
 }
 
-DiMP::Geometry* AdaptorDiMP::GetGeometry(int id){
+std::pair<DiMP::Geometry*, size_t> AdaptorDiMP::GetGeometry(int id){
 	AUTO(ShapeAux*, shapeAux, HandleByID(id, ShapeProp::id));
-	return shapeAux->geo;
+	return std::make_pair(shapeAux->geos[0], shapeAux->geos.size());
 }
 
-DiMP::Geometry* AdaptorDiMP::GetGeometry(string name){
+std::pair<DiMP::Geometry*, size_t> AdaptorDiMP::GetGeometry(string name){
 	AUTO(ShapeAux*, shapeAux, HandleByName(name, ShapeProp::id));
-	return shapeAux->geo;
+	return std::make_pair(shapeAux->geos[0], shapeAux->geos.size());
 }
 
 }
