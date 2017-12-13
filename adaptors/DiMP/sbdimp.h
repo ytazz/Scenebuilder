@@ -46,11 +46,11 @@ protected:
 	};
 	
 	DiMP::Graph*	graph;
-	real_t			syncTime;
+	//real_t			syncTime;
 	
 public:
 	void            Set        (DiMP::Graph*  g);
-	void            SetSyncTime(real_t time);
+	//void            SetSyncTime(real_t time);
 	DiMP::Object*   GetObject  (int    id  );
 	DiMP::Object*   GetObject  (string name);
 	DiMP::Joint*    GetJoint   (int    id  );

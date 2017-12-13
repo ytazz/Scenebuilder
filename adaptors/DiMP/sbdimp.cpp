@@ -10,16 +10,16 @@ namespace Scenebuilder{;
 
 AdaptorDiMP::AdaptorDiMP(){
 	graph    = 0;
-	syncTime = 0.0;
+	//syncTime = 0.0;
 }
 
 void AdaptorDiMP::Set(DiMP::Graph* g){
 	graph = g;
 }
 
-void AdaptorDiMP::SetSyncTime(real_t time){
-	syncTime = time;
-}
+//void AdaptorDiMP::SetSyncTime(real_t time){
+//	syncTime = time;
+//}
 
 int AdaptorDiMP::CreateObject(int id){
 	int type       = scene->GetObjectType(id);
@@ -82,15 +82,22 @@ int AdaptorDiMP::CreateObject(int id){
 				
 				shape = new ShapeAux();
 				if(meshProp->convex){
-					DiMP::Geometry* geo = new DiMP::Mesh(graph, name);
+					DiMP::Mesh* geo = new DiMP::Mesh(graph, name);
 					for(uint i = 0; i < model->meshSolid.size(); i++){
 						Mesh& mesh = model->meshSolid[i];
-						for(uint j = 0; j < mesh.positions.size(); j++){
+						int ntri = ((int)mesh.positions.size())/3;
+						geo->tris.resize(ntri);
+						for(int j = 0; j < ntri; j++){
+							geo->tris[j].vertices[0] = mesh.positions[3*j+0];
+							geo->tris[j].vertices[1] = mesh.positions[3*j+1];
+							geo->tris[j].vertices[2] = mesh.positions[3*j+2];
+							geo->tris[j].normal      = mesh.normals  [3*j+0];
 						}
 					}
 					shape->geos.push_back(geo);
 				}
 				else{
+
 				}
 			}
 			if(shape){
@@ -217,10 +224,14 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 			else{
 				// syncTimeに設定された時刻の状態
 				quat_t qinv = tr.rot.Conjugated();
-				bodyProp->trn    = qinv * (obj->Pos(syncTime) - tr.trn);
-				bodyProp->rot    = qinv * obj->Ori(syncTime);
-				bodyProp->vel    = obj->Vel(syncTime);
-				bodyProp->angvel = obj->Angvel(syncTime);
+				bodyProp->trn    = qinv * (obj->snapshot.pos - tr.trn);
+				bodyProp->rot    = qinv *  obj->snapshot.ori;
+				bodyProp->vel    = obj->snapshot.vel;
+				bodyProp->angvel = obj->snapshot.angvel;
+				//bodyProp->trn    = qinv * (obj->Pos(syncTime) - tr.trn);
+				//bodyProp->rot    = qinv * obj->Ori(syncTime);
+				//bodyProp->vel    = obj->Vel(syncTime);
+				//bodyProp->angvel = obj->Angvel(syncTime);
 			}
 		}
 	}
