@@ -121,6 +121,7 @@ public:
 
 public:
 	/// 内部関数
+	void    Prepare             ();
 	real_t  CalcStepSize        ();
 	real_t  CalcUpdatedObjective(real_t alpha);
 	

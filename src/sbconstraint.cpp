@@ -93,8 +93,8 @@ void Constraint::CalcError(){
 
 void Constraint::CalcDeviation(){
 	y.clear();
-	for(uint i = 0; i < links.size(); i++)
-		links[i]->AddError();
+	for(Link* link : links)
+		link->AddError();
 }
 
 void Constraint::RegisterDeviation(vvec_t& yvec){
@@ -113,10 +113,8 @@ void Constraint::CalcCorrection(){
 	const real_t eps = (real_t)1.0e-10;
 	
 	J.clear();
-	for(uint i = 0; i < links.size(); i++){
-		Link* lnk = links[i];
-		if(!lnk->var->locked)
-			lnk->AddRowSqr(J);
+	for(Link* link : links_active){
+		link->AddRowSqr(J);
 	}
 	
 	// 対角成分の逆数
@@ -136,19 +134,24 @@ void Constraint::CalcCorrection(){
 		dyd *= (dyd_lim / dyd_max);
 
 	for(int k = 0; k < nelem; k++){
-		for(uint i = 0; i < links.size(); i++){
-			links[i]->Backward(k, dyd[k], &Variable::UpdateConjugate3);
+		for(Link* link : links_active){
+			link->ColTrans(k, dyd[k], &Variable::UpdateConjugate3);
 		}
 	}
 }
 
 void Constraint::UpdateGradient(uint k){
-	for(uint i = 0; i < links.size(); i++){
-		links[i]->Backward(k, -y[k], &Variable::UpdateVar2);
+	for(Link* link : links_active){
+		link->ColTrans(k, -y[k], &Variable::UpdateVar2);
 	}
 }
 
 void Constraint::UpdateMultiplier(uint k){
+	dy[k] = 0.0;
+	for(Link* link : links_active){
+		link->Row(k, link->var->dx, &Constraint::UpdateError1);
+	}
+
 	// update multiplier
 	real_t lnew;
 	dl[k] = (real_t)-1.0 * Jinv[k] * (dy[k] - dyd[k]);
@@ -159,13 +162,13 @@ void Constraint::UpdateMultiplier(uint k){
 
 	// update variable
 	if(solver->param.methodMinor == Solver::Method::Minor::GaussSeidel){
-		for(uint i = 0; i < links.size(); i++){
-			links[i]->Backward(k, dl[k], &Variable::UpdateVar1);
+		for(Link* link : links_active){
+			link->ColTrans(k, dl[k], &Variable::UpdateVar1);
 		}
 	}
 	else{
-		for(uint i = 0; i < links.size(); i++){
-			links[i]->Backward(k, dl[k], &Variable::UpdateVar2);
+		for(Link* link : links_active){
+			link->ColTrans(k, dl[k], &Variable::UpdateVar2);
 		}
 	}
 }
@@ -180,14 +183,13 @@ void Constraint::UpdateError2(uint k, real_t _dy){
 
 void Constraint::UpdateError3(uint k, real_t ddy){
 	dy[k] += ddy;
-	for(uint i = 0; i < links.size(); i++)
-		links[i]->Backward(k, ddy, &Variable::UpdateConjugate1);
+	for(Link* link : links_active)
+		link->ColTrans(k, ddy, &Variable::UpdateConjugate1);
 }
 
 void Constraint::UpdateConjugate(uint k){
-	for(Links::iterator it = links.begin(); it != links.end(); it++){
-		Link* lnk = *it;
-		lnk->Backward(k, dy[k], &Variable::UpdateConjugate1);
+	for(Link* link : links_active){
+		link->ColTrans(k, dy[k], &Variable::UpdateConjugate1);
 	}
 }
 

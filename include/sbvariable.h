@@ -31,9 +31,7 @@ public:
 		return 3;
 	}
 
-	ID():tag(-1), owner(0){}
-
-	ID(int _tag, void* _owner = 0, void* _owner2 = 0, string _name = ""){
+	ID(int _tag = 0, void* _owner = 0, void* _owner2 = 0, string _name = ""){
 		tag    = _tag;
 		owner  = _owner;
 		owner2 = _owner2;
@@ -63,6 +61,7 @@ public:
 
 	Solver*	 solver;
 	Links	 links;			///< links to constraints
+	Links    links_active;
 	bool	 locked;		///< locked or not
 	int	     type;			///< variable type
 	int	     nelem;			///< number of elements

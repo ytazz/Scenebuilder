@@ -48,10 +48,8 @@ void Variable::Prepare(){
 	const real_t eps = (real_t)1.0e-10;
 	
 	J.clear();
-	for(uint i = 0; i < links.size(); i++){
-		Link* lnk = links[i];
-		if(lnk->con->active)
-			lnk->AddColSqr(J);
+	for(Link* link : links_active){
+		link->AddColSqr(J);
 	}
 	
 	// 対角成分の逆数
@@ -69,10 +67,10 @@ void Variable::UpdateVar1(uint k, real_t ddx){
 	dx[k] += ddx;
 	
 	// error update: 
-	for(Links::iterator it = links.begin(); it != links.end(); it++){
-		Link* lnk = *it;
-		lnk->Forward(k, ddx, &Constraint::UpdateError1);
-	}
+	//for(Links::iterator it = links.begin(); it != links.end(); it++){
+	//	Link* lnk = *it;
+	//	lnk->Forward(k, ddx, &Constraint::UpdateError1);
+	//}
 }
 
 void Variable::UpdateVar2(uint k, real_t ddx){
@@ -91,21 +89,20 @@ void Variable::UpdateVar3(uint k){
 
 	// update variable
 	if(solver->param.methodMinor == Solver::Method::Minor::GaussSeidel){
-		for(uint i = 0; i < links.size(); i++){
-			links[i]->Forward(k, ddx, &Constraint::UpdateError3);
+		for(Link* link : links_active){
+			link->Col(k, ddx, &Constraint::UpdateError3);
 		}
 	}
 	else{
-		for(uint i = 0; i < links.size(); i++){
-			links[i]->Forward(k, ddx, &Constraint::UpdateError1);
+		for(Link* link : links_active){
+			link->Col(k, ddx, &Constraint::UpdateError1);
 		}
 	}
 }
 
 void Variable::UpdateError(uint k){
-	for(Links::iterator it = links.begin(); it != links.end(); it++){
-		Link* lnk = *it;
-		lnk->Forward(k, dx[k], &Constraint::UpdateError1);
+	for(Link* link : links_active){
+		link->Col(k, dx[k], &Constraint::UpdateError1);
 	}
 }
 

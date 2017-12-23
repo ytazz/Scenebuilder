@@ -31,7 +31,7 @@ public:
 	}
 
 	/// “Ç‚İ‚Ş
-	bool Read(const string& filename, const string& delim){
+	bool Read(const string& filename, const string& delim, bool compress = false){
 		ifstream ifs;
 		ifs.open(filename, ifstream::in | ifstream::binary);
 
@@ -48,13 +48,13 @@ public:
 		ifs.close();
 	
 		// ‚Ü‚¸s”‚ğ”‚¦‚é
-		rowIt.Set(contents, "\n", false);
+		rowIt.Set(contents, "\n", compress);
 		int nrow = 0;
 		for(; !rowIt.IsEnd(); rowIt.Next())
 			nrow++;
 		row.resize(nrow);
 
-		rowIt.Set(contents, "\n", false);
+		rowIt.Set(contents, "\n", compress);
 		for(int i = 0; !rowIt.IsEnd(); rowIt.Next(), i++){
 			Row& r = row[i];
 
@@ -64,13 +64,13 @@ public:
 				continue;
 
 			// —ñ”‚ğ”‚¦‚é
-			colIt.Set(str, delim, false);
+			colIt.Set(str, delim, compress);
 			int ncol = 0;
 			for(; !colIt.IsEnd(); colIt.Next())
 				ncol++;
 			r.col.resize(ncol);
 			
-			colIt.Set(str, delim, false);
+			colIt.Set(str, delim, compress);
 			for(int j = 0; !colIt.IsEnd(); colIt.Next(), j++){
 				r.col[j] = colIt.GetToken();
 			}

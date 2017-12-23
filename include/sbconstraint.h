@@ -28,6 +28,7 @@ public:
 
 	Solver*		solver;
 	Links		links;		///< links to constrained variables
+	Links       links_active;
 	int         nelem;
 	int         level;      ///< priority level
 	int         index;

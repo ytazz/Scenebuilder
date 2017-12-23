@@ -83,7 +83,7 @@ int AdaptorDiMP::CreateObject(int id){
 				shape = new ShapeAux();
 				if(meshProp->convex){
 					DiMP::Mesh* geo = new DiMP::Mesh(graph, name);
-					for(uint i = 0; i < model->meshSolid.size(); i++){
+					for(int i = 0; i < (int)model->meshSolid.size(); i++){
 						Mesh& mesh = model->meshSolid[i];
 						int ntri = ((int)mesh.positions.size())/3;
 						geo->tris.resize(ntri);
@@ -97,7 +97,18 @@ int AdaptorDiMP::CreateObject(int id){
 					shape->geos.push_back(geo);
 				}
 				else{
-
+					for(int i = 0; i < (int)model->meshSolid.size(); i++){
+						Mesh& mesh = model->meshSolid[i];
+						int ntri = ((int)mesh.positions.size())/3;
+						for(int j = 0; j < ntri; j++){
+							DiMP::Triangle* geo = new DiMP::Triangle(graph, name);
+							geo->vertices[0] = mesh.positions[3*j+0];
+							geo->vertices[1] = mesh.positions[3*j+1];
+							geo->vertices[2] = mesh.positions[3*j+2];
+							geo->normal      = mesh.normals  [3*j+0];
+							shape->geos.push_back(geo);
+						}
+					}
 				}
 			}
 			if(shape){

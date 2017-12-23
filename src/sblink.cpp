@@ -48,11 +48,15 @@ void SLink::RegisterCoef(vmat_t& J){
 		J[i+n][j+n] = coef;
 }	
 
-void SLink::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void SLink::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(k, coef * d);
 }
 
-void SLink::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void SLink::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(k, coef * d[k]);
+}
+
+void SLink::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(k, coef * d);
 }
 
@@ -73,6 +77,12 @@ void V3Link::SetCoef(vec3_t k){
 }
 
 //-------------------------------------------------------------------------------------------------
+// c % x = [c[1] * x[2] - c[2] * x[1]
+//          c[2] * x[0] - c[0] * x[2]
+// 	        c[0] * x[1] - c[1] * x[0]]
+// J = [ 0    -c[2]  c[1]
+//       c[2]  0    -c[0]
+// 	    -c[1]  c[0]  0   ]
 
 void X3Link::AddRowSqr(vec3_t& v){
 	v[0] += (coefsqr[2] + coefsqr[1]) * var->scale2;
@@ -98,7 +108,7 @@ void X3Link::RegisterCoef(vmat_t& J){
 	J[i+2][j+0] = -coef[1]; J[i+2][j+1] =  coef[0]; J[i+2][j+2] =  0.0    ;
 }	
 
-void X3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void X3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	if(k == 0){
 		(con->*func)(1,  coef[2] * d);
 		(con->*func)(2, -coef[1] * d);
@@ -113,7 +123,19 @@ void X3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
 	}
 }
 
-void X3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void X3Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	if(k == 0){
+		(con->*func)(0, coef[1]*d[2] - coef[2]*d[1]);
+	}
+	else if(k == 1){
+		(con->*func)(1, coef[2]*d[0] - coef[0]*d[2]);
+	}
+	else{
+		(con->*func)(2, coef[0]*d[1] - coef[1]*d[0]);
+	}
+}
+
+void X3Link::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	if(k == 0){
 		(var->*func)(1, -coef[2] * d);
 		(var->*func)(2,  coef[1] * d);
@@ -152,12 +174,16 @@ void C2Link::RegisterCoef(vmat_t& J){
 	J[i+1][j] = coef[1];
 }	
 
-void C2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void C2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[0] * d);
 	(con->*func)(1, coef[1] * d);
 }
 
-void C2Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void C2Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(k, coef[k] * d[0]);
+}
+
+void C2Link::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[k] * d);
 }
 
@@ -187,13 +213,17 @@ void C3Link::RegisterCoef(vmat_t& J){
 	J[i+2][j] = coef[2];
 }	
 
-void C3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void C3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[0] * d);
 	(con->*func)(1, coef[1] * d);
 	(con->*func)(2, coef[2] * d);
 }
 
-void C3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void C3Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(k, coef[k] * d[0]);
+}
+
+void C3Link::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[k] * d);
 }
 
@@ -220,11 +250,15 @@ void R2Link::RegisterCoef(vmat_t& J){
 	J[i][j+1] = coef[1];
 }	
 
-void R2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void R2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[k] * d);
 }
 
-void R2Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void R2Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[0] * d[0] + coef[1] * d[1]);
+}
+
+void R2Link::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[0] * d);
 	(var->*func)(1, coef[1] * d);
 }
@@ -255,11 +289,15 @@ void R3Link::RegisterCoef(vmat_t& J){
 	J[i][j+2] = coef[2];
 }	
 
-void R3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void R3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[k] * d);
 }
 
-void R3Link::Backward(uint k, real_t d, Variable::UpdateFunc func){
+void R3Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(0, coef[0] * d[0] + coef[1] * d[1] + coef[2] * d[2]);
+}
+
+void R3Link::ColTrans(uint k, real_t d, Variable::UpdateFunc func){
 	(var->*func)(0, coef[0] * d);
 	(var->*func)(1, coef[1] * d);
 	(var->*func)(2, coef[2] * d);
@@ -295,19 +333,23 @@ void M2Link::RegisterCoef(vmat_t& J){
 		J[i+ii][j+jj] = coef[ii][jj];
 }	
 
-void M2Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void M2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[0][k] * d);
 	(con->*func)(1, coef[1][k] * d);
 }
 
-void M2Link::Backward(uint k, real_t d, Variable  ::UpdateFunc func){
+void M2Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(k, coef[k][0] * d[0] + coef[k][1] * d[1]);
+}
+
+void M2Link::ColTrans(uint k, real_t d, Variable  ::UpdateFunc func){
 	(var->*func)(0, coef[k][0] * d);
 	(var->*func)(1, coef[k][1] * d);
 }
 
-vec2_t M2Link::Backward(vec2_t v){
-	return coef.trans() * v;
-}
+//vec2_t M2Link::Backward(vec2_t v){
+//	return coef.trans() * v;
+//}
 
 //-------------------------------------------------------------------------------------------------
 
@@ -340,20 +382,24 @@ void M3Link::RegisterCoef(vmat_t& J){
 		J[i+ii][j+jj] = coef[ii][jj];
 }	
 
-void M3Link::Forward(uint k, real_t d, Constraint::UpdateFunc func){
+void M3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
 	(con->*func)(0, coef[0][k] * d);
 	(con->*func)(1, coef[1][k] * d);
 	(con->*func)(2, coef[2][k] * d);
 }
 
-void M3Link::Backward(uint k, real_t d, Variable  ::UpdateFunc func){
+void M3Link::Row(uint k, vec3_t& d, Constraint::UpdateFunc func){
+	(con->*func)(k, coef[k][0] * d[0] + coef[k][1] * d[1] + coef[k][2] * d[2]);
+}
+
+void M3Link::ColTrans(uint k, real_t d, Variable  ::UpdateFunc func){
 	(var->*func)(0, coef[k][0] * d);
 	(var->*func)(1, coef[k][1] * d);
 	(var->*func)(2, coef[k][2] * d);
 }
 
-vec3_t M3Link::Backward(vec3_t v){
-	return coef.trans() * v;
-}
+//vec3_t M3Link::Backward(vec3_t v){
+//	return coef.trans() * v;
+//}
 
 }
