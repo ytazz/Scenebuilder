@@ -49,7 +49,7 @@ protected:
 
 		void Init();
 
-		virtual void SetParam              (PHGenericJointIf* jnt, const char* name, double value);
+		virtual void SetParam              (PHGenericJointIf* jnt, const string& name, double value);
 		virtual bool IsCyclic              (PHGenericJointIf* jnt);
 		virtual void GetMovableAxes        (PHGenericJointIf* jnt, int& n, int* indices);
 		virtual void CompBias              (PHGenericJointIf* jnt, Vec3d&  dbv, Vec3d&  dbw, const Vec3d& prel, const Quaterniond& qrel, const Vec3d& vrel, const Vec3d& wrel);

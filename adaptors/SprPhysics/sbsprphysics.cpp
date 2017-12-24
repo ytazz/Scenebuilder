@@ -218,9 +218,9 @@ void AdaptorSprPH::GenericJointCallback::Init(){
 	hCompRelativeVelocity   = (CompRelativeVelocityFunc  )GetProcAddress((HMODULE)hDll, "CompRelativeVelocityFunc"  );
 }
 
-void AdaptorSprPH::GenericJointCallback::SetParam(PHGenericJointIf* jnt, const char* name, double value){
+void AdaptorSprPH::GenericJointCallback::SetParam(PHGenericJointIf* jnt, const string& name, double value){
 	if(hSetParam)
-		return hSetParam(jnt, name, value);
+		return hSetParam(jnt, name.c_str(), value);
 }
 bool AdaptorSprPH::GenericJointCallback::IsCyclic(PHGenericJointIf* jnt){
 	if(hIsCyclic)
