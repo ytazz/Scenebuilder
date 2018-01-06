@@ -9,6 +9,7 @@ Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
 	index      = 0;
 	enabled    = true;
 	active     = true;
+	weight     = 1.0;
 	scale      = _scale;
 	scale2     = scale * scale;
 	scale_inv  = 1.0 / scale;
@@ -99,7 +100,7 @@ void Constraint::CalcDeviation(){
 
 void Constraint::RegisterDeviation(vvec_t& yvec){
 	for(int n = 0; n < nelem; n++)
-		yvec[index+n] = y[n];
+		yvec[index+n] = weight * y[n];
 }
 
 void Constraint::ResetState(){

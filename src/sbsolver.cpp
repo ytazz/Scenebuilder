@@ -414,7 +414,7 @@ void Solver::CalcDirection(){
 			y.clear();
 			for(Constraint* con : cons_active){
 				for(Link* link : con->links_active){
-					link->RegisterCoef(J);
+					link->RegisterCoef(J, con->weight);
 				}
 				con->RegisterDeviation(y);
 			}
@@ -590,12 +590,6 @@ void Solver::Step(){
 	if(param.verbose)
 		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
 	state.iterCount++;
-
-	// ログ有効時
-	//int i = Logging::MajorLoop;
- 	//if(doLog[i]){
-	//	LogValue(i);
-	//}
 }
 
 }

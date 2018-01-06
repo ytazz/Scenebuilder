@@ -34,6 +34,7 @@ public:
 	int         index;
 	bool		enabled;			///< enabled constraint (controlled by user)
 	bool		active;				///< active constraint (task-related constraints, range constraints)
+	real_t      weight;
 	real_t		scale, scale2, scale_inv, scale2_inv;		///< scaling coefficient
 	
 	/** error correction rate
