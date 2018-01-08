@@ -14,7 +14,7 @@ class ImageBMP : public BitmapImage{
 public:
 #pragma pack(push,1)
 	struct FileHeader{
-		unsigned short signature;
+		unsigned char  signature[2];
 		unsigned int   sizeFile;
 		unsigned short res1;
 		unsigned short res2;

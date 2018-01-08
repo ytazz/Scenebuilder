@@ -65,20 +65,38 @@ bool ImageBMP::Save(string filename){
 	if(!ofs.is_open())
 		throw FileError();
 
-	if(infoHeader.nbits != 24){
-		Message::Error("only 24 bit bmp is supported");
-		return false;
-	}
-
-	ofs.write((const char*)&fileHeader, sizeof(FileHeader));
-	ofs.write((const char*)&infoHeader, sizeof(InfoHeader));
-
 	int nbytesLine = bpp * width;
 	while(nbytesLine % 4)
 		nbytesLine++;
 
+	int szHeader = sizeof(FileHeader) + sizeof(InfoHeader);
+	int szData   = nbytesLine * height;
+
+	fileHeader.signature[0] = 'B';
+	fileHeader.signature[1] = 'M';
+	fileHeader.sizeFile     = szHeader + szData;
+	fileHeader.res1         = 0;
+	fileHeader.res2         = 0;
+	fileHeader.offset       = szHeader;
+
+	infoHeader.sizeHeader       = 40;
+	infoHeader.width            = width;
+	infoHeader.height           = height;
+	infoHeader.nplanes          = 1;
+	infoHeader.nbits            = 24;
+	infoHeader.compress         = 0;
+	infoHeader.sizeBitmap       = szData;
+	infoHeader.hres             = 0;
+	infoHeader.vres             = 0;
+	infoHeader.ncolors          = 0;
+	infoHeader.nimportantColors = 0;
+
+
+	ofs.write((const char*)&fileHeader, sizeof(FileHeader));
+	ofs.write((const char*)&infoHeader, sizeof(InfoHeader));
+
 	vector<byte> data;
-	data.resize(nbytesLine * height);
+	data.resize(szData);
 	fill(data.begin(), data.end(), 0);
 
 	// 上下反転，BGR -> RGB

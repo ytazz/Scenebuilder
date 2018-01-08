@@ -64,6 +64,8 @@ public:
 	
 	/// ウェブカラー名からRGBAを取得
 	static bool ColorFromName(string_iterator_pair name, Vec4f& c);
+	/// インデックスからRGBAを取得
+	static bool ColorFromIndex(int index, Vec4f& c);
 	
 	template<typename T>
 	static void ToBinary(byte*& buf, T val){
