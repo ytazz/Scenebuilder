@@ -373,7 +373,7 @@ IKJointHandle::IKJointHandle(IKSolver* _solver, IKJoint* _joint){
 	solver = _solver;
 	joint  = _joint;
 	
-	for(int i = 0; i < 3; i++){
+	for(int i = 0; i < 6; i++){
 		enablePos[i] = false;
 		enableVel[i] = false;
 		enableAcc[i] = false;

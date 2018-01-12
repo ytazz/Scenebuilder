@@ -1,5 +1,6 @@
 ﻿#include <IK/sbik.h>
 #include <sbmessage.h>
+#include <sbrollpitchyaw.h>
 
 #define AUTO(T, X, EXP) T X = static_cast<T>(EXP)
 
@@ -211,14 +212,23 @@ int AdaptorIK::CreateObject(int id){
 		else if(type == SliderProp::id){
 			jntType = IKJoint::Type::Slider;
 		}
+		else if(type == UniversaljointProp::id){
+			jntType = IKJoint::Type::Universaljoint;
+		}
 		else if(type == BalljointProp::id){
 			jntType = IKJoint::Type::Balljoint;
 		}
 		else if(type == FixjointProp::id){
 			jntType = IKJoint::Type::Fixjoint;
 		}
+		else if(type == FreejointProp::id){
+			jntType = IKJoint::Type::Freejoint;
+		}
 		else if(type == LineToLineProp::id){
 			jntType = IKJoint::Type::LineToLine;
+		}
+		else if(type == PointToPointProp::id){
+			jntType = IKJoint::Type::PointToPoint;
 		}
 		else{
 			Message::Error("%s: unsupported joint type", name.c_str());
@@ -238,9 +248,11 @@ int AdaptorIK::CreateObject(int id){
 		ikJoint->SetSocketBody(sockBody);
 		ikJoint->SetPlugBody  (plugBody);
 
-		if( typedb->KindOf(type, Joint1DProp  ::id) ||
-			typedb->KindOf(type, BalljointProp::id) ||
-			typedb->KindOf(type, FixjointProp ::id) )
+		if( typedb->KindOf(type, Joint1DProp       ::id) ||
+			typedb->KindOf(type, UniversaljointProp::id) ||
+			typedb->KindOf(type, BalljointProp     ::id) ||
+			typedb->KindOf(type, FixjointProp      ::id) ||
+			typedb->KindOf(type, FreejointProp     ::id) )
 			plugBody->SetParent(sockBody, ikJoint);
 
 		JointAux* jntAux = new JointAux(sockAux, plugAux, ikJoint);
@@ -445,6 +457,56 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				}
 			}
 		}
+		if(typedb->KindOf(type, UniversaljointProp::id)){
+			AUTO(UniversaljointProp*, uniProp, prop);
+				
+			if(cat & AttrCategory::State){
+				if(download){
+					// IK計算の初期値に設定
+					jointAux->ikJoint->SetInitialPos(0, uniProp->pos[0]);
+					jointAux->ikJoint->SetInitialPos(1, uniProp->pos[1]);
+				}
+			}
+		}
+		if(typedb->KindOf(type, BalljointProp::id)){
+			AUTO(BalljointProp*, ballProp, prop);
+				
+			vec3_t angle;
+			if(cat & AttrCategory::State){
+				if(download){
+					// IK計算の初期値に設定
+					angle = ToRollPitchYaw(ballProp->pos);
+					jointAux->ikJoint->SetInitialPos(0, angle[0]);
+					jointAux->ikJoint->SetInitialPos(1, angle[1]);
+					jointAux->ikJoint->SetInitialPos(2, angle[2]);
+				}
+				else{
+					// IKの計算結果をtargetposに代入
+					angle[0] = jointAux->ikJoint->GetPos(0);
+					angle[1] = jointAux->ikJoint->GetPos(1);
+					angle[2] = jointAux->ikJoint->GetPos(2);
+					ballProp->targetpos = FromRollPitchYaw(angle);
+				}
+			}
+		}
+		if(typedb->KindOf(type, FreejointProp::id)){
+			AUTO(FreejointProp*, freeProp, prop);
+				
+			vec3_t angle;
+			if(cat & AttrCategory::State){
+				if(download){
+					// IK計算の初期値に設定
+					angle = ToRollPitchYaw(freeProp->ori);
+					jointAux->ikJoint->SetInitialPos(0, freeProp->pos[0]);
+					jointAux->ikJoint->SetInitialPos(1, freeProp->pos[1]);
+					jointAux->ikJoint->SetInitialPos(2, freeProp->pos[2]);
+					jointAux->ikJoint->SetInitialPos(3, angle[0]);
+					jointAux->ikJoint->SetInitialPos(4, angle[1]);
+					jointAux->ikJoint->SetInitialPos(5, angle[2]);
+				}
+			}
+		}
+
 	}
 	else if(type == IKProp::id){
 		AUTO(IKProp*, ikProp, prop);

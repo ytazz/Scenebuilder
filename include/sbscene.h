@@ -551,6 +551,22 @@ struct SliderProp : Joint1DProp{
 	}
 };
 
+struct UniversaljointProp : JointProp{
+	static int id;
+
+	vec2_t	  pos;				///< position
+	vec2_t	  vel;				///< velocity
+
+	static string GetName(){ return "universaljoint"; }
+	static void Construct(Property* p){ new(p) UniversaljointProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(UniversaljointProp), &Construct, JointProp::id);
+		db->GetType(id)
+			->AddAttr("pos", Primitive::Vec2, 1, OFFSET(UniversaljointProp, pos), vec2_t(), AttrCategory::State, Dimension::R  )
+			->AddAttr("vel", Primitive::Vec2, 1, OFFSET(UniversaljointProp, vel), vec2_t(), AttrCategory::State, Dimension::R_T);
+	}
+};
+
 /** Balljoint
 	- 球面ジョイント．
  **/
@@ -605,6 +621,28 @@ struct FixjointProp : JointProp{
 	static void Construct(Property* p){ new(p) FixjointProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(FixjointProp), &Construct, JointProp::id);
+	}
+};
+
+/** Freejoint
+ */
+struct FreejointProp : JointProp{
+	static int id;
+
+	vec3_t    pos;
+	quat_t	  ori;
+	vec3_t	  vel;
+	vec3_t    angvel;
+
+	static string GetName(){ return "freejoint"; }
+	static void Construct(Property* p){ new(p) FreejointProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(FreejointProp), &Construct, JointProp::id);
+		db->GetType(id)
+			->AddAttr("pos"   , Primitive::Vec3, 1, OFFSET(FreejointProp, pos   ), vec3_t(), AttrCategory::State, Dimension::L	)
+			->AddAttr("ori"   , Primitive::Quat, 1, OFFSET(FreejointProp, ori   ), quat_t(), AttrCategory::State, Dimension::R	)
+			->AddAttr("vel"   , Primitive::Vec3, 1, OFFSET(FreejointProp, vel   ), vec3_t(), AttrCategory::State, Dimension::L_T)
+			->AddAttr("angvel", Primitive::Vec3, 1, OFFSET(FreejointProp, angvel), vec3_t(), AttrCategory::State, Dimension::R_T);
 	}
 };
 

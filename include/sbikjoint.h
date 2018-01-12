@@ -21,15 +21,13 @@ public:
 		enum{
 			Hinge,
 			Slider,
+			Universaljoint,
 			Balljoint,
+			Freejoint,
 			Fixjoint,
 			LineToLine,
+			PointToPoint,
 		};
-	};
-	struct Node{
-		IKBody* body;
-		bool    shared;
-		Link*   links[3];
 	};
 
 	class PosCon : public Constraint{
@@ -66,7 +64,7 @@ public:
 	IKBody*    rootBody;       ///< sock側とplug側の共通の親
 	int        type;
 	int        ndof;           ///< 関節の自由度
-	bool       revolutive[3];  ///< 回転自由度ならtrue 直動自由度ならfalse
+	bool       revolutive[6];  ///< 回転自由度ならtrue 直動自由度ならfalse
 	
 	vec3_t	sockPos;			///< 親剛体に対するソケットの位置と向き
 	quat_t  sockOri;
@@ -86,9 +84,9 @@ public:
 	
 	vec3_t	relPos;	            ///< ソケットに対するプラグの位置と向き
 	quat_t  relOri;
-	vec3_t  axis[3];
-	vec3_t	Jv[3], Jv_abs[3];	///< ヤコビアン（並進）
-	vec3_t  Jw[3], Jw_abs[3];	///< ヤコビアン（回転）
+	vec3_t  axis[6];
+	vec3_t	Jv[6], Jv_abs[6];	///< ヤコビアン（並進）
+	vec3_t  Jw[6], Jw_abs[6];	///< ヤコビアン（回転）
 
 	vec3_t	pos;				///< グローバル座標上の位置と向き
 	quat_t  ori;
@@ -106,26 +104,23 @@ public:
 	vec3_t  qdd_ini;
 	vec3_t  tau_ini;
 
-	vec3_t  q_limit[2];
-	vec3_t  qd_limit[2];
+	vec6_t  q_limit[2];
+	vec6_t  qd_limit[2];
 
-	bool    q_lock  [3];
-	bool    qd_lock [3];
-	bool    qdd_lock[3];
-	bool    tau_lock[3];
+	bool    q_lock  [6];
+	bool    qd_lock [6];
+	bool    qdd_lock[6];
+	bool    tau_lock[6];
 
-	SVar*   q_var  [3];             ///< 関節変位（ヒンジ，スライダ）
-	SVar*   qd_var [3];
-	SVar*   qdd_var[3];
-	SVar*   force_var [3];
-	SVar*   moment_var[3];
+	SVar*   q_var  [6];             ///< 関節変位（ヒンジ，スライダ）
+	SVar*   qd_var [6];
+	SVar*   qdd_var[6];
+	SVar*   force_var [6];
+	SVar*   moment_var[6];
 
 	PosCon* pos_con[3];
 	VelCon* vel_con[3];
 	AccCon* acc_con[3];
-
-	vector<Node>  sockPath;
-	vector<Node>  plugPath;
 	
 public:
 	void CalcJacobian    ();

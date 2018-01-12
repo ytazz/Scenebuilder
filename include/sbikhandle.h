@@ -178,21 +178,21 @@ public:
 	IKSolver*   solver;
 	IKJoint*	joint;
 	
-	PosCon*     pos_con[3];
-	VelCon*     vel_con[3];
-	AccCon*     acc_con[3];
+	PosCon*     pos_con[6];
+	VelCon*     vel_con[6];
+	AccCon*     acc_con[6];
 
-	vec3_t  pos;
-	vec3_t  vel;
-	vec3_t  acc;
+	vec6_t  pos;
+	vec6_t  vel;
+	vec6_t  acc;
 
-	vec3_t  desPos;
-	vec3_t  desVel;
-	vec3_t  desAcc;
+	vec6_t  desPos;
+	vec6_t  desVel;
+	vec6_t  desAcc;
 
-	bool    enablePos[3];
-	bool    enableVel[3];
-	bool    enableAcc[3];
+	bool    enablePos[6];
+	bool    enableVel[6];
+	bool    enableAcc[6];
 
 public:
 	void SetDesiredPos(int i, real_t pos);

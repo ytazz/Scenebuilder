@@ -2,6 +2,7 @@
 #include <sbikbody.h>
 #include <sbikjoint.h>
 #include <sbmessage.h>
+#include <sbrollpitchyaw.h>
 
 #include <GL/glew.h>
 
@@ -149,9 +150,25 @@ IKJoint::IKJoint(IKSolver* _solver, int _type){
 		ndof = 1;
 		revolutive[0] = false;
 	}
+	if(type == Type::Universaljoint){
+		ndof = 2;
+		revolutive[0] = true;
+		revolutive[1] = true;
+	}
 	if(type == Type::Balljoint){
 		ndof = 3;
-		revolutive[0] = revolutive[1] = revolutive[2] = true;
+		revolutive[0] = true;
+		revolutive[1] = true;
+		revolutive[2] = true;
+	}
+	if(type == Type::Freejoint){
+		ndof = 6;
+		revolutive[0] = false;
+		revolutive[1] = false;
+		revolutive[2] = false;
+		revolutive[3] = true;
+		revolutive[4] = true;
+		revolutive[5] = true;
 	}
 	if(type == Type::Fixjoint){
 		ndof = 0;
@@ -159,8 +176,11 @@ IKJoint::IKJoint(IKSolver* _solver, int _type){
 	if(type == Type::LineToLine){
 		ndof = 0;
 	}
+	if(type == Type::PointToPoint){
+		ndof = 0;
+	}
 
-	for(int i = 0; i < 3; i++){
+	for(int i = 0; i < 6; i++){
 		q_var  [i] = 0;
 		qd_var [i] = 0;
 		qdd_var[i] = 0;
@@ -316,6 +336,21 @@ void IKJoint::Prepare(){
 			moment_var[1]->locked = tau_lock[1];
 			moment_var[2]->locked = tau_lock[2];
 		}
+		if(type == Type::Freejoint){
+			force_var [0]->val = 0.0;
+			force_var [1]->val = 0.0;
+			force_var [2]->val = 0.0;
+			moment_var[0]->val = 0.0;
+			moment_var[1]->val = 0.0;
+			moment_var[2]->val = 0.0;
+
+			force_var [0]->locked = true;
+			force_var [1]->locked = true;
+			force_var [2]->locked = true;
+			moment_var[0]->locked = true;
+			moment_var[1]->locked = true;
+			moment_var[2]->locked = true;
+		}
 		if(type == Type::LineToLine){
 			force_var [2]->val = 0.0;
 			moment_var[0]->val = 0.0;
@@ -323,6 +358,15 @@ void IKJoint::Prepare(){
 			moment_var[2]->val = 0.0;
 
 			force_var [2]->locked = true;
+			moment_var[0]->locked = true;
+			moment_var[1]->locked = true;
+			moment_var[2]->locked = true;
+		}
+		if(type == Type::PointToPoint){
+			moment_var[0]->val = 0.0;
+			moment_var[1]->val = 0.0;
+			moment_var[2]->val = 0.0;
+
 			moment_var[0]->locked = true;
 			moment_var[1]->locked = true;
 			moment_var[2]->locked = true;
@@ -347,6 +391,17 @@ void IKJoint::Prepare(){
 			acc_con[1]->enabled = (solver->mode == IKSolver::Mode::Acc);
 			acc_con[2]->enabled = false;
 		}
+		if(type == Type::PointToPoint){
+			pos_con[0]->enabled = (solver->mode == IKSolver::Mode::Pos);
+			pos_con[1]->enabled = (solver->mode == IKSolver::Mode::Pos);
+			pos_con[2]->enabled = (solver->mode == IKSolver::Mode::Pos);
+			vel_con[0]->enabled = (solver->mode == IKSolver::Mode::Vel);
+			vel_con[1]->enabled = (solver->mode == IKSolver::Mode::Vel);
+			vel_con[2]->enabled = (solver->mode == IKSolver::Mode::Vel);
+			acc_con[0]->enabled = (solver->mode == IKSolver::Mode::Acc);
+			acc_con[1]->enabled = (solver->mode == IKSolver::Mode::Acc);
+			acc_con[2]->enabled = (solver->mode == IKSolver::Mode::Acc);
+		}
 	}
 }
 
@@ -357,7 +412,7 @@ void IKJoint::Finish(){
 	if(solver->mode == IKSolver::Mode::Pos){
 		if(plugBody->parBody == sockBody){
 			for(int i = 0; i < ndof; i++){
-				q  [i] = /*q_var  [i]->val;*/std::min(std::max(q_limit [0][i], q_var  [i]->val), q_limit [1][i]);
+				q  [i] = std::min(std::max(q_limit [0][i], q_var  [i]->val), q_limit [1][i]);
 			}
 		}
 		pos = sockPosAbs;
@@ -366,7 +421,7 @@ void IKJoint::Finish(){
 	if(solver->mode == IKSolver::Mode::Vel){
 		if(plugBody->parBody == sockBody){
 			for(int i = 0; i < ndof; i++){
-				qd [i] = /*qd_var [i]->val;*/std::min(std::max(qd_limit[0][i], qd_var [i]->val), qd_limit[1][i]);
+				qd [i] = std::min(std::max(qd_limit[0][i], qd_var [i]->val), qd_limit[1][i]);
 			}
 		}
 	}
@@ -403,7 +458,8 @@ void IKJoint::Update(){
 		return;
 
 	if(solver->mode == IKSolver::Mode::Pos){
-		if(type == Type::LineToLine){
+		if( type == Type::LineToLine   || 
+			type == Type::PointToPoint ){
 			sockOffsetAbs = sockBody->ori_var->val * sockPos;
 			sockPosAbs    = sockBody->pos_var->val + sockOffsetAbs;
 			sockOriAbs    = sockBody->ori_var->val * sockOri;
@@ -430,32 +486,59 @@ void IKJoint::CalcJacobian(){
 	if(!rootBody)
 		return;
 
+	for(int i = 0; i < 6; i++){
+		Jv[i].clear();
+		Jw[i].clear();
+	}
 	if(type == Type::Hinge){
-		Jv[0] = vec3_t();
 		Jw[0] = vec3_t(0.0, 0.0, 1.0);
 	}
 	if(type == Type::Slider){
 		Jv[0] = vec3_t(0.0, 0.0, 1.0);
-		Jw[0] = vec3_t();
+	}
+	if(type == Type::Universaljoint){
+		real_t pitch = q_var[1]->val;
+		
+		// 行列の場合と行・列のインデックス順が逆なので注意
+		Jw[0][0] =  cos(pitch);
+		Jw[0][1] =  0.0;
+		Jw[0][2] = -sin(pitch);
+		Jw[1][0] =  0.0;
+		Jw[1][1] =  1.0;
+		Jw[1][2] =  0.0;
 	}
 	if(type == Type::Balljoint){
-		Jv[0].clear();
-		Jv[1].clear();
-		Jv[2].clear();
-
-		real_t yaw   = q_var[0]->val;
 		real_t pitch = q_var[1]->val;
-
+		real_t yaw   = q_var[2]->val;
+		
 		// 行列の場合と行・列のインデックス順が逆なので注意
-		Jw[0][0] = -sin(yaw) * sin(pitch);
-		Jw[0][1] =  cos(yaw) * sin(pitch);
-		Jw[0][2] =  1.0 - cos(pitch);
-		Jw[1][0] =  cos(yaw);
-		Jw[1][1] =  sin(yaw);
+		Jw[0][0] =  cos(yaw)*cos(pitch);
+		Jw[0][1] =  sin(yaw)*cos(pitch);
+		Jw[0][2] = -sin(pitch);
+		Jw[1][0] = -sin(yaw);
+		Jw[1][1] =  cos(yaw);
 		Jw[1][2] =  0.0;
-		Jw[2][0] =  sin(yaw) * sin(pitch);
-		Jw[2][1] = -cos(yaw) * sin(pitch);
-		Jw[2][2] =  cos(pitch);
+		Jw[2][0] =  0.0;
+		Jw[2][1] =  0.0;
+		Jw[2][2] =  1.0;
+	}
+	if(type == Type::Freejoint){
+		Jv[0][0] = 1.0;
+		Jv[1][1] = 1.0;
+		Jv[2][2] = 1.0;
+
+		real_t pitch = q_var[4]->val;
+		real_t yaw   = q_var[5]->val;
+		
+		Jw[3][0] =  cos(yaw)*cos(pitch);
+		Jw[3][1] =  sin(yaw)*cos(pitch);
+		Jw[3][2] = -sin(pitch);
+		Jw[4][0] = -sin(yaw);
+		Jw[4][1] =  cos(yaw);
+		Jw[4][2] =  0.0;
+		Jw[5][0] =  0.0;
+		Jw[5][1] =  0.0;
+		Jw[5][2] =  1.0;
 	}
 	if(type == Type::Fixjoint){
 
@@ -466,31 +549,26 @@ void IKJoint::CalcRelativePose(){
 	if(!rootBody)
 		return;
 
+	relPos = vec3_t();
+	relOri = quat_t();
+
 	if(type == Type::Hinge){
-		relPos.clear();
 		relOri = quat_t::Rot(q_var[0]->val, 'z');
 	}
 	if(type == Type::Slider){
 		relPos = vec3_t(0.0, 0.0, q_var[0]->val);
-		relOri = quat_t();
+	}
+	if(type == Type::Universaljoint){
+		relOri = FromRollPitchYaw(vec3_t(q_var[0]->val, q_var[1]->val, 0.0));
 	}
 	if(type == Type::Balljoint){
-		real_t yaw   = q_var[0]->val;
-		real_t pitch = q_var[1]->val;
-		real_t roll  = q_var[2]->val;
-		
-		quat_t q;
-		q.w = cos(pitch/2) * cos(roll/2);
-		q.x = sin(pitch/2) * cos(yaw - roll/2);
-		q.y = sin(pitch/2) * sin(yaw - roll/2);
-		q.z = cos(pitch/2) * sin(roll/2);
-		
-		relPos = vec3_t();
-		relOri = quat_t();
+		relOri = FromRollPitchYaw(vec3_t(q_var[0]->val, q_var[1]->val, q_var[2]->val));
 	}
-	if(type == Type::Fixjoint){
-		relPos = vec3_t();
-		relOri = quat_t();
+	if(type == Type::Freejoint){
+		relPos[0] = q_var[0]->val;
+		relPos[1] = q_var[1]->val;
+		relPos[2] = q_var[2]->val;
+		relOri = FromRollPitchYaw(vec3_t(q_var[3]->val, q_var[4]->val, q_var[5]->val));
 	}
 }
 
