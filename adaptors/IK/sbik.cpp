@@ -41,7 +41,7 @@ AdaptorIK::ConnectorAux::~ConnectorAux(){
 
 }
 
-AdaptorIK::JointAux::JointAux(AdaptorIK::ConnectorAux* _sock, AdaptorIK::ConnectorAux* _plug, IKJoint* _joint){
+AdaptorIK::JointAux::JointAux(AdaptorIK::ConnectorAux* _sock, AdaptorIK::ConnectorAux* _plug, IKJointBase* _joint){
 	sock    = _sock;
 	plug    = _plug;
 	ikJoint = _joint;
@@ -111,12 +111,12 @@ IKBody* AdaptorIK::GetBody(string name){
 	return bodyAux->ikBody;
 }
 
-IKJoint* AdaptorIK::GetJoint(int id){
+IKJointBase* AdaptorIK::GetJoint(int id){
 	AUTO(JointAux*, jntAux, HandleByID(id, JointProp::id));
 	return jntAux->ikJoint;
 }
 
-IKJoint* AdaptorIK::GetJoint(string name){
+IKJointBase* AdaptorIK::GetJoint(string name){
 	AUTO(JointAux*, jntAux, HandleByName(name, JointProp::id));
 	return jntAux->ikJoint;
 }
@@ -205,7 +205,8 @@ int AdaptorIK::CreateObject(int id){
 		if(IsUndefined(sockId) || IsUndefined(plugId))
 			return SupportState::Undefined;
 
-		int  jntType;
+		int  jntType  = -1;
+		int  mateType = -1;
 		if(type == HingeProp::id){
 			jntType = IKJoint::Type::Hinge;
 		}
@@ -224,11 +225,8 @@ int AdaptorIK::CreateObject(int id){
 		else if(type == FreejointProp::id){
 			jntType = IKJoint::Type::Freejoint;
 		}
-		else if(type == LineToLineProp::id){
-			jntType = IKJoint::Type::LineToLine;
-		}
 		else if(type == PointToPointProp::id){
-			jntType = IKJoint::Type::PointToPoint;
+			mateType = IKMate::Type::PointToPoint;
 		}
 		else{
 			Message::Error("%s: unsupported joint type", name.c_str());
@@ -239,7 +237,11 @@ int AdaptorIK::CreateObject(int id){
 		AUTO(ConnectorAux*, plugAux, GetAux(plugId));
 
 		//
-		IKJoint* ikJoint = ikSolver.AddJoint(jntType);
+		IKJointBase* ikJoint;
+		if(jntType != -1)
+			ikJoint = ikSolver.AddJoint(jntType);
+		if(mateType != -1)
+			ikJoint = ikSolver.AddMate(mateType);
 		
 		// 親子関係を設定
 		IKBody* sockBody = sockAux->body->ikBody;
@@ -248,12 +250,8 @@ int AdaptorIK::CreateObject(int id){
 		ikJoint->SetSocketBody(sockBody);
 		ikJoint->SetPlugBody  (plugBody);
 
-		if( typedb->KindOf(type, Joint1DProp       ::id) ||
-			typedb->KindOf(type, UniversaljointProp::id) ||
-			typedb->KindOf(type, BalljointProp     ::id) ||
-			typedb->KindOf(type, FixjointProp      ::id) ||
-			typedb->KindOf(type, FreejointProp     ::id) )
-			plugBody->SetParent(sockBody, ikJoint);
+		if(jntType != -1)
+			plugBody->SetParent(sockBody, (IKJoint*)ikJoint);
 
 		JointAux* jntAux = new JointAux(sockAux, plugAux, ikJoint);
 		RegAux(id, jntAux);
@@ -303,7 +301,7 @@ int AdaptorIK::CreateObject(int id){
 
 		AUTO(JointAux*, jntAux, GetAux(jntId));
 		
-		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle(jntAux->ikJoint));
+		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle((IKJoint*)jntAux->ikJoint));
 		RegAux(id, handleAux);
 		jointHandles.push_back(handleAux);
 
@@ -438,75 +436,88 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 
 		if(typedb->KindOf(type, Joint1DProp::id)){
 			AUTO(Joint1DProp*, joint1DProp, prop);
-				
+			IKJoint* ikJoint = ((IKJoint*)jointAux->ikJoint);
+
 			if(cat & AttrCategory::Param){
 				if(download){
-					jointAux->ikJoint->SetPosLimit(0, joint1DProp-> range[0], joint1DProp-> range[1]);
-					jointAux->ikJoint->SetVelLimit(0, joint1DProp->vrange[0], joint1DProp->vrange[1]);
+					ikJoint->SetPosLimit(0, joint1DProp-> range[0], joint1DProp-> range[1]);
+					ikJoint->SetVelLimit(0, joint1DProp->vrange[0], joint1DProp->vrange[1]);
 				}
 			}
 			if(cat & AttrCategory::State){
 				if(download){
 					// IK計算の初期値に設定
-					jointAux->ikJoint->SetInitialPos(0, joint1DProp->pos);
-					jointAux->ikJoint->SetInitialVel(0, joint1DProp->vel);
+					ikJoint->SetInitialPos(0, joint1DProp->pos);
+					ikJoint->SetInitialVel(0, joint1DProp->vel);
 				}
 				else{
 					// IKの計算結果をtargetposに代入
-					joint1DProp->targetpos = jointAux->ikJoint->GetPos(0);
+					joint1DProp->targetpos = ikJoint->GetPos(0);
 				}
 			}
 		}
 		if(typedb->KindOf(type, UniversaljointProp::id)){
 			AUTO(UniversaljointProp*, uniProp, prop);
+			IKJoint* ikJoint = ((IKJoint*)jointAux->ikJoint);
 				
 			if(cat & AttrCategory::State){
 				if(download){
 					// IK計算の初期値に設定
-					jointAux->ikJoint->SetInitialPos(0, uniProp->pos[0]);
-					jointAux->ikJoint->SetInitialPos(1, uniProp->pos[1]);
+					ikJoint->SetInitialPos(0, uniProp->pos[0]);
+					ikJoint->SetInitialPos(1, uniProp->pos[1]);
 				}
 			}
 		}
 		if(typedb->KindOf(type, BalljointProp::id)){
 			AUTO(BalljointProp*, ballProp, prop);
+			IKJoint* ikJoint = ((IKJoint*)jointAux->ikJoint);
 				
 			vec3_t angle;
 			if(cat & AttrCategory::State){
 				if(download){
 					// IK計算の初期値に設定
 					angle = ToRollPitchYaw(ballProp->pos);
-					jointAux->ikJoint->SetInitialPos(0, angle[0]);
-					jointAux->ikJoint->SetInitialPos(1, angle[1]);
-					jointAux->ikJoint->SetInitialPos(2, angle[2]);
+					ikJoint->SetInitialPos(0, angle[0]);
+					ikJoint->SetInitialPos(1, angle[1]);
+					ikJoint->SetInitialPos(2, angle[2]);
 				}
 				else{
 					// IKの計算結果をtargetposに代入
-					angle[0] = jointAux->ikJoint->GetPos(0);
-					angle[1] = jointAux->ikJoint->GetPos(1);
-					angle[2] = jointAux->ikJoint->GetPos(2);
+					angle[0] = ikJoint->GetPos(0);
+					angle[1] = ikJoint->GetPos(1);
+					angle[2] = ikJoint->GetPos(2);
 					ballProp->targetpos = FromRollPitchYaw(angle);
 				}
 			}
 		}
 		if(typedb->KindOf(type, FreejointProp::id)){
 			AUTO(FreejointProp*, freeProp, prop);
+			IKJoint* ikJoint = ((IKJoint*)jointAux->ikJoint);
 				
 			vec3_t angle;
 			if(cat & AttrCategory::State){
 				if(download){
 					// IK計算の初期値に設定
 					angle = ToRollPitchYaw(freeProp->ori);
-					jointAux->ikJoint->SetInitialPos(0, freeProp->pos[0]);
-					jointAux->ikJoint->SetInitialPos(1, freeProp->pos[1]);
-					jointAux->ikJoint->SetInitialPos(2, freeProp->pos[2]);
-					jointAux->ikJoint->SetInitialPos(3, angle[0]);
-					jointAux->ikJoint->SetInitialPos(4, angle[1]);
-					jointAux->ikJoint->SetInitialPos(5, angle[2]);
+					ikJoint->SetInitialPos(0, freeProp->pos[0]);
+					ikJoint->SetInitialPos(1, freeProp->pos[1]);
+					ikJoint->SetInitialPos(2, freeProp->pos[2]);
+					ikJoint->SetInitialPos(3, angle[0]);
+					ikJoint->SetInitialPos(4, angle[1]);
+					ikJoint->SetInitialPos(5, angle[2]);
 				}
 			}
 		}
-
+		if(typedb->KindOf(type, PointToPointProp::id)){
+			AUTO(PointToPointProp*, ptpProp, prop);
+			IKMate* ikMate = ((IKMate*)jointAux->ikJoint);
+		
+			if(cat & AttrCategory::Param){
+				if(download){
+					ikMate->distance = ptpProp->distance;
+				}
+			}
+		}
 	}
 	else if(type == IKProp::id){
 		AUTO(IKProp*, ikProp, prop);

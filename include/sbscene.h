@@ -650,10 +650,15 @@ struct FreejointProp : JointProp{
  */
 struct PointToPointProp : JointProp{
 	static int id;
+
+	real_t distance;
+
 	static string GetName(){ return "point_to_point"; }
 	static void Construct(Property* p){ new(p) PointToPointProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PointToPointProp), &Construct, JointProp::id);
+		db->GetType(id)
+			->AddAttr("distance", Primitive::Real, 1, OFFSET(PointToPointProp, distance), real_t(), AttrCategory::Param, Dimension::L);
 	}
 };
 struct PointToLineProp : JointProp{

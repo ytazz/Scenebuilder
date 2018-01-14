@@ -37,10 +37,10 @@ public:
 	struct JointAux : Aux{
 		ConnectorAux*	sock;		///< reference to socket Connector
 		ConnectorAux*	plug;		///< reference to plug Connector
-		IKJoint*        ikJoint;
+		IKJointBase *   ikJoint;
 		
 		void OnChange(Aux* caller);
-		JointAux(ConnectorAux* _sock, ConnectorAux* _plug, IKJoint* _joint);
+		JointAux(ConnectorAux* _sock, ConnectorAux* _plug, IKJointBase* _joint);
 		virtual ~JointAux();
 	};
 	struct HandleAux : Aux{
@@ -80,8 +80,8 @@ public:
 	/// 取得
 	IKBody       *  GetBody       (int    id  );
 	IKBody       *  GetBody       (string name);
-	IKJoint      *  GetJoint      (int    id  );
-	IKJoint      *  GetJoint      (string name);
+	IKJointBase  *  GetJoint      (int    id  );
+	IKJointBase  *  GetJoint      (string name);
 	IKHandle     *  GetHandle     (int    id  );
 	IKHandle     *  GetHandle     (string name);
 	IKJointHandle*  GetJointHandle(int    id  );

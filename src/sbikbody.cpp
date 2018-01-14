@@ -10,9 +10,7 @@ namespace Scenebuilder{;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), 1.0){
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		AddC3Link(jnt->force_var[0]);
 		AddC3Link(jnt->force_var[1]);
 		AddC3Link(jnt->force_var[2]);
@@ -20,9 +18,7 @@ IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0,
 }
 void IKBody::ForceCon::CalcCoef(){
 	uint idx = 0;
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0]);
 		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1]);
 		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2]);
@@ -30,15 +26,12 @@ void IKBody::ForceCon::CalcCoef(){
 }
 void IKBody::ForceCon::CalcDeviation(){
 	y = body->force;
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0] * jnt->force_var[0]->val;
 		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1] * jnt->force_var[1]->val;
 		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2] * jnt->force_var[2]->val;
 	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
+	for(IKHandle* handle : body->handles){
 		y += -1.0 * handle->force;
 	}
 }
@@ -46,9 +39,7 @@ void IKBody::ForceCon::CalcDeviation(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), 1.0){
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		AddC3Link(jnt->force_var [0]);
 		AddC3Link(jnt->force_var [1]);
 		AddC3Link(jnt->force_var [2]);
@@ -59,9 +50,7 @@ IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 
 }
 void IKBody::MomentCon::CalcCoef(){
 	uint idx = 0;
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
 		vec3_t r    = jnt->sockPosAbs - body->centerPosAbs;
 		((C3Link*)links[idx++])->SetCoef( sign * (r % jnt->axis[0]) );
@@ -74,9 +63,7 @@ void IKBody::MomentCon::CalcCoef(){
 }
 void IKBody::MomentCon::CalcDeviation(){
 	y = body->moment;
-	for(uint i = 0; i < body->joints.size(); i++){
-		IKJoint* jnt = body->joints[i];
-		if(!jnt->rootBody) continue;
+	for(IKJointBase* jnt : body->joints){
 		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
 		vec3_t r    = jnt->sockPosAbs - body->centerPosAbs;
 		y += sign * (r % jnt->axis[0]) * jnt->force_var[0]->val;
@@ -86,8 +73,7 @@ void IKBody::MomentCon::CalcDeviation(){
 		y += sign * jnt->axis[1] * jnt->moment_var[1]->val;
 		y += sign * jnt->axis[2] * jnt->moment_var[2]->val;
 	}
-	for(uint i = 0; i < body->handles.size(); i++){
-		IKHandle* handle = body->handles[i];
+	for(IKHandle* handle : body->handles){
 		y += -1.0 * ((handle->sockPosAbs - body->centerPosAbs) % handle->force + handle->moment);
 	}
 }
@@ -191,7 +177,6 @@ void IKBody::Finish(){
 		vec3_t wl = qc * w;
 		vec3_t nl = inertia * al + wl % (inertia * wl);
 		moment    = q * nl;
-		//moment = ori_var->val * (inertia * (ori_var->val.Conjugated() * angacc_var->val));
 	}
 }
 

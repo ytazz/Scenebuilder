@@ -14,57 +14,14 @@ namespace Scenebuilder{;
 
 class IKSolver;
 
-/// 剛体
-class IKJoint : public UTRefCount{
+///
+class IKJointBase : public UTRefCount{
 public:
-	struct Type{
-		enum{
-			Hinge,
-			Slider,
-			Universaljoint,
-			Balljoint,
-			Freejoint,
-			Fixjoint,
-			LineToLine,
-			PointToPoint,
-		};
-	};
-
-	class PosCon : public Constraint{
-	public:
-		IKJoint*  joint;
-		int       dir;
-	public:
-		virtual void CalcCoef();
-		virtual void CalcDeviation();
-		PosCon(IKJoint* jnt, int _dir);
-	};
-	class VelCon : public Constraint{
-	public:
-		IKJoint*  joint;
-		int       dir;
-	public:
-		virtual void CalcCoef();
-		virtual void CalcDeviation();
-		VelCon(IKJoint* jnt, int _dir);
-	};
-	class AccCon : public Constraint{
-	public:
-		IKJoint* joint;
-		int      dir;
-	public:
-		virtual void CalcCoef();
-		virtual void CalcDeviation();
-		AccCon(IKJoint* jnt, int _dir);
-	};
-
 	IKSolver*  solver;
 	IKBody*    sockBody;
 	IKBody*    plugBody;
-	IKBody*    rootBody;       ///< sock側とplug側の共通の親
 	int        type;
-	int        ndof;           ///< 関節の自由度
-	bool       revolutive[6];  ///< 回転自由度ならtrue 直動自由度ならfalse
+	int        ndof;            ///< 関節の自由度	
 	
 	vec3_t	sockPos;			///< 親剛体に対するソケットの位置と向き
 	quat_t  sockOri;
@@ -82,23 +39,124 @@ public:
 	vec3_t  sockAccAbs;
 	vec3_t  plugAccAbs;
 	
-	vec3_t	relPos;	            ///< ソケットに対するプラグの位置と向き
-	quat_t  relOri;
-	vec3_t  axis[6];
-	vec3_t	Jv[6], Jv_abs[6];	///< ヤコビアン（並進）
-	vec3_t  Jw[6], Jw_abs[6];	///< ヤコビアン（回転）
-
 	vec3_t	pos;				///< グローバル座標上の位置と向き
 	quat_t  ori;
-	vec3_t  q;
-	vec3_t  qd;
-	vec3_t  qdd;
-	vec3_t  tau;
+	
+	vec3_t  axis[6];
+
 	vec3_t  forceLocal;
 	vec3_t  momentLocal;
 	vec3_t  force;
 	vec3_t  moment;
 
+	SVar*   force_var [6];
+	SVar*   moment_var[6];
+
+public:
+	void SetSocketBody(IKBody* _sockBody);
+	void SetPlugBody  (IKBody* _plugBody);
+
+	/// 親リンクに対する相対的な位置と向きを設定
+	void SetSocketPose(const pose_t& p);
+	void SetPlugPose(const pose_t& p);
+
+	void GetSocketPose(pose_t& p);
+	void GetPlugPose(pose_t& p);
+
+	virtual void Init   ();
+	virtual void AddVar ();
+	virtual void AddCon ();
+	virtual void Prepare();
+	virtual void Finish ();
+	virtual void Update ();
+	virtual void Draw   (GRRenderIf* render);
+
+	IKJointBase(IKSolver* _solver, int _type);
+};
+
+/// 拘束
+class IKMate : public IKJointBase{
+public:
+	struct Type{
+		enum{
+			PointToPoint,
+		};
+	};
+
+	class PosCon : public Constraint{
+	public:
+		IKMate*  mate;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		PosCon(IKMate* mate);
+	};
+	class VelCon : public Constraint{
+	public:
+		IKMate*  mate;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		VelCon(IKMate* mate);
+	};
+	class AccCon : public Constraint{
+	public:
+		IKMate* mate;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		AccCon(IKMate* mate);
+	};
+
+public:
+	real_t distance;
+
+	IKBody*    rootBody;       ///< sock側とplug側の共通の親
+
+	vec3_t pos_diff;
+	vec3_t vel_diff;
+	vec3_t acc_diff;
+
+	PosCon* pos_con;
+	VelCon* vel_con;
+	AccCon* acc_con;
+
+public:
+	virtual void Init   ();
+	virtual void AddVar ();
+	virtual void AddCon ();
+	virtual void Prepare();
+	virtual void Finish ();
+	virtual void Update ();
+	virtual void Draw   (GRRenderIf* render);
+
+	IKMate(IKSolver* _solver, int _type);
+};
+
+/// 関節
+class IKJoint : public IKJointBase{
+public:
+	struct Type{
+		enum{
+			Hinge,
+			Slider,
+			Universaljoint,
+			Balljoint,
+			Freejoint,
+			Fixjoint
+		};
+	};
+
+	vec3_t	relPos;	            ///< ソケットに対するプラグの位置と向き
+	quat_t  relOri;
+	vec3_t	Jv[6], Jv_abs[6];	///< ヤコビアン（並進）
+	vec3_t  Jw[6], Jw_abs[6];	///< ヤコビアン（回転）
+
+	vec3_t  q;
+	vec3_t  qd;
+	vec3_t  qdd;
+	vec3_t  tau;
+	
 	vec3_t  q_ini;
 	vec3_t  qd_ini;
 	vec3_t  qdd_ini;
@@ -115,28 +173,12 @@ public:
 	SVar*   q_var  [6];             ///< 関節変位（ヒンジ，スライダ）
 	SVar*   qd_var [6];
 	SVar*   qdd_var[6];
-	SVar*   force_var [6];
-	SVar*   moment_var[6];
-
-	PosCon* pos_con[3];
-	VelCon* vel_con[3];
-	AccCon* acc_con[3];
 	
 public:
 	void CalcJacobian    ();
 	void CalcRelativePose();
 	
 public:
-	void SetSocketBody(IKBody* _sockBody);
-	void SetPlugBody  (IKBody* _plugBody);
-
-	/// 親リンクに対する相対的な位置と向きを設定
-	void SetSocketPose(const pose_t& p);
-	void SetPlugPose(const pose_t& p);
-
-	void GetSocketPose(pose_t& p);
-	void GetPlugPose(pose_t& p);
-
 	/// 関節変数を取得
 	real_t GetPos   (uint i);
 	real_t GetVel   (uint i);
@@ -159,13 +201,13 @@ public:
 	void SetPosLimit(uint i, real_t lower, real_t upper);
 	void SetVelLimit(uint i, real_t lower, real_t upper);
 
-	void Init   ();
-	void AddVar ();
-	void AddCon ();
-	void Prepare();
-	void Finish ();
-	void Update ();
-	void Draw   (GRRenderIf* render);
+	virtual void Init   ();
+	virtual void AddVar ();
+	virtual void AddCon ();
+	virtual void Prepare();
+	virtual void Finish ();
+	virtual void Update ();
+	virtual void Draw   (GRRenderIf* render);
 
 	IKJoint(IKSolver* _solver, int _type);
 };

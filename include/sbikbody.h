@@ -13,7 +13,7 @@ using namespace Spr;
 namespace Scenebuilder{;
 
 class IKSolver;
-class IKJoint;
+class IKJointBase;
 
 /// 剛体
 class IKBody : public UTRefCount{
@@ -36,13 +36,13 @@ public:
 		MomentCon(IKBody* b);
 	};
 
-	IKSolver*           solver;
-	IKBody*				parBody;
-	IKJoint*            parJoint;
-	vector< IKBody*  >  children;
-	vector< IKJoint* >  joints;
-	vector< IKHandle*>  handles;
-	bool                ready;
+	IKSolver*               solver;
+	IKBody*				    parBody;
+	IKJoint*                parJoint;
+	vector< IKBody* >       children;
+	vector< IKJointBase* >  joints;
+	vector< IKHandle* >     handles;
+	bool                    ready;
 	
 	real_t  mass;
 	vec3_t  center;
