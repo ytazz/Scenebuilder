@@ -658,7 +658,7 @@ struct PointToPointProp : JointProp{
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PointToPointProp), &Construct, JointProp::id);
 		db->GetType(id)
-			->AddAttr("distance", Primitive::Real, 1, OFFSET(PointToPointProp, distance), real_t(), AttrCategory::Param, Dimension::L);
+			->AddAttr("distance", Primitive::Real, 1, OFFSET(PointToPointProp, distance), 0.0, AttrCategory::Param, Dimension::L);
 	}
 };
 struct PointToLineProp : JointProp{
