@@ -80,7 +80,8 @@ void IKBody::MomentCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBody::IKBody(IKSolver* _solver){
+IKBody::IKBody(IKSolver* _solver, const string& _name){
+	name     = _name;
 	solver   = _solver;
 	parBody  = 0;
 	parJoint = 0;
@@ -123,12 +124,12 @@ void IKBody::Init(){
 }
 
 void IKBody::AddVar(){
-	pos_var    = new V3Var(solver, ID(0, 0, 0, ""), 1.0);
-	ori_var    = new QVar (solver, ID(0, 0, 0, ""), 1.0);
-	vel_var    = new V3Var(solver, ID(0, 0, 0, ""), 1.0);
-	angvel_var = new V3Var(solver, ID(0, 0, 0, ""), 1.0);
-	acc_var    = new V3Var(solver, ID(0, 0, 0, ""), 1.0);
-	angacc_var = new V3Var(solver, ID(0, 0, 0, ""), 1.0);
+	pos_var    = new V3Var(solver, ID(0, 0, 0, name + "_pos"   ), 1.0);
+	ori_var    = new QVar (solver, ID(0, 0, 0, name + "_ori"   ), 1.0);
+	vel_var    = new V3Var(solver, ID(0, 0, 0, name + "_vel"   ), 1.0);
+	angvel_var = new V3Var(solver, ID(0, 0, 0, name + "_angvel"), 1.0);
+	acc_var    = new V3Var(solver, ID(0, 0, 0, name + "_acc"   ), 1.0);
+	angacc_var = new V3Var(solver, ID(0, 0, 0, name + "_angvel"), 1.0);
 }
 
 void IKBody::AddCon(){

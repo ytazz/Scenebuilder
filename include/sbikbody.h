@@ -36,6 +36,7 @@ public:
 		MomentCon(IKBody* b);
 	};
 
+	string                  name;
 	IKSolver*               solver;
 	IKBody*				    parBody;
 	IKJoint*                parJoint;
@@ -100,7 +101,7 @@ public:
 
 	void Draw(GRRenderIf* render);
 
-	IKBody(IKSolver* _solver);
+	IKBody(IKSolver* _solver, const string& _name);
 };
 
 }

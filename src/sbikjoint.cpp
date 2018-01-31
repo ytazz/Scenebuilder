@@ -132,7 +132,8 @@ void IKMate::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointBase::IKJointBase(IKSolver* _solver, int _type){
+IKJointBase::IKJointBase(IKSolver* _solver, int _type, const string& _name){
+	name   = _name;
 	solver = _solver;
 	type   = _type;
 
@@ -164,8 +165,8 @@ void IKJointBase::Init(){
 
 void IKJointBase::AddVar(){
 	for(int i = 0; i < 3; i++){
-		force_var [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
-		moment_var[i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
+		force_var [i] = new SVar(solver, ID(0, 0, 0, name + "_force" ), 1.0);
+		moment_var[i] = new SVar(solver, ID(0, 0, 0, name + "_moment"), 1.0);
 	}
 }
 
@@ -174,14 +175,12 @@ void IKJointBase::AddCon(){
 }
 
 void IKJointBase::Prepare(){
-	if(solver->mode == IKSolver::Mode::Force){
-		for(int i = 0; i < 3; i++){
-			force_var [i]->val = 0.0;
-			moment_var[i]->val = 0.0;
+	for(int i = 0; i < 3; i++){
+		force_var [i]->val = 0.0;
+		moment_var[i]->val = 0.0;
 
-			force_var [i]->locked = false;
-			moment_var[i]->locked = false;
-		}
+		force_var [i]->locked = true;
+		moment_var[i]->locked = true;
 	}
 }
 
@@ -240,7 +239,7 @@ void IKJointBase::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::IKMate(IKSolver* _solver, int _type):IKJointBase(_solver, _type){
+IKMate::IKMate(IKSolver* _solver, int _type, const string& _name):IKJointBase(_solver, _type, _name){
 	if(type == Type::PointToPoint){
 		ndof = 0;
 	}
@@ -285,13 +284,9 @@ void IKMate::Prepare(){
 
 	if(solver->mode == IKSolver::Mode::Force){
 		if(type == Type::PointToPoint){
-			moment_var[0]->val = 0.0;
-			moment_var[1]->val = 0.0;
-			moment_var[2]->val = 0.0;
-
-			moment_var[0]->locked = true;
-			moment_var[1]->locked = true;
-			moment_var[2]->locked = true;
+			force_var[0]->locked = false;
+			force_var[1]->locked = false;
+			force_var[2]->locked = false;
 		}
 	}
 
@@ -333,7 +328,7 @@ void IKMate::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJoint::IKJoint(IKSolver* _solver, int _type):IKJointBase(_solver, _type){
+IKJoint::IKJoint(IKSolver* _solver, int _type, const string& _name):IKJointBase(_solver, _type, _name){
 	if(type == Type::Hinge){
 		ndof = 1;
 	}
@@ -405,9 +400,9 @@ void IKJoint::AddVar(){
 	IKJointBase::AddVar();
 
 	for(int i = 0; i < ndof; i++){
-		q_var  [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
-		qd_var [i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
-		qdd_var[i] = new SVar(solver, ID(0, 0, 0, ""), 1.0);
+		q_var  [i] = new SVar(solver, ID(0, 0, 0, name + "_q"  ), 1.0);
+		qd_var [i] = new SVar(solver, ID(0, 0, 0, name + "_qd" ), 1.0);
+		qdd_var[i] = new SVar(solver, ID(0, 0, 0, name + "_qdd"), 1.0);
 	}
 }
 
@@ -427,7 +422,7 @@ void IKJoint::Prepare(){
 		qd_var [i]->locked = (qd_lock [i] || !(solver->mode == IKSolver::Mode::Vel));
 		qdd_var[i]->locked = (qdd_lock[i] || !(solver->mode == IKSolver::Mode::Acc));
 	}
-	
+
 	if(solver->mode == IKSolver::Mode::Force){
 		if(type == Type::Hinge){
 			moment_var[2]->val    = tau_ini [0];
@@ -444,21 +439,6 @@ void IKJoint::Prepare(){
 			moment_var[0]->locked = tau_lock[0];
 			moment_var[1]->locked = tau_lock[1];
 			moment_var[2]->locked = tau_lock[2];
-		}
-		if(type == Type::Freejoint){
-			force_var [0]->val = 0.0;
-			force_var [1]->val = 0.0;
-			force_var [2]->val = 0.0;
-			moment_var[0]->val = 0.0;
-			moment_var[1]->val = 0.0;
-			moment_var[2]->val = 0.0;
-
-			force_var [0]->locked = true;
-			force_var [1]->locked = true;
-			force_var [2]->locked = true;
-			moment_var[0]->locked = true;
-			moment_var[1]->locked = true;
-			moment_var[2]->locked = true;
 		}
 	}
 }

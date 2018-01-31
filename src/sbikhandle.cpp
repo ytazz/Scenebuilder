@@ -209,7 +209,8 @@ void IKHandle::AngaccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::IKHandle(IKSolver* _solver, IKBody* _body){
+IKHandle::IKHandle(IKSolver* _solver, IKBody* _body, const string& _name){
+	name   = _name;
 	solver = _solver;
 	body   = _body;
 	
@@ -369,7 +370,8 @@ void IKJointHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::IKJointHandle(IKSolver* _solver, IKJoint* _joint){
+IKJointHandle::IKJointHandle(IKSolver* _solver, IKJoint* _joint, const string& _name){
+	name   = _name;
 	solver = _solver;
 	joint  = _joint;
 	
@@ -546,7 +548,8 @@ void IKComHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::IKComHandle(IKSolver* _solver){
+IKComHandle::IKComHandle(IKSolver* _solver, const string& _name){
+	name   = _name;
 	solver = _solver;
 	
 	totalMass = 0.0;

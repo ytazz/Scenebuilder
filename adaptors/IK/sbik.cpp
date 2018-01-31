@@ -157,7 +157,7 @@ int AdaptorIK::CreateObject(int id){
 	string    name = scene->GetName      (id);
 	
 	if(type == BodyProp::id){
-		BodyAux* body = new BodyAux(ikSolver.AddBody());
+		BodyAux* body = new BodyAux(ikSolver.AddBody(name));
 		RegAux(id, body);
 		bodies.push_back(body);
 		
@@ -239,9 +239,9 @@ int AdaptorIK::CreateObject(int id){
 		//
 		IKJointBase* ikJoint;
 		if(jntType != -1)
-			ikJoint = ikSolver.AddJoint(jntType);
+			ikJoint = ikSolver.AddJoint(jntType, name);
 		if(mateType != -1)
-			ikJoint = ikSolver.AddMate(mateType);
+			ikJoint = ikSolver.AddMate(mateType, name);
 		
 		// 親子関係を設定
 		IKBody* sockBody = sockAux->body->ikBody;
@@ -278,7 +278,7 @@ int AdaptorIK::CreateObject(int id){
 		
 		IKBody* sockBody = sockAux->body->ikBody;
 		
-		HandleAux* handleAux = new HandleAux(ikSolver.AddHandle(sockBody), sockAux);
+		HandleAux* handleAux = new HandleAux(ikSolver.AddHandle(sockBody, name), sockAux);
 		RegAux(id, handleAux);
 		handles.push_back(handleAux);
 
@@ -301,7 +301,7 @@ int AdaptorIK::CreateObject(int id){
 
 		AUTO(JointAux*, jntAux, GetAux(jntId));
 		
-		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle((IKJoint*)jntAux->ikJoint));
+		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle((IKJoint*)jntAux->ikJoint, name));
 		RegAux(id, handleAux);
 		jointHandles.push_back(handleAux);
 
@@ -325,7 +325,7 @@ int AdaptorIK::CreateObject(int id){
 			bodies.push_back(dest);
 		}
 
-		ComHandleAux* comHandleAux = new ComHandleAux(ikSolver.AddComHandle());
+		ComHandleAux* comHandleAux = new ComHandleAux(ikSolver.AddComHandle(name));
 		for(uint i = 0; i < bodies.size(); i++){
 			AUTO(BodyAux*, bodyAux, GetAux(bodies[i]));
 			comHandleAux->bodies.push_back(bodyAux);

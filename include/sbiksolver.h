@@ -120,25 +120,25 @@ public:
 
 public:
 	/// 剛体を追加
-	IKBody*		AddBody   ();
+	IKBody*		AddBody   (const string& name = "");
 	void        DeleteBody(IKBody* body);
 
 	///
-	IKJoint*    AddJoint   (int _type);
+	IKJoint*    AddJoint   (int _type, const string& name = "");
 	void        DeleteJoint(IKJoint* joint);
 
-	IKMate*     AddMate   (int _type);
+	IKMate*     AddMate   (int _type, const string& name = "");
 	void        DeleteMate(IKMate* mate);
 
 	/// 拘束を追加
-	IKHandle*   AddHandle   (IKBody* sockBody);
+	IKHandle*   AddHandle   (IKBody* sockBody, const string& name = "");
 	void        DeleteHandle(IKHandle* handle);
 
-	IKJointHandle*   AddJointHandle   (IKJoint* joint);
+	IKJointHandle*   AddJointHandle   (IKJoint* joint, const string& name = "");
 	void             DeleteJointHandle(IKJointHandle* handle);
 
 	///
-	IKComHandle*  AddComHandle   ();
+	IKComHandle*  AddComHandle   (const string& name = "");
 	void          DeleteComHandle(IKComHandle* handle);
 
 	/** 逆キネ計算を行う

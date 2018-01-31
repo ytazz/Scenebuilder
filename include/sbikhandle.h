@@ -56,6 +56,7 @@ public:
 		AngaccCon(IKHandle* h);
 	};
 
+	string      name;
 	IKSolver*   solver;
 	IKBody*	    body;         ///< エンドボディ（ハンドルを取り付けるボディ）
 	
@@ -142,7 +143,7 @@ public:
 	void Update ();
 	void Draw   (GRRenderIf* render);
 
-	IKHandle(IKSolver* _solver, IKBody* _body);
+	IKHandle(IKSolver* _solver, IKBody* _body, const string& _name);
 };
 
 class IKJointHandle : public UTRefCount{
@@ -175,6 +176,7 @@ public:
 		AccCon(IKJointHandle* h, int _idx);
 	};
 	
+	string      name;
 	IKSolver*   solver;
 	IKJoint*	joint;
 	
@@ -212,7 +214,7 @@ public:
 
 	void Draw(GRRenderIf* render);
 
-	IKJointHandle(IKSolver* _solver, IKJoint* _joint);
+	IKJointHandle(IKSolver* _solver, IKJoint* _joint, const string& _name);
 };
 
 class IKComHandle : public UTRefCount{
@@ -251,6 +253,7 @@ public:
 		AccCon(IKComHandle* h);
 	};
 
+	string             name;
 	IKSolver*          solver;
 	vector<BodyInfo>   bodies;
 	vector<JointInfo>  joints;
@@ -308,7 +311,7 @@ public:
 	
 	void Draw(GRRenderIf* render);
 
-	IKComHandle(IKSolver* _solver);
+	IKComHandle(IKSolver* _solver, const string& _name);
 };
 
 }

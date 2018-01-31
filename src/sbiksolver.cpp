@@ -48,9 +48,9 @@ IKSolver::IKSolver(){
 	ready = false;
 }
 
-IKBody* IKSolver::AddBody(){
+IKBody* IKSolver::AddBody(const string& _name){
 	// 重複追加のチェックやループ形成チェックは行わないのでユーザが注意
-	IKBody* body = new IKBody(this);
+	IKBody* body = new IKBody(this, _name);
 	ikBodies.push_back(body);
 	ready = false;
 	return body;
@@ -66,8 +66,8 @@ void IKSolver::DeleteBody(IKBody* body){
 	ready = false;
 }
 
-IKJoint* IKSolver::AddJoint(int _type){
-	IKJoint* joint = new IKJoint(this, _type);
+IKJoint* IKSolver::AddJoint(int _type, const string& _name){
+	IKJoint* joint = new IKJoint(this, _type, _name);
 	ikJoints.push_back(joint);
 	ready = false;
 	return joint;
@@ -78,8 +78,8 @@ void IKSolver::DeleteJoint(IKJoint* joint){
 	ready = false;
 }
 
-IKMate* IKSolver::AddMate(int _type){
-	IKMate* mate = new IKMate(this, _type);
+IKMate* IKSolver::AddMate(int _type, const string& _name){
+	IKMate* mate = new IKMate(this, _type, _name);
 	ikMates.push_back(mate);
 	ready = false;
 	return mate;
@@ -90,8 +90,8 @@ void IKSolver::DeleteMate(IKMate* mate){
 	ready = false;
 }
 
-IKHandle* IKSolver::AddHandle(IKBody* ikBody){
-	IKHandle* handle = new IKHandle(this, ikBody);
+IKHandle* IKSolver::AddHandle(IKBody* ikBody, const string& _name){
+	IKHandle* handle = new IKHandle(this, ikBody, _name);
 	ikHandles.push_back(handle);
 	ikBody->handles.push_back(handle);
 	ready = false;
@@ -105,8 +105,8 @@ void IKSolver::DeleteHandle(IKHandle* handle){
 	ready = false;
 }
 
-IKJointHandle* IKSolver::AddJointHandle(IKJoint* ikJoint){
-	IKJointHandle* handle = new IKJointHandle(this, ikJoint);
+IKJointHandle* IKSolver::AddJointHandle(IKJoint* ikJoint, const string& _name){
+	IKJointHandle* handle = new IKJointHandle(this, ikJoint, _name);
 	ikJointHandles.push_back(handle);
 	ready = false;
 	return handle;
@@ -117,8 +117,8 @@ void IKSolver::DeleteJointHandle(IKJointHandle* handle){
 	ready = false;
 }
 
-IKComHandle* IKSolver::AddComHandle(){
-	IKComHandle* handle = new IKComHandle(this);
+IKComHandle* IKSolver::AddComHandle(const string& _name){
+	IKComHandle* handle = new IKComHandle(this, _name);
 	ikComHandles.push_back(handle);
 	ready = false;
 	return handle;

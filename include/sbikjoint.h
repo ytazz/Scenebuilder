@@ -17,6 +17,7 @@ class IKSolver;
 ///
 class IKJointBase : public UTRefCount{
 public:
+	string     name;
 	IKSolver*  solver;
 	IKBody*    sockBody;
 	IKBody*    plugBody;
@@ -71,7 +72,7 @@ public:
 	virtual void Update ();
 	virtual void Draw   (GRRenderIf* render);
 
-	IKJointBase(IKSolver* _solver, int _type);
+	IKJointBase(IKSolver* _solver, int _type, const string& _name);
 };
 
 /// 拘束
@@ -130,7 +131,7 @@ public:
 	virtual void Update ();
 	virtual void Draw   (GRRenderIf* render);
 
-	IKMate(IKSolver* _solver, int _type);
+	IKMate(IKSolver* _solver, int _type, const string& _name);
 };
 
 /// 関節
@@ -209,7 +210,7 @@ public:
 	virtual void Update ();
 	virtual void Draw   (GRRenderIf* render);
 
-	IKJoint(IKSolver* _solver, int _type);
+	IKJoint(IKSolver* _solver, int _type, const string& _name);
 };
 
 }
