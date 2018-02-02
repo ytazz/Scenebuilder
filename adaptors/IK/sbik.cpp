@@ -228,6 +228,15 @@ int AdaptorIK::CreateObject(int id){
 		else if(type == PointToPointProp::id){
 			mateType = IKMate::Type::PointToPoint;
 		}
+		else if(type == PointToLineProp::id){
+			mateType = IKMate::Type::PointToLine;
+		}
+		else if(type == PointToPlaneProp::id){
+			mateType = IKMate::Type::PointToPlane;
+		}
+		else if(type == DistanceProp::id){
+			mateType = IKMate::Type::Distance;
+		}
 		else{
 			Message::Error("%s: unsupported joint type", name.c_str());
 			return SupportState::Ignored;
@@ -508,13 +517,13 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				}
 			}
 		}
-		if(typedb->KindOf(type, PointToPointProp::id)){
-			AUTO(PointToPointProp*, ptpProp, prop);
+		if(typedb->KindOf(type, DistanceProp::id)){
+			AUTO(DistanceProp*, distProp, prop);
 			IKMate* ikMate = ((IKMate*)jointAux->ikJoint);
 		
 			if(cat & AttrCategory::Param){
 				if(download){
-					ikMate->distance = ptpProp->distance;
+					ikMate->distance = distProp->distance;
 				}
 			}
 		}

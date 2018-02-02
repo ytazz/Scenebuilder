@@ -12,122 +12,187 @@ const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::PosCon::PosCon(IKMate* _mate):mate(_mate), Constraint(_mate->solver, 1, ID(0, 0, 0, ""), 1.0){
-	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
-		IKJoint* jnt = b->parJoint;
-		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->q_var[i]);
-		}
-	}
-
-	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
-		IKJoint* jnt = b->parJoint;
-		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->q_var[i]);
-		}
-	}
+IKMate::ConBase::ConBase(IKMate* _mate):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, ""), 1.0){	
+	if(mate->type == IKMate::Type::PointToPoint)
+		nelem = 3;
+	if(mate->type == IKMate::Type::PointToLine)
+		nelem = 2;
+	if(mate->type == IKMate::Type::PointToPlane)
+		nelem = 1;
+	if(mate->type == IKMate::Type::Distance)
+		nelem = 1;
 }
 
-void IKMate::PosCon::CalcCoef(){
+void IKMate::ConBase::CalcCoef(){
 	uint idx = 0;
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(-mate->pos_diff * r);
+			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->sockPosAbs - jnt->sockPosAbs));
+			if(mate->type == IKMate::Type::PointToPoint){
+				((C3Link*)links[idx++])->SetCoef(-r);
+			}
+			if(mate->type == IKMate::Type::PointToLine){
+				((C2Link*)links[idx++])->SetCoef(-vec2_t(r[0], r[1]));
+			}
+			if(mate->type == IKMate::Type::PointToPlane){
+				((SLink*)links[idx++])->SetCoef(-r[2]);
+			}
+			if(mate->type == IKMate::Type::Distance){
+				((SLink*)links[idx++])->SetCoef(-mate->pos_diff * r);
+			}
 		}
 	}
 	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
 			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(mate->pos_diff * r);
+			if(mate->type == IKMate::Type::PointToPoint){
+				((C3Link*)links[idx++])->SetCoef(r);
+			}
+			if(mate->type == IKMate::Type::PointToLine){
+				((C2Link*)links[idx++])->SetCoef(vec2_t(r[0], r[1]));
+			}
+			if(mate->type == IKMate::Type::PointToPlane){
+				((SLink*)links[idx++])->SetCoef(r[2]);
+			}
+			if(mate->type == IKMate::Type::Distance){
+				((SLink*)links[idx++])->SetCoef(mate->pos_diff * r);
+			}
 		}
 	}
-}
-void IKMate::PosCon::CalcDeviation(){
-	y[0] = mate->pos_diff.square() - mate->distance * mate->distance;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::VelCon::VelCon(IKMate* _mate):mate(_mate), Constraint(_mate->solver, 1, ID(0, 0, 0, ""), 1.0){
+IKMate::PosCon::PosCon(IKMate* _mate):ConBase(_mate){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->qd_var[i]);
+			if(nelem == 1)
+				AddSLink(jnt->q_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->q_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->q_var[i]);
 		}
 	}
 
 	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->qd_var[i]);
+			if(nelem == 1)
+				AddSLink(jnt->q_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->q_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->q_var[i]);
 		}
 	}
 }
-void IKMate::VelCon::CalcCoef(){
-	uint idx = 0;
+
+void IKMate::PosCon::CalcDeviation(){
+	if(mate->type == IKMate::Type::PointToPoint){
+		y = mate->pos_diff;
+	}
+	if(mate->type == IKMate::Type::PointToLine){
+		y[0] = mate->pos_diff[0];
+		y[1] = mate->pos_diff[1];
+	}
+	if(mate->type == IKMate::Type::PointToPlane){
+		y[0] = mate->pos_diff[2];
+	}
+	if(mate->type == IKMate::Type::Distance){
+		y[0] = mate->pos_diff.square() - mate->distance * mate->distance;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+IKMate::VelCon::VelCon(IKMate* _mate):ConBase(_mate){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(-mate->pos_diff * r);
+			if(nelem == 1)
+				AddSLink(jnt->qd_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->qd_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->qd_var[i]);
 		}
 	}
 
 	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(mate->pos_diff * r);
+			if(nelem == 1)
+				AddSLink(jnt->qd_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->qd_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->qd_var[i]);
 		}
 	}
 }
 
 void IKMate::VelCon::CalcDeviation(){
-	y[0] = mate->pos_diff * mate->vel_diff;
+	if(mate->type == IKMate::Type::PointToPoint){
+		y = mate->vel_diff;
+	}
+	if(mate->type == IKMate::Type::PointToLine){
+		y[0] = mate->vel_diff[0];
+		y[1] = mate->vel_diff[1];
+	}
+	if(mate->type == IKMate::Type::PointToPlane){
+		y[0] = mate->vel_diff[2];
+	}
+	if(mate->type == IKMate::Type::Distance){
+		y[0] = mate->pos_diff * mate->vel_diff;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::AccCon::AccCon(IKMate* _mate):mate(_mate), Constraint(_mate->solver, 1, ID(0, 0, 0, ""), 1.0){
+IKMate::AccCon::AccCon(IKMate* _mate):ConBase(_mate){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->qdd_var[i]);
+			if(nelem == 1)
+				AddSLink(jnt->qdd_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->qdd_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->qdd_var[i]);
 		}
 	}
 
 	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
-			AddSLink(jnt->qdd_var[i]);
-		}
-	}
-}
-
-void IKMate::AccCon::CalcCoef(){
-	uint idx = 0;
-	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
-		IKJoint* jnt = b->parJoint;
-		for(int i = 0; i < jnt->ndof; i++){
-			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(-mate->pos_diff * r);
-		}
-	}
-
-	for(IKBody* b = mate->plugBody; b != mate->rootBody; b = b->parBody){
-		IKJoint* jnt = b->parJoint;
-		for(int i = 0; i < jnt->ndof; i++){
-			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			((SLink*)links[idx++])->SetCoef(mate->pos_diff * r);
+			if(nelem == 1)
+				AddSLink(jnt->qdd_var[i]);
+			if(nelem == 2)
+				AddC2Link(jnt->qdd_var[i]);
+			if(nelem == 3)
+				AddC3Link(jnt->qdd_var[i]);
 		}
 	}
 }
 
 void IKMate::AccCon::CalcDeviation(){
-	y[0] = mate->pos_diff * mate->acc_diff + mate->vel_diff.square();
+	if(mate->type == IKMate::Type::PointToPoint){
+		y = mate->acc_diff;
+	}
+	if(mate->type == IKMate::Type::PointToLine){
+		y[0] = mate->acc_diff[0];
+		y[1] = mate->acc_diff[1];
+	}
+	if(mate->type == IKMate::Type::PointToPlane){
+		y[0] = mate->acc_diff[2];
+	}
+	if(mate->type == IKMate::Type::Distance){
+		y[0] = mate->pos_diff * mate->acc_diff + mate->vel_diff.square();
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -240,9 +305,7 @@ void IKJointBase::Draw(GRRenderIf* render){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKMate::IKMate(IKSolver* _solver, int _type, const string& _name):IKJointBase(_solver, _type, _name){
-	if(type == Type::PointToPoint){
-		ndof = 0;
-	}
+
 }
 
 void IKMate::Init(){

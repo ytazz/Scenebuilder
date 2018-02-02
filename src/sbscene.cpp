@@ -34,6 +34,7 @@ int PointToLineProp     ::id;
 int PointToPlaneProp    ::id;
 int LineToLineProp      ::id;
 int PlaneToPlaneProp    ::id;
+int DistanceProp        ::id;
 int GearProp            ::id;
 int GravityProp         ::id;
 int ContactGroupProp    ::id;
@@ -126,6 +127,7 @@ void SceneBase::Register(TypeDB* db){
 	PointToPlaneProp    ::Register(db);
 	LineToLineProp      ::Register(db);
 	PlaneToPlaneProp    ::Register(db);
+	DistanceProp        ::Register(db);
 	GearProp            ::Register(db);
 	GravityProp         ::Register(db);
 	ContactGroupProp    ::Register(db);

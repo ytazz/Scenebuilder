@@ -81,32 +81,33 @@ public:
 	struct Type{
 		enum{
 			PointToPoint,
+			PointToLine,
+			PointToPlane,
+			Distance,
 		};
 	};
 
-	class PosCon : public Constraint{
+	class ConBase : public Constraint{
 	public:
 		IKMate*  mate;
 	public:
 		virtual void CalcCoef();
-		virtual void CalcDeviation();
-		PosCon(IKMate* mate);
+		ConBase(IKMate* _mate);
 	};
-	class VelCon : public Constraint{
+	class PosCon : public ConBase{
 	public:
-		IKMate*  mate;
-	public:
-		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		VelCon(IKMate* mate);
+		PosCon(IKMate* _mate);
 	};
-	class AccCon : public Constraint{
+	class VelCon : public ConBase{
 	public:
-		IKMate* mate;
-	public:
-		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AccCon(IKMate* mate);
+		VelCon(IKMate* _mate);
+	};
+	class AccCon : public ConBase{
+	public:
+		virtual void CalcDeviation();
+		AccCon(IKMate* _mate);
 	};
 
 public:

@@ -651,14 +651,10 @@ struct FreejointProp : JointProp{
 struct PointToPointProp : JointProp{
 	static int id;
 
-	real_t distance;
-
 	static string GetName(){ return "point_to_point"; }
 	static void Construct(Property* p){ new(p) PointToPointProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PointToPointProp), &Construct, JointProp::id);
-		db->GetType(id)
-			->AddAttr("distance", Primitive::Real, 1, OFFSET(PointToPointProp, distance), 0.0, AttrCategory::Param, Dimension::L);
 	}
 };
 struct PointToLineProp : JointProp{
@@ -696,6 +692,19 @@ struct PlaneToPlaneProp : JointProp{
 	static void Construct(Property* p){ new(p) PlaneToPlaneProp; }
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PlaneToPlaneProp), &Construct, JointProp::id);
+	}
+};
+struct DistanceProp : JointProp{
+	static int id;
+
+	real_t distance;
+
+	static string GetName(){ return "distance"; }
+	static void Construct(Property* p){ new(p) DistanceProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(DistanceProp), &Construct, JointProp::id);
+		db->GetType(id)
+			->AddAttr("distance", Primitive::Real, 1, OFFSET(DistanceProp, distance), 0.0, AttrCategory::Param, Dimension::L);
 	}
 };
 
