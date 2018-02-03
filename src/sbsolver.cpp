@@ -428,7 +428,7 @@ void Solver::CalcDirection(){
 				y2[i] = y[i];
 			
 			// dgels
-			DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << endl;
+			//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << endl;
 			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', (int)dimcon, (int)dimvar, 1, &J[0][0], (int)dimcon, &y2[0], (int)ny);
 
 			// dgelsd

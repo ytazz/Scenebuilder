@@ -12,7 +12,7 @@ const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::ConBase::ConBase(IKMate* _mate):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, ""), 1.0){	
+IKMate::ConBase::ConBase(IKMate* _mate, const string& _name):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, _name), 1.0){	
 	if(mate->type == IKMate::Type::PointToPoint)
 		nelem = 3;
 	if(mate->type == IKMate::Type::PointToLine)
@@ -65,7 +65,7 @@ void IKMate::ConBase::CalcCoef(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::PosCon::PosCon(IKMate* _mate):ConBase(_mate){
+IKMate::PosCon::PosCon(IKMate* _mate, const string& _name):ConBase(_mate, _name){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
@@ -109,7 +109,7 @@ void IKMate::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::VelCon::VelCon(IKMate* _mate):ConBase(_mate){
+IKMate::VelCon::VelCon(IKMate* _mate, const string& _name):ConBase(_mate, _name){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
@@ -153,7 +153,7 @@ void IKMate::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::AccCon::AccCon(IKMate* _mate):ConBase(_mate){
+IKMate::AccCon::AccCon(IKMate* _mate, const string& _name):ConBase(_mate, _name){
 	for(IKBody* b = mate->sockBody; b != mate->rootBody; b = b->parBody){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
@@ -337,9 +337,9 @@ void IKMate::AddVar(){
 void IKMate::AddCon(){
 	IKJointBase::AddCon();
 
-	pos_con = new PosCon(this);
-	vel_con = new VelCon(this);
-	acc_con = new AccCon(this);
+	pos_con = new PosCon(this, name + "_pos");
+	vel_con = new VelCon(this, name + "_vel");
+	acc_con = new AccCon(this, name + "_acc");
 }
 
 void IKMate::Prepare(){
@@ -353,11 +353,9 @@ void IKMate::Prepare(){
 		}
 	}
 
-	if(type == Type::PointToPoint){
-		pos_con->enabled = (solver->mode == IKSolver::Mode::Pos);
-		vel_con->enabled = (solver->mode == IKSolver::Mode::Vel);
-		acc_con->enabled = (solver->mode == IKSolver::Mode::Acc);
-	}
+	pos_con->enabled = (solver->mode == IKSolver::Mode::Pos);
+	vel_con->enabled = (solver->mode == IKSolver::Mode::Vel);
+	acc_con->enabled = (solver->mode == IKSolver::Mode::Acc);
 }
 
 void IKMate::Update(){

@@ -92,22 +92,22 @@ public:
 		IKMate*  mate;
 	public:
 		virtual void CalcCoef();
-		ConBase(IKMate* _mate);
+		ConBase(IKMate* _mate, const string& _name);
 	};
 	class PosCon : public ConBase{
 	public:
 		virtual void CalcDeviation();
-		PosCon(IKMate* _mate);
+		PosCon(IKMate* _mate, const string& _name);
 	};
 	class VelCon : public ConBase{
 	public:
 		virtual void CalcDeviation();
-		VelCon(IKMate* _mate);
+		VelCon(IKMate* _mate, const string& _name);
 	};
 	class AccCon : public ConBase{
 	public:
 		virtual void CalcDeviation();
-		AccCon(IKMate* _mate);
+		AccCon(IKMate* _mate, const string& _name);
 	};
 
 public:

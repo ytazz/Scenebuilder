@@ -9,7 +9,7 @@ namespace Scenebuilder{;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::PosCon::PosCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::PosCon::PosCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -43,7 +43,7 @@ void IKHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::OriCon::OriCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::OriCon::OriCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -76,7 +76,7 @@ void IKHandle::OriCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::VelCon::VelCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::VelCon::VelCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < handle->body->parJoint->ndof; i++){
@@ -111,7 +111,7 @@ void IKHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AngvelCon::AngvelCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::AngvelCon::AngvelCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -143,7 +143,7 @@ void IKHandle::AngvelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AccCon::AccCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::AccCon::AccCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -177,7 +177,7 @@ void IKHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKHandle::AngaccCon::AngaccCon(IKHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKHandle::AngaccCon::AngaccCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -263,12 +263,12 @@ void IKHandle::AddVar(){
 }
 
 void IKHandle::AddCon(){
-	pos_con    = new PosCon   (this);
-	ori_con    = new OriCon   (this);
-	vel_con    = new VelCon   (this);
-	angvel_con = new AngvelCon(this);
-	acc_con    = new AccCon   (this);
-	angacc_con = new AngaccCon(this);
+	pos_con    = new PosCon   (this, name + "_pos"   );
+	ori_con    = new OriCon   (this, name + "_ori"   );
+	vel_con    = new VelCon   (this, name + "_vel"   );
+	angvel_con = new AngvelCon(this, name + "_angvel");
+	acc_con    = new AccCon   (this, name + "_acc"   );
+	angacc_con = new AngaccCon(this, name + "_angacc");
 }
 
 void IKHandle::Prepare(){
@@ -334,7 +334,7 @@ void IKHandle::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, ""), 1.0){
+IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
 	AddSLink(handle->joint->q_var[idx]);
 }
 void IKJointHandle::PosCon::CalcCoef(){
@@ -346,7 +346,7 @@ void IKJointHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, ""), 1.0){
+IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
 	AddSLink(handle->joint->qd_var[idx]);
 }
 void IKJointHandle::VelCon::CalcCoef(){
@@ -358,7 +358,7 @@ void IKJointHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, ""), 1.0){
+IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
 	AddSLink(handle->joint->qdd_var[idx]);
 }
 void IKJointHandle::AccCon::CalcCoef(){
@@ -398,9 +398,9 @@ void IKJointHandle::AddVar(){
 
 void IKJointHandle::AddCon(){
 	for(int i = 0; i < joint->ndof; i++){
-		pos_con[i] = new PosCon(this, i);
-		vel_con[i] = new VelCon(this, i);
-		acc_con[i] = new AccCon(this, i);
+		pos_con[i] = new PosCon(this, i, name + "_pos");
+		vel_con[i] = new VelCon(this, i, name + "_vel");
+		acc_con[i] = new AccCon(this, i, name + "_acc");
 	}
 }
 
@@ -423,7 +423,7 @@ void IKJointHandle::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::PosCon::PosCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKComHandle::PosCon::PosCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -464,7 +464,7 @@ void IKComHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::VelCon::VelCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKComHandle::VelCon::VelCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -506,7 +506,7 @@ void IKComHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::AccCon::AccCon(IKComHandle* h):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKComHandle::AccCon::AccCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -634,9 +634,9 @@ void IKComHandle::AddVar(){
 }
 
 void IKComHandle::AddCon(){
-	pos_con = new PosCon(this);
-	vel_con = new VelCon(this);
-	acc_con = new AccCon(this);
+	pos_con = new PosCon(this, name + "_pos");
+	vel_con = new VelCon(this, name + "_vel");
+	acc_con = new AccCon(this, name + "_acc");
 }
 
 void IKComHandle::Prepare(){

@@ -13,7 +13,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		PosCon(IKHandle* h);
+		PosCon(IKHandle* h, const string& _name);
 	};
 	class OriCon : public Constraint{
 	public:
@@ -21,7 +21,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		OriCon(IKHandle* h);
+		OriCon(IKHandle* h, const string& _name);
 	};
 	class VelCon : public Constraint{
 	public:
@@ -29,7 +29,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		VelCon(IKHandle* h);
+		VelCon(IKHandle* h, const string& _name);
 	};
 	class AngvelCon : public Constraint{
 	public:
@@ -37,7 +37,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AngvelCon(IKHandle* h);
+		AngvelCon(IKHandle* h, const string& _name);
 	};
 	class AccCon : public Constraint{
 	public:
@@ -45,7 +45,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AccCon(IKHandle* h);
+		AccCon(IKHandle* h, const string& _name);
 	};
 	class AngaccCon : public Constraint{
 	public:
@@ -53,7 +53,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AngaccCon(IKHandle* h);
+		AngaccCon(IKHandle* h, const string& _name);
 	};
 
 	string      name;
@@ -155,7 +155,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		PosCon(IKJointHandle* h, int _idx);
+		PosCon(IKJointHandle* h, int _idx, const string& _name);
 	};
 	class VelCon : public Constraint{
 	public:
@@ -164,7 +164,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		VelCon(IKJointHandle* h, int _idx);
+		VelCon(IKJointHandle* h, int _idx, const string& _name);
 	};
 	class AccCon : public Constraint{
 	public:
@@ -173,7 +173,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AccCon(IKJointHandle* h, int _idx);
+		AccCon(IKJointHandle* h, int _idx, const string& _name);
 	};
 	
 	string      name;
@@ -234,7 +234,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		PosCon(IKComHandle* h);
+		PosCon(IKComHandle* h, const string& _name);
 	};
 	class VelCon : public Constraint{
 	public:
@@ -242,7 +242,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		VelCon(IKComHandle* h);
+		VelCon(IKComHandle* h, const string& _name);
 	};
 	class AccCon : public Constraint{
 	public:
@@ -250,7 +250,7 @@ public:
 	public:
 		virtual void CalcCoef();
 		virtual void CalcDeviation();
-		AccCon(IKComHandle* h);
+		AccCon(IKComHandle* h, const string& _name);
 	};
 
 	string             name;
