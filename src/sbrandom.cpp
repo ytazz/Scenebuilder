@@ -26,11 +26,17 @@ void SamplerImpl::Seed(int _seed){
 }
 
 int SamplerImpl::SampleInt (int _min, int _max){
+	if(_min >= _max)
+		return _min;
+
 	uniInt.param(boost::random::uniform_int_distribution<>::param_type(_min, _max));
 	return uniInt(rng);
 }
 
 real_t SamplerImpl::SampleReal(real_t _min, real_t _max){
+	if(_min >= _max)
+		return _min;
+
 	uniReal.param(boost::random::uniform_real_distribution<>::param_type(_min, _max));
 	return uniReal(rng);
 }

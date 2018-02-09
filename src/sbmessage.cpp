@@ -10,7 +10,7 @@ using namespace boost::gregorian;
 
 namespace Scenebuilder{;
 
-int					Message::verboseLevel = 0;
+int					Message::verboseLevel = Message::Level::Normal;
 ostream*			Message::os           = &cout;
 MessageCallback*	Message::callback     = 0;
 CriticalSection		Message::cs;
