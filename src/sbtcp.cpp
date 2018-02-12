@@ -543,10 +543,29 @@ public:
 			return false;
 		}
 
+		unsigned long on = 1;
+		if(::ioctlsocket(sock, FIONBIO, &on) == SOCKET_ERROR){
+			Message::Error("failed to make socket non-blocking");
+			return false;
+		}
+
 		si.sin_family      = AF_INET;
 		si.sin_addr.s_addr = inet_addr(_host);
 		si.sin_port        = htons(port);
-		if(::connect(sock, (sockaddr*)&si, sizeof(si)) == SOCKET_ERROR){
+		::connect(sock, (sockaddr*)&si, sizeof(si));
+
+		fd_set  fd;
+		timeval to;
+		fd.fd_count = 1;
+		fd.fd_array[0] = sock;
+		to.tv_sec  = 0;
+		to.tv_usec = 1000*owner->connectTimeout;
+		int ret = select(0, &fd, 0, 0, &to);
+		if(ret == 0){
+			Message::Error("connect timeout");
+			return false;
+		}
+		if(ret == SOCKET_ERROR){
 			Message::Error("connect failed");
 			return false;
 		}
@@ -629,6 +648,7 @@ void TCPServer::SetCallback(TCPServerCallback* cb){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 TCPClient::TCPClient(bool use_asio){
+	connectTimeout  = 1000;
 	receiveInterval = 100;
 	sendTimeout     = 100;
 

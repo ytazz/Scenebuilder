@@ -53,6 +53,7 @@ class TCPClient{
 public:
 	TCPClientImpl* impl;
 
+	int  connectTimeout;
 	int  receiveInterval;
 	int  sendTimeout;
 
