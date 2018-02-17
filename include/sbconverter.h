@@ -5,6 +5,32 @@
 
 namespace Scenebuilder{;
 
+/** Color
+
+ */
+class Color{
+public:
+	string name;
+	Vec4f  rgba;
+
+public:
+	void Init();
+
+	Color(string n = "white"){
+		name = n;
+		Init();
+	}
+};
+
+inline Color operator*(const Color& c0, const Color& c1){
+	Color c;
+	c.rgba[0] = c0.rgba[0] * c1.rgba[0];
+	c.rgba[1] = c0.rgba[1] * c1.rgba[1];
+	c.rgba[2] = c0.rgba[2] * c1.rgba[2];
+	c.rgba[3] = c0.rgba[3] * c1.rgba[3];
+	return c;
+}
+
 /** Converter
 
 	各種変換機能
@@ -44,6 +70,7 @@ public:
 		**/
 	static bool FromString(string_iterator_pair str, char*  val, size_t len);
 	static bool FromString(string_iterator_pair str, string     &  val);
+	static bool FromString(string_iterator_pair str, Color      &  val);
 	static bool FromString(string_iterator_pair str, bool       &  val);
 	static bool FromString(string_iterator_pair str, int        &  val, int dim = Dimension::None);
 	static bool FromString(string_iterator_pair str, uint       &  val, int dim = Dimension::None);
@@ -105,22 +132,6 @@ public:
 	static void FromBinary(istream& is, VVecf & val);
 	static void FromBinary(istream& is, VVecd & val);
 	
-};
-
-class Color{
-public:
-	string name;
-	Vec4f  rgb ;
-
-public:
-	void Init(){
-		Converter::ColorFromName(name, rgb);
-	}
-
-	Color(string n = "white"){
-		name = n;
-		Init();
-	}
 };
 
 }

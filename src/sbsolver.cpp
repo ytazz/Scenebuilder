@@ -588,8 +588,9 @@ void Solver::Step(){
 	real_t objPrev = state.obj;
 	state.obj      = CalcObjective();
 	state.objDiff  = state.obj - objPrev;
-	if(param.verbose)
+	if(param.verbose){
 		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
+	}
 	state.iterCount++;
 }
 

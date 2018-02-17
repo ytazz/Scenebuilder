@@ -7,6 +7,12 @@ namespace Scenebuilder{;
 
 //-------------------------------------------------------------------------------------------------
 
+void Color::Init(){
+	Converter::ColorFromName(name, rgba);
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void Converter::ToString(ostream& os, const char* val){
 	os << val;
 }
@@ -118,6 +124,62 @@ bool Converter::FromString(string_iterator_pair str, string& val){
 	return true;
 }
 
+bool Converter::FromString(string_iterator_pair str, Color& val){
+	str = eat_white(str);
+	// 括弧考慮しつつ*で区切る（回転合成）
+	Tokenizer tok0(str, "*", true, true);
+	
+	val = Color();
+
+	Vec4f rgba;
+	Vec4f rgb;
+	Color ctmp;
+	
+	while(!tok0.IsEnd()){
+		// rgba
+		if(FromString(tok0.GetToken(), rgba, Dimension::None)){
+			ctmp.rgba = rgba;
+			val = val * ctmp;
+		}
+		// rgb
+		else if(FromString(tok0.GetToken(), rgb, Dimension::None)){
+			ctmp.rgba = Vec4f(rgb[0], rgb[1], rgb[2], 1.0f);
+			val = val * ctmp;
+		}
+		// name
+		else if(ColorFromName(tok0.GetToken(), ctmp.rgba)){
+			val = val * ctmp;
+		}
+		// [r|g|b|a|]=[real]
+		else{
+			Tokenizer tok1(tok0.GetToken(), "=", false, true);
+			if(tok1.IsEnd())
+				return false;
+			string_iterator_pair str = tok1.GetToken();
+			tok1.Next();
+			if(tok1.IsEnd())
+				return false;
+			float v;
+			if(!FromString(tok1.GetToken(), v))
+				return false;
+
+			ctmp.rgba = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
+			if(str == "r")
+				ctmp.rgba[0] = v;
+			if(str == "g")
+				ctmp.rgba[1] = v;
+			if(str == "b")
+				ctmp.rgba[2] = v;
+			if(str == "a")
+				ctmp.rgba[3] = v;
+
+			val = val * ctmp;
+		}
+		tok0.Next();
+	}
+	return true;
+}
+	
 /* bool値
 	- true : 1, true, True, TRUE
 	- false: 0, false, False, FALSE
@@ -638,7 +700,7 @@ static const ColorInfo colorInfo[] = {
 };
 #undef RGB
 
-bool Converter::ColorFromName(string_iterator_pair name, Vec4f& c){	
+bool Converter::ColorFromName(string_iterator_pair name, Vec4f& c){
 	// 無色 
 	if(name == "none"){
 		c = Vec4f();

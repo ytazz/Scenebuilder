@@ -279,28 +279,28 @@ void IKBody::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
 	if(solver->showBody){
-		glColor4fv((float*)solver->bodyColor.rgb);
+		glColor4fv((float*)solver->bodyColor.rgba);
 		render->SetPointSize(3.0f);
 		p0 = pos;
 		render->DrawPoint(p0);
 	}
 	if(solver->showVel){
-		glColor4fv((float*)solver->velColor.rgb);
+		glColor4fv((float*)solver->velColor.rgba);
 		p1 = p0 + solver->velScale * vel;
 		render->DrawLine(p0, p1);
 	}
 	if(solver->showAngvel){
-		glColor4fv((float*)solver->angvelColor.rgb);
+		glColor4fv((float*)solver->angvelColor.rgba);
 		p1 = p0 + solver->angvelScale * angvel;
 		render->DrawLine(p0, p1);
 	}
 	if(solver->showAcc){
-		glColor4fv((float*)solver->accColor.rgb);
+		glColor4fv((float*)solver->accColor.rgba);
 		p1 = p0 + solver->accScale * acc;
 		render->DrawLine(p0, p1);
 	}
 	if(solver->showAngacc){
-		glColor4fv((float*)solver->angaccColor.rgb);
+		glColor4fv((float*)solver->angaccColor.rgba);
 		p1 = p0 + solver->angaccScale * angacc;
 		render->DrawLine(p0, p1);
 	}

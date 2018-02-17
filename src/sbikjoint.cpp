@@ -279,7 +279,7 @@ void IKJointBase::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
 	if(solver->showJoint){
-		glColor4fv((float*)solver->jointColor.rgb);
+		glColor4fv((float*)solver->jointColor.rgba);
 		render->SetLineWidth(1.0f);
 		p0 = pos;
 		p1 = sockBody->pos;
@@ -289,13 +289,13 @@ void IKJointBase::Draw(GRRenderIf* render){
 		render->DrawLine(p0, p1);
 	}
 	if(solver->showForce){
-		glColor4fv((float*)solver->forceColor.rgb);
+		glColor4fv((float*)solver->forceColor.rgba);
 		p0 = pos;
 		p1 = p0 + solver->forceScale * force;
 		render->DrawLine(p0, p1);
 	}
 	if(solver->showMoment){
-		glColor4fv((float*)solver->momentColor.rgb);
+		glColor4fv((float*)solver->momentColor.rgba);
 		p0 = pos;
 		p1 = p0 + solver->momentScale * moment;
 		render->DrawLine(p0, p1);
@@ -637,7 +637,7 @@ void IKJoint::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
 	if(solver->showTorque){
-		glColor4fv((float*)solver->momentColor.rgb);
+		glColor4fv((float*)solver->momentColor.rgba);
 		p0 = pos;
 		p1 = p0 + solver->momentScale * (ori * vec3_t(0.0, 0.0, tau[0]));
 		render->DrawLine(p0, p1);

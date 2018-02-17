@@ -317,7 +317,7 @@ void IKHandle::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 
 	if(solver->showHandle){
-		glColor4fv((float*)solver->handleColor.rgb);
+		glColor4fv((float*)solver->handleColor.rgba);
 		render->SetPointSize(5.0f);
 	
 		p0 = pos;
@@ -682,7 +682,7 @@ void IKComHandle::Draw(GRRenderIf* render){
 	Vec3f p;
 	
 	if(solver->showHandle){
-		glColor4fv((float*)solver->handleColor.rgb);
+		glColor4fv((float*)solver->handleColor.rgba);
 		render->SetPointSize(5.0f);
 
 		p = pos;
