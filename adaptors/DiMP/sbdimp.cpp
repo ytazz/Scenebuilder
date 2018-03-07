@@ -66,6 +66,9 @@ int AdaptorDiMP::CreateObject(int id){
 			else if(type == CylinderProp::id){
 				shape = new ShapeAux(new DiMP::Cylinder(graph, ((CylinderProp*)prop)->radius, ((CylinderProp*)prop)->height, name));
 			}
+			else if(type == CapsuleProp::id){
+				shape = new ShapeAux(new DiMP::Capsule(graph, ((CapsuleProp*)prop)->radius, ((CapsuleProp*)prop)->height, name));
+			}
 			else if(type == MeshProp::id){
 				AUTO(MeshProp*, meshProp, prop);
 			
@@ -295,6 +298,20 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 				else{
 					cylinderProp->radius = cylinder->radius;
 					cylinderProp->height = cylinder->length;
+				}
+			}
+		}
+		else if(type == CapsuleProp::id){
+			AUTO(CapsuleProp*, capsuleProp, prop);
+			AUTO(DiMP::Capsule*, capsule, shapeAux->geos[0]);
+			if(cat & AttrCategory::Param){
+				if(download){
+					capsule->radius = capsuleProp->radius;
+					capsule->length = capsuleProp->height;
+				}
+				else{
+					capsuleProp->radius = capsule->radius;
+					capsuleProp->height = capsule->length;
 				}
 			}
 		}
