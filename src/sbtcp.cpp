@@ -466,9 +466,8 @@ public:
 		si.sin_port        = htons(port);
 		::bind(sock, (sockaddr*)&si, sizeof(si));
 
-		Run();
-
 		running = true;
+		Run();
 	}
 
 	virtual void Stop(){
@@ -570,6 +569,7 @@ public:
 		//	return false;
 		//}
 
+		running = true;
 		Run();
 
 		return true;
