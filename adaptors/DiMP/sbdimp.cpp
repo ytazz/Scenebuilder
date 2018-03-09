@@ -184,6 +184,8 @@ int AdaptorDiMP::CreateObject(int id){
 			jnt = new DiMP::Slider(sockAux->con, plugAux->con, 0, name);
 		else if(type == BalljointProp::id)
 			jnt = new DiMP::Balljoint(sockAux->con, plugAux->con, 0, name);
+		else if(type == FixjointProp::id)
+			jnt = new DiMP::Fixjoint(sockAux->con, plugAux->con, 0, name);
 		else return false;
 		
 		JointAux* jointAux = new JointAux(jnt, sockAux, plugAux);
