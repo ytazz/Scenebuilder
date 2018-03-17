@@ -185,6 +185,7 @@ public:
 };
 
 /**	range constraint for difference of scalar variables
+    _min <= var1 - var0 <= _max
  */
 struct DiffConS : Constraint{
 	real_t	_min, _max;
