@@ -14,7 +14,7 @@ IKSolver::IKSolver(){
 	numIter = 3;
 	gravity = vec3_t(0.0, 0.0, -9.8);
 	
-	param.methodMajor = Solver::Method::Major::GaussNewton1;
+	param.methodMajor = Solver::Method::Major::GaussNewton;
 	param.methodMinor = Solver::Method::Minor::Direct;
 
 	bodyColor  .name = "black"  ; bodyColor  .Init();

@@ -23,8 +23,7 @@ public:
 		struct Major{
 			enum{
 				SteepestDescent,
-				GaussNewton1,   ///< ガウスニュートン　拘束二乗誤差最小化
-				GaussNewton2,   ///< 拘束誤差の全成分を一定レートで減少
+				GaussNewton,   ///< ガウスニュートン　拘束二乗誤差最小化
 				Prioritized,
 			};
 		};
@@ -41,12 +40,12 @@ public:
 		bool           verbose;
 		int            methodMajor;
 		int            methodMinor;
-		vector<int>    numIter;       ///< マイナループの反復回数
+		vector<int>    numIter;          ///< マイナループの反復回数
 		real_t         minStepSize;
 		real_t         maxStepSize;
 		real_t         cutoffStepSize;
 		bool           hastyStepSize;
-
+		
 		Param();
 	};
 
@@ -83,7 +82,9 @@ public:
 				Enable,
 				Lock,
 				SetPriority,
-				SetCorrectionRate,
+				SetCorrection,
+				SetConstraintWeight,
+				SetVariableWeight,
 			};
 		};
 
@@ -94,6 +95,7 @@ public:
 		int    level;
 		real_t rate;
 		real_t lim;
+		real_t weight;
 	};
 
 	Param            param;
@@ -108,9 +110,9 @@ public:
 	
 	LinkRefs        links;			///< array of links
 
-	vmat_t          J, JtrJ;
-	vvec_t          y, y2;
-	vvec_t          Jtry;
+	vmat_t          A, AtrA;
+	vvec_t          b, b2;
+	vvec_t          Atrb;
 	vvec_t          dx;
 
 	vector<VariableInfo>    varInfoType;
@@ -161,7 +163,11 @@ public:
 
 	/** @brief	set correction rate
 	 */
-	void SetCorrectionRate(ID mask, real_t rate, real_t lim = FLT_MAX);
+	void SetCorrection(ID mask, real_t rate, real_t lim = FLT_MAX);
+
+	void SetConstraintWeight(ID mask, real_t weight);
+	
+	void SetVariableWeight  (ID mask, real_t weight);
 	
 	/** @brief calculate constraint error
 		@param mask			constraint id mask

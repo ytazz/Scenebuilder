@@ -98,9 +98,9 @@ void Constraint::CalcDeviation(){
 		link->AddError();
 }
 
-void Constraint::RegisterDeviation(vvec_t& yvec){
+void Constraint::RegisterCorrection(vvec_t& dydvec){
 	for(int n = 0; n < nelem; n++)
-		yvec[index+n] = weight * y[n];
+		dydvec[index+n] = weight * dyd[n];
 }
 
 void Constraint::ResetState(){
