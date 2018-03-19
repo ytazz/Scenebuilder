@@ -154,6 +154,8 @@ void IKSolver::Init(){
 	for(IKComHandle  * comHandle   : ikComHandles  ) comHandle  ->AddCon();
 
 	Solver::Init();
+	Solver::SetCorrection(ID(), 1.0);
+
 	ready = true;
 
 	int timeInit = timer.CountUS();
