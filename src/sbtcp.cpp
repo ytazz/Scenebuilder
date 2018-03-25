@@ -580,7 +580,7 @@ public:
 			return;
 
 		evStop.Set();
-		Join();
+		//Join();
 
 		closesocket(sock);
 
