@@ -9,6 +9,7 @@ namespace Scenebuilder{;
 
 void Color::Init(){
 	Converter::ColorFromName(name, rgba);
+	//Converter::FromString(name, *this);
 }
 
 //-------------------------------------------------------------------------------------------------

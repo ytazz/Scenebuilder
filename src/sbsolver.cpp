@@ -18,7 +18,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 
 Solver::Param::Param(){
 	verbose        = false;
-	methodMajor    = Solver::Method::Major::GaussNewton1;
+	methodMajor    = Solver::Method::Major::GaussNewton;
 	methodMinor    = Solver::Method::Minor::GaussSeidel;
 	minStepSize    =  0.01;
 	maxStepSize    = 10.0;
@@ -108,12 +108,30 @@ void Solver::Lock(ID mask, bool lock){
 	ready = false;
 }
 
-void Solver::SetCorrectionRate(ID mask, real_t rate, real_t lim){
+void Solver::SetCorrection(ID mask, real_t rate, real_t lim){
 	Request req;
-	req.type   = Request::Type::SetCorrectionRate;
+	req.type   = Request::Type::SetCorrection;
 	req.mask   = mask;
 	req.rate   = rate;
 	req.lim    = lim;
+	requests.push_back(req);
+	ready = false;
+}
+
+void Solver::SetConstraintWeight(ID mask, real_t weight){
+	Request req;
+	req.type   = Request::Type::SetConstraintWeight;
+	req.mask   = mask;
+	req.weight = weight;
+	requests.push_back(req);
+	ready = false;
+}
+
+void Solver::SetVariableWeight(ID mask, real_t weight){
+	Request req;
+	req.type   = Request::Type::SetVariableWeight;
+	req.mask   = mask;
+	req.weight = weight;
 	requests.push_back(req);
 	ready = false;
 }
@@ -151,8 +169,12 @@ void Solver::Init(){
 		for(Variable* var : vars){
 			if(!req.mask.Match(var))
 				continue;
-			if(req.type == Request::Type::Lock)
+			if(req.type == Request::Type::Lock){
 				var->locked = req.lock;
+			}
+			if(req.type == Request::Type::SetVariableWeight){
+				var->weight = req.weight;
+			}
 		}
 		for(Constraint* con : cons){
 			if(!req.mask.Match(con))
@@ -163,9 +185,12 @@ void Solver::Init(){
 			if(req.type == Request::Type::SetPriority){
 				con->level = req.level;
 			}
-			if(req.type == Request::Type::SetCorrectionRate){
+			if(req.type == Request::Type::SetCorrection){
 				con->corrRate = req.rate;
 				con->corrMax  = req.lim;
+			}
+			if(req.type == Request::Type::SetConstraintWeight){
+				con->weight = req.weight;
 			}
 		}
 	}
@@ -386,16 +411,24 @@ void Solver::CalcDirection(){
 				con->UpdateGradient(k);
 		}	
 	}
-	if(param.methodMajor == Method::Major::GaussNewton1){		
+	if(param.methodMajor == Method::Major::GaussNewton){
+		for(Constraint* con : cons_active)
+				con->CalcCorrection();
+
 		if(param.methodMinor == Method::Minor::Direct){
 			timer.CountUS();
-			uint dimvar = 0;
-			uint dimcon = 0;
-			uint idxvar = 0;
-			uint idxcon = 0;
+			int dimvar          = 0;
+			int dimvar_weighted = 0;
+			int dimcon          = 0;
+			int idxvar          = 0;
+			int idxcon          = 0;
 			for(Variable* var : vars_unlocked){
 				var->index = dimvar;
 				dimvar += var->nelem;
+				if(var->weight != 0.0){
+					var->index_weighted = dimvar_weighted;
+					dimvar_weighted += var->nelem;
+				}
 			}
 			for(Constraint* con : cons_active){
 				con->index = dimcon;
@@ -408,29 +441,40 @@ void Solver::CalcDirection(){
 				return;
 			
 			timer.CountUS();
-			J.resize(dimcon, dimvar);
-			y.resize(dimcon);
-			J.clear();
-			y.clear();
+			A.resize(dimcon + dimvar_weighted, dimvar);
+			b.resize(dimcon + dimvar_weighted);
+			A.clear();
+			b.clear();
 			for(Constraint* con : cons_active){
 				for(Link* link : con->links_active){
-					link->RegisterCoef(J, con->weight);
+					link->RegisterCoef(A, con->weight);
 				}
-				con->RegisterDeviation(y);
+				con->RegisterCorrection(b);
+			}
+			for(Variable* var : vars_unlocked){
+				if(var->weight != 0.0){
+					for(int j = 0; j < var->nelem; j++)
+						A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
+				}
 			}
 			int t2 = timer.CountUS();
 			
 			timer.CountUS();
 #if defined USE_MKL
-			size_t ny = std::max(dimcon, dimvar);
-			y2.resize(ny);
-			for(uint i = 0; i < dimcon; i++)
-				y2[i] = y[i];
+			int nb = std::max(dimcon + dimvar_weighted, dimvar);
+			b2.resize(nb);
+			for(int i = 0; i < dimcon + dimvar_weighted; i++)
+				b2[i] = b[i];
 			
 			// dgels
 			//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << endl;
-			LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', (int)dimcon, (int)dimvar, 1, &J[0][0], (int)dimcon, &y2[0], (int)ny);
-
+			int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
+			if(info < 0){
+				Message::Error("dgels: %d-th argument illegal", -info);
+			}
+			if(info > 0){
+				Message::Error("dgels: matrix not full-rank");
+			}
 			// dgelsd
 			//vector<real_t> S;
 			//S.resize(std::min(dimcon, dimvar));
@@ -455,12 +499,12 @@ void Solver::CalcDirection(){
 			//LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &JtrJ[0][0], dimcon, &y2[0], dimcon);
 			
 			dx.resize(dimvar);
-			for(uint i = 0; i < dimvar; i++)
-				dx[i] = -1.0 * y2[i];
+			for(int i = 0; i < dimvar; i++)
+				dx[i] = b2[i];
 #else
-			JtrJ = J.trans()*J;
-			Jtry = J.trans()*y;
-			dx = -1.0 * (JtrJ.inv()*Jtry);
+			AtrA = A.trans()*A;
+			Atrb = A.trans()*b;
+			dx   = AtrA.inv()*Atrb;
 #endif
 			int t3 = timer.CountUS();
 			
@@ -471,10 +515,9 @@ void Solver::CalcDirection(){
 			//DSTR << "t1 t2 t3 " << t1 << " " << t2 << " " << t3 << endl;
 		}
 		else{
-			for(Variable*   var : vars_unlocked) var->Prepare       ();
-			for(Variable*   var : vars_unlocked) var->ResetState    ();
-			for(Constraint* con : cons_active  ) con->CalcCorrection();
-			for(Constraint* con : cons_active  ) con->ResetState    ();
+			for(Variable*   var : vars_unlocked) var->Prepare   ();
+			for(Variable*   var : vars_unlocked) var->ResetState();
+			for(Constraint* con : cons_active  ) con->ResetState();
 
 			for(int n = 0; n < param.numIter[0]; n++){
 				for(Variable* var : vars){
@@ -491,32 +534,6 @@ void Solver::CalcDirection(){
 							con->UpdateConjugate(k);
 					}
 
-				}
-			}
-		}
-	}
-	if(param.methodMajor == Method::Major::GaussNewton2){
-		for(Variable* var : vars_unlocked){
-			var->ResetState();
-		}
-		for(Constraint* con : cons_active){
-			con->CalcCorrection();
-		}
-		for(Constraint* con : cons_active){
-			con->ResetState();
-		}
-		for(int n = 0; n < param.numIter[0]; n++){
-			for(Constraint* con : cons_active){
-				for(int k = 0; k < con->nelem; k++)
-					con->UpdateMultiplier(k);
-			}
-			if(param.methodMinor == Method::Minor::Jacobi){
-				for(Constraint* con : cons_active){
-					con->dy.clear();
-				}
-				for(Variable* var : vars_unlocked){
-					for(int k = 0; k < var->nelem; k++)
-						var->UpdateError(k);
 				}
 			}
 		}

@@ -98,9 +98,9 @@ void Constraint::CalcDeviation(){
 		link->AddError();
 }
 
-void Constraint::RegisterDeviation(vvec_t& yvec){
+void Constraint::RegisterCorrection(vvec_t& dydvec){
 	for(int n = 0; n < nelem; n++)
-		yvec[index+n] = weight * y[n];
+		dydvec[index+n] = weight * dyd[n];
 }
 
 void Constraint::ResetState(){
@@ -297,6 +297,8 @@ void RangeConS::CalcDeviation(){
 }
 
 void RangeConS::Project(real_t& l, uint k){
+	if(_min == _max)
+		return;
 	if(on_upper && l > 0.0)
 		l = 0.0;
 	if(on_lower && l < 0.0)
@@ -401,6 +403,8 @@ void DiffConS::CalcDeviation(){
 }
 
 void DiffConS::Project(real_t& l, uint k){
+	if(_min == _max)
+		return;
 	if(on_upper && l > 0.0)
 		l = 0.0;
 	if(on_lower && l < 0.0)

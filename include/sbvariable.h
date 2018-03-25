@@ -66,10 +66,11 @@ public:
 	int	     type;			///< variable type
 	int	     nelem;			///< number of elements
 	int      index;
+	int      index_weighted;
 
 	real_t	scale, scale2, scale_inv, scale_inv2;	///< scaling factor, its inverse and squared inverse
 
-	real_t   dmax, dmax2;    ///< upper limit of delta norm
+	real_t   dmax, dmax2;   ///< upper limit of delta norm
 	real_t   weight;
 	vec3_t	 dx;            ///< delta
 	vec3_t   dz, dzd;

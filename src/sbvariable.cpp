@@ -18,7 +18,7 @@ Variable::Variable(uint _type, Solver* solver, ID _id, real_t _scale):ID(_id){
 
 	index  = 0;
 	dmax   = 1.0;
-	weight = 1.0;
+	weight = 0.0;
 	locked = false;
 }
 

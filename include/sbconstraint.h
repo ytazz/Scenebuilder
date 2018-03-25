@@ -54,9 +54,6 @@ public:
 	real_t	corrMax;
 
 	vec3_t		e;			///< error value
-	//vec3_t		de;			///< change of error
-	//vec3_t		ded;		///< desired change of error
-
 	vec3_t		y;			///< constraint error
 	vec3_t		dy;			///< change of constraint error
 	vec3_t		dyd;		///< desired change of constraint error
@@ -85,7 +82,7 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
-	void RegisterDeviation(vvec_t& yvec);
+	void RegisterCorrection(vvec_t& dydvec);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);
@@ -185,6 +182,7 @@ public:
 };
 
 /**	range constraint for difference of scalar variables
+    _min <= var1 - var0 <= _max
  */
 struct DiffConS : Constraint{
 	real_t	_min, _max;
