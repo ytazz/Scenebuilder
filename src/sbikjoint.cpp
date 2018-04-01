@@ -449,8 +449,8 @@ void IKJoint::SetPosLimit(uint i, real_t lower, real_t upper){
 	q_limit[1][i] = upper;
 }
 void IKJoint::SetVelLimit(uint i, real_t lower, real_t upper){
-	qd_limit[i][0] = lower;
-	qd_limit[i][1] = upper;
+	qd_limit[0][i] = lower;
+	qd_limit[1][i] = upper;
 }
 
 void IKJoint::Init(){
@@ -464,6 +464,10 @@ void IKJoint::AddVar(){
 		q_var  [i] = new SVar(solver, ID(0, 0, 0, name + "_q"  ), 1.0);
 		qd_var [i] = new SVar(solver, ID(0, 0, 0, name + "_qd" ), 1.0);
 		qdd_var[i] = new SVar(solver, ID(0, 0, 0, name + "_qdd"), 1.0);
+
+		q_var  [i]->val = q_ini  [i];
+		qd_var [i]->val = qd_ini [i];
+		qdd_var[i]->val = qdd_ini[i];
 	}
 }
 
@@ -475,9 +479,9 @@ void IKJoint::Prepare(){
 	IKJointBase::Prepare();
 
 	for(int i = 0; i < ndof; i++){
-		q_var  [i]->val = q_ini  [i];
-		qd_var [i]->val = qd_ini [i];
-		qdd_var[i]->val = qdd_ini[i];
+		//q_var  [i]->val = q_ini  [i];
+		//qd_var [i]->val = qd_ini [i];
+		//qdd_var[i]->val = qdd_ini[i];
 
 		q_var  [i]->locked = (q_lock  [i] || !(solver->mode == IKSolver::Mode::Pos));
 		qd_var [i]->locked = (qd_lock [i] || !(solver->mode == IKSolver::Mode::Vel));
@@ -504,6 +508,19 @@ void IKJoint::Prepare(){
 	}
 }
 
+void IKJoint::Limit(){
+	if(solver->mode == IKSolver::Mode::Pos){
+		for(int i = 0; i < ndof; i++){
+			q_var[i]->val = std::min(std::max(q_limit [0][i], q_var[i]->val), q_limit [1][i]);
+		}
+	}
+	if(solver->mode == IKSolver::Mode::Vel){
+		for(int i = 0; i < ndof; i++){
+			qd_var[i]->val = std::min(std::max(qd_limit[0][i], qd_var [i]->val), qd_limit[1][i]);
+		}
+	}
+}
+
 void IKJoint::Update(){
 	IKJointBase::Update();
 	
@@ -519,12 +536,12 @@ void IKJoint::Finish(){
 
 	if(solver->mode == IKSolver::Mode::Pos){
 		for(int i = 0; i < ndof; i++){
-			q[i] = std::min(std::max(q_limit [0][i], q_var[i]->val), q_limit [1][i]);
+			q[i] = q_var[i]->val;
 		}
 	}
 	if(solver->mode == IKSolver::Mode::Vel){
 		for(int i = 0; i < ndof; i++){
-			qd [i] = std::min(std::max(qd_limit[0][i], qd_var [i]->val), qd_limit[1][i]);
+			qd[i] = qd_var[i]->val;
 		}
 	}
 	if(solver->mode == IKSolver::Mode::Acc){

@@ -445,6 +445,8 @@ void Solver::CalcDirection(){
 			b.resize(dimcon + dimvar_weighted);
 			A.clear();
 			b.clear();
+			pivot.resize(dimcon);
+
 			for(Constraint* con : cons_active){
 				for(Link* link : con->links_active){
 					link->RegisterCoef(A, con->weight);
@@ -467,7 +469,7 @@ void Solver::CalcDirection(){
 				b2[i] = b[i];
 			
 			// dgels
-			//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << endl;
+			//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << " dimvar_weighted: " << dimvar_weighted << endl;
 			int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
 			if(info < 0){
 				Message::Error("dgels: %d-th argument illegal", -info);
@@ -606,7 +608,8 @@ void Solver::Step(){
 	state.obj      = CalcObjective();
 	state.objDiff  = state.obj - objPrev;
 	if(param.verbose){
-		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
+		//Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
+		DSTR << "iter:" << state.iterCount << " step:" << state.stepSize << " obj:" << state.obj << endl;
 	}
 	state.iterCount++;
 }
