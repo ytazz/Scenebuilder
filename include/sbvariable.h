@@ -31,7 +31,7 @@ public:
 		return 3;
 	}
 
-	ID(int _tag = 0, void* _owner = 0, void* _owner2 = 0, string _name = ""){
+	ID(int _tag = -1, void* _owner = 0, void* _owner2 = 0, string _name = ""){
 		tag    = _tag;
 		owner  = _owner;
 		owner2 = _owner2;
