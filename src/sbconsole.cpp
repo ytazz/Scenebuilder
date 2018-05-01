@@ -27,6 +27,8 @@ void Console::SetBufferSize(int nrow, int ncol){
 	
 	coninfo.dwSize.X = ncol;
 	coninfo.dwSize.Y = nrow;
+	coninfo.srWindow.Left   = 0;
+	coninfo.srWindow.Top    = 0;
 	coninfo.srWindow.Right  = ncol;
 	coninfo.srWindow.Bottom = nrow;
 	
