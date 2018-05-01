@@ -69,6 +69,7 @@ public:
 	virtual void AddCon ();
 	virtual void Prepare();
 	virtual void Finish ();
+	virtual void Limit  (){}
 	virtual void Update ();
 	virtual void Draw   (GRRenderIf* render);
 
@@ -208,6 +209,7 @@ public:
 	virtual void AddCon ();
 	virtual void Prepare();
 	virtual void Finish ();
+	virtual void Limit  ();
 	virtual void Update ();
 	virtual void Draw   (GRRenderIf* render);
 

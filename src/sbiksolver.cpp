@@ -190,10 +190,13 @@ void IKSolver::Finish(){
 void IKSolver::Update(){
 	timer.CountUS();
 
+	for(IKJoint* joint : ikJoints) joint->Limit();
+	
 	for(IKBody* body : ikBodies){
 		if(!body->parBody)
 			body->Update();
 	}
+	
 	for(IKJoint      * joint       : ikJoints      ) joint      ->Update();
 	for(IKMate       * mate        : ikMates       ) mate       ->Update();
 	for(IKHandle     * handle      : ikHandles     ) handle     ->Update();
@@ -215,8 +218,9 @@ void IKSolver::CompPosIK(){
 	
 	Prepare();
 	timeUpdate = 0;
-	for(int i = 0; i < numIter; i++)
+	for(int i = 0; i < numIter; i++){
 		Solver::Step();
+	}
 	Finish();
 }
 

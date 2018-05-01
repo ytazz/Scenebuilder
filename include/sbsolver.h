@@ -114,6 +114,7 @@ public:
 	vvec_t          b, b2;
 	vvec_t          Atrb;
 	vvec_t          dx;
+	vector<int>     pivot;
 
 	vector<VariableInfo>    varInfoType;
 	vector<ConstraintInfo>  conInfoType;		///< sum for each constraint category

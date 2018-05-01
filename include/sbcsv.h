@@ -1,7 +1,6 @@
 #pragma once
 
-#include <base/typedefs.h>
-
+#include <sbtypes.h>
 #include <sbtokenizer.h>
 
 namespace Scenebuilder{;
