@@ -193,7 +193,7 @@ public:
 
 		sock = new udp::socket(ioService, udp::endpoint(udp::v4(), port));
 		sock->async_receive_from(boost::asio::buffer(buf), remoteEp, boost::bind(&UDPReceiverImplAsio::OnReceive, this, _1, _2));
-		threadIoService = thread(boost::bind(&io_service::run, &ioService));
+		threadIoService = boost::thread(boost::bind(&io_service::run, &ioService));
 	}
 
 	virtual void Disconnect(){

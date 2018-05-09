@@ -176,7 +176,7 @@ public:
 	tcp::acceptor*	acceptor;
 
 	/// thread to run io_service
-	thread			threadIoService;
+	boost::thread	threadIoService;
 
 public:
 	/** internal callbacks **/
@@ -217,7 +217,7 @@ public:
 		StartSession();
 
 		// バックグラウンドでio_service始動
-		threadIoService = thread(boost::bind(&io_service::run, &ioService));
+		threadIoService = boost::thread(boost::bind(&io_service::run, &ioService));
 
 		Message::Out("server: listening on port %d", port);
 		running = true;
@@ -301,7 +301,7 @@ public:
 		timer->expires_from_now(boost::posix_time::seconds(1));
 		timer->async_wait(boost::bind(&TCPClientImplAsio::OnConnectTimeout, this, _1));
 
-		threadIoService = thread(boost::bind(&io_service::run, &ioService));
+		threadIoService = boost::thread(boost::bind(&io_service::run, &ioService));
 
 		while(connecting);
 		if(!connected){

@@ -132,7 +132,7 @@ protected:
 	tcp::acceptor*	acceptor;
 
 	/// thread to run io_service
-	thread			threadIoService;
+	boost::thread	threadIoService;
 
 	/// array of sessions
 	Sessions		sessions;
@@ -181,7 +181,7 @@ public:
 		StartSession();
 
 		// バックグラウンドでio_service始動
-		threadIoService = thread(boost::bind(&io_service::run, &ioService));
+		threadIoService = boost::thread(boost::bind(&io_service::run, &ioService));
 
 		Message::Out("server: listening on port %d", port);
 		running = true;
@@ -230,7 +230,7 @@ protected:
 	deadline_timer		writeTimer;
 	
 	/// thread to run io_service
-	thread				threadIoService;
+	boost::thread		threadIoService;
 
 	typedef unsigned char		byte;
 	
@@ -449,7 +449,7 @@ public:
 			ioService.reset();
 			// Disconnectするまでスレッドが終了しないようにする
 			work = new io_service::work(ioService);
-			threadIoService = thread(boost::bind(&io_service::run, &ioService));
+			threadIoService = boost::thread(boost::bind(&io_service::run, &ioService));
 		}
 		catch(std::exception& e){
 			cerr << e.what() << endl;
