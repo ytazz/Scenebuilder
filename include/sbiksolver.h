@@ -95,6 +95,7 @@ public:
 	bool    ready;
 
 	int     timeInit;
+	int     timeReset;
 	int     timePrepare;
 	int     timeFinish;
 	int     timeUpdate;
@@ -109,6 +110,7 @@ public:
 public:
 	
 	void Init   ();
+	void Reset  ();
 	void Prepare();
 	void Finish ();
 	void Update ();

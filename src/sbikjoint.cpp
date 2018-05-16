@@ -475,14 +475,32 @@ void IKJoint::AddCon(){
 	IKJointBase::AddCon();
 }
 
+void IKJoint::Reset(){
+	for(int i = 0; i < ndof; i++){
+		q_var  [i]->val = q_ini  [i];
+		qd_var [i]->val = qd_ini [i];
+		qdd_var[i]->val = qdd_ini[i];
+	}
+
+	if(solver->mode == IKSolver::Mode::Force){
+		if(type == Type::Hinge){
+			moment_var[2]->val = tau_ini[0];
+		}
+		if(type == Type::Slider){
+			force_var[2]->val  = tau_ini[0];
+		}
+		if(type == Type::Balljoint){
+			moment_var[0]->val = tau_ini[0];
+			moment_var[1]->val = tau_ini[1];
+			moment_var[2]->val = tau_ini[2];
+		}
+	}
+}
+
 void IKJoint::Prepare(){
 	IKJointBase::Prepare();
 
 	for(int i = 0; i < ndof; i++){
-		//q_var  [i]->val = q_ini  [i];
-		//qd_var [i]->val = qd_ini [i];
-		//qdd_var[i]->val = qdd_ini[i];
-
 		q_var  [i]->locked = (q_lock  [i] || !(solver->mode == IKSolver::Mode::Pos));
 		qd_var [i]->locked = (qd_lock [i] || !(solver->mode == IKSolver::Mode::Vel));
 		qdd_var[i]->locked = (qdd_lock[i] || !(solver->mode == IKSolver::Mode::Acc));
@@ -490,17 +508,12 @@ void IKJoint::Prepare(){
 
 	if(solver->mode == IKSolver::Mode::Force){
 		if(type == Type::Hinge){
-			moment_var[2]->val    = tau_ini [0];
 			moment_var[2]->locked = tau_lock[0];
 		}
 		if(type == Type::Slider){
-			force_var[2]->val    = tau_ini [0];
 			force_var[2]->locked = tau_lock[0]; 
 		}
 		if(type == Type::Balljoint){
-			moment_var[0]->val    = tau_ini [0];
-			moment_var[1]->val    = tau_ini [1];
-			moment_var[2]->val    = tau_ini [2];
 			moment_var[0]->locked = tau_lock[0];
 			moment_var[1]->locked = tau_lock[1];
 			moment_var[2]->locked = tau_lock[2];

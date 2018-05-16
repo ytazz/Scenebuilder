@@ -411,7 +411,7 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				scene->CalcRelativeTransform(-1, par, typedb, tr);
 				
 			if(download){
-				bodyAux->ikBody->SetPose(pose_t(tr.rot * bodyProp->trn + tr.trn, tr.rot * bodyProp->rot));
+				bodyAux->ikBody->SetInitialPose(pose_t(tr.rot * bodyProp->trn + tr.trn, tr.rot * bodyProp->rot));
 			}
 			else{
 				quat_t qinv = tr.rot.Conjugated();
@@ -461,7 +461,8 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				}
 				else{
 					// IKの計算結果をtargetposに代入
-					joint1DProp->targetpos = ikJoint->GetPos(0);
+					//joint1DProp->targetpos = ikJoint->GetPos(0);
+					joint1DProp->pos = ikJoint->GetPos(0);
 				}
 			}
 		}

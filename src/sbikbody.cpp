@@ -116,8 +116,12 @@ real_t IKBody::GetMass  (        ){ return mass; }
 
 void   IKBody::SetCenter(const vec3_t& c){ center = c;      }
 void   IKBody::GetCenter(      vec3_t& c){ c      = center; }
-void   IKBody::SetPose  (const pose_t& p){ pos = p.Pos(); ori = p.Ori(); }
 void   IKBody::GetPose  (      pose_t& p){ p.Pos() = pos; p.Ori() = ori; }
+
+void   IKBody::SetInitialPose(const pose_t& p){
+	pos_ini = p.Pos();
+	ori_ini = p.Ori();
+}
 
 void IKBody::Init(){
 
@@ -135,6 +139,11 @@ void IKBody::AddVar(){
 void IKBody::AddCon(){
 	force_con  = new ForceCon (this);
 	moment_con = new MomentCon(this);
+}
+
+void IKBody::Reset(){
+	pos_var->val = pos_ini;
+	ori_var->val = ori_ini;
 }
 
 void IKBody::Prepare(){

@@ -61,6 +61,9 @@ public:
 	vec3_t  angacc;
 	vec3_t  force;
 	vec3_t  moment;
+
+	vec3_t  pos_ini;
+	quat_t  ori_ini;
 	
 	V3Var*  pos_var;
 	QVar*   ori_var;
@@ -76,13 +79,13 @@ public:
 	vec3_t  cw;
 
 public:
-	void    Init   ();
-	void    AddVar ();
-	void    AddCon ();
-	void	Prepare();
-	void    Finish ();
-	void    Update ();
-	//void	CompFK ();
+	void     Init   ();
+	void     AddVar ();
+	void     AddCon ();
+	void     Reset  ();
+	void	 Prepare();
+	void     Finish ();
+	void     Update ();
 
 public:
 	IKBody*	 GetParent();
@@ -95,11 +98,11 @@ public:
 	void     SetCenter(const vec3_t& c);
 	void     GetCenter(vec3_t& c);
 
-	/// 位置と向きの取得
-	void SetPose(const pose_t& p);
-	void GetPose(pose_t& p);
+	void     GetPose(pose_t& p);
 
-	void Draw(GRRenderIf* render);
+	void     SetInitialPose(const pose_t& p);
+	
+	void     Draw(GRRenderIf* render);
 
 	IKBody(IKSolver* _solver, const string& _name);
 };

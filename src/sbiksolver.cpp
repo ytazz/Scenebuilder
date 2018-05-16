@@ -161,6 +161,19 @@ void IKSolver::Init(){
 	int timeInit = timer.CountUS();
 }
 
+void IKSolver::Reset(){
+	if(!ready)
+		Init();
+
+	timer.CountUS();
+
+	for(IKBody * body  : ikBodies) body ->Reset();
+	for(IKJoint* joint : ikJoints) joint->Reset();
+	for(IKMate * mate  : ikMates ) mate ->Reset();
+	
+	timeReset = timer.CountUS();
+}
+
 void IKSolver::Prepare(){
 	timer.CountUS();
 

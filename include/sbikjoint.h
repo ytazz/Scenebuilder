@@ -67,6 +67,7 @@ public:
 	virtual void Init   ();
 	virtual void AddVar ();
 	virtual void AddCon ();
+	virtual void Reset  (){}
 	virtual void Prepare();
 	virtual void Finish ();
 	virtual void Limit  (){}
@@ -207,6 +208,7 @@ public:
 	virtual void Init   ();
 	virtual void AddVar ();
 	virtual void AddCon ();
+	virtual void Reset  ();
 	virtual void Prepare();
 	virtual void Finish ();
 	virtual void Limit  ();
