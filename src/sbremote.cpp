@@ -160,7 +160,7 @@ protected:
 public:
 	/// create new session
 	void StartSession(){
-		SessionBase* s = owner->CreateSession();
+		UTRef<SessionBase> s(owner->CreateSession());
 		s->impl = new SessionBaseImpl((int)sessions.size(), ioService);
 		s->impl->owner = s;
 		sessions.push_back(s);

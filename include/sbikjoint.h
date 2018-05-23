@@ -15,7 +15,7 @@ namespace Scenebuilder{;
 class IKSolver;
 
 ///
-class IKJointBase : public UTRefCount{
+class IKJointBase{
 public:
 	string     name;
 	IKSolver*  solver;
@@ -78,7 +78,7 @@ public:
 };
 
 /// 拘束
-class IKMate : public IKJointBase{
+class IKMate : public UTRefCount, public IKJointBase{
 public:
 	struct Type{
 		enum{
@@ -138,7 +138,7 @@ public:
 };
 
 /// 関節
-class IKJoint : public IKJointBase{
+class IKJoint : public UTRefCount, public IKJointBase{
 public:
 	struct Type{
 		enum{

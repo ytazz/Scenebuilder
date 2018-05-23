@@ -34,14 +34,14 @@ void SceneLocal::SetName(int id, string name){
 }
 
 void SceneLocal::AddChild(int parId, int childId){
-	Object* obj = objArray[parId];
+	auto& obj = objArray[parId];
 	if(find(obj->children.begin(), obj->children.end(), childId) == obj->children.end())
 		obj->children.push_back(childId);
 	objArray[childId]->parId = parId;
 }
 
 void SceneLocal::RemoveChild(int parId, int childId){
-	Object* obj = objArray[parId];
+	auto& obj = objArray[parId];
 	obj->children.erase(find(obj->children.begin(), obj->children.end(), childId));
 	objArray[childId]->parId = -1;
 }
@@ -75,15 +75,14 @@ int SceneLocal::CreateObject(int type, const string& name, TypeDB* typedb){
 }
 
 void SceneLocal::DeleteObject(int id){
-	Object* obj = objArray[id];
+	auto& obj = objArray[id];
 	
 	// delete reference from parent
 	if(obj->parId != -1)
 		RemoveFromArray(objArray[obj->parId]->children, id);
 
 	// delete all links pointing to this object
-	for(uint i = 0; i < objArray.size(); i++){
-		Object* o = objArray[i];
+	for(auto& o : objArray){
 		for(vector<Link>::iterator it = o->links.begin(); it != o->links.end(); ){
 			if(it->id == id)
 				 it = o->links.erase(it);
@@ -107,7 +106,7 @@ int SceneLocal::GetObjectType(int id){
 }
 
 void SceneLocal::AddLink(int srcId, int destId, const string& name){
-	Object* obj = objArray[srcId];
+	auto& obj = objArray[srcId];
 	uint i;
 	for(i = 0; i < obj->links.size(); i++){
 		if(obj->links[i].name == name){
@@ -120,7 +119,7 @@ void SceneLocal::AddLink(int srcId, int destId, const string& name){
 }
 
 void SceneLocal::RemoveLink(int srcId, int destId){
-	Object* obj = objArray[srcId];
+	auto& obj = objArray[srcId];
 	for(vector<Link>::iterator it = obj->links.begin(); it != obj->links.end(); ){
 		if(it->id == destId)
 			 it = obj->links.erase(it);
@@ -129,9 +128,8 @@ void SceneLocal::RemoveLink(int srcId, int destId){
 }
 
 int SceneLocal::GetLink(int id, const string& name){
-	Object* obj = objArray[id];
-	for(uint i = 0; i < obj->links.size(); i++){
-		Link& lnk = obj->links[i];
+	auto& obj = objArray[id];
+	for(Link& lnk : obj->links){
 		if(lnk.name == name)
 			return lnk.id;
 	}
@@ -139,9 +137,8 @@ int SceneLocal::GetLink(int id, const string& name){
 }
 
 void SceneLocal::GetLinks(int id, vector<int>& links, vector<string>& names){
-	Object* obj = objArray[id];
-	for(uint i = 0; i < obj->links.size(); i++){
-		Link& lnk = obj->links[i];
+	auto& obj = objArray[id];
+	for(Link& lnk : obj->links){
 		links.push_back(lnk.id);
 		names.push_back(lnk.name);
 	}
@@ -155,8 +152,8 @@ void SceneLocal::GetLivenessRecursively(int id, vector<byte>& alive){
 	alive[id] = 1;
 	vector<int> children;
 	GetChildren(id, children);
-	for(uint i = 0; i < children.size(); i++)
-		GetLivenessRecursively(children[i], alive);
+	for(int cid : children)
+		GetLivenessRecursively(cid, alive);
 }
 
 void SceneLocal::GetLivenessArray(Address& addr, vector<byte>& alive){
@@ -169,8 +166,7 @@ void SceneLocal::GetLivenessArray(Address& addr, vector<byte>& alive){
 
 void SceneLocal::SetLocation(int id, const string& path){
 	bool found = false;
-	for(uint i = 0; i < locArray.size(); i++){
-		Location& loc = locArray[i];
+	for(auto& loc : locArray){
 		if(loc.id == id){
 			loc.path = path;
 			found = true;
@@ -182,8 +178,7 @@ void SceneLocal::SetLocation(int id, const string& path){
 
 string SceneLocal::GetLocation(int id){
 	Location* loc = 0;
-	for(uint i = 0; i < locArray.size(); i++){
-		Location& l = locArray[i];
+	for(auto& l : locArray){
 		if(l.id == id){
 			loc = &l;
 			break;

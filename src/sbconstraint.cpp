@@ -21,56 +21,56 @@ Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
 }
 
 SLink* Constraint::AddSLink(Variable* var, real_t coef){
-	SLink* link = new SLink(var, this, coef);
+	UTRef<SLink> link(new SLink(var, this, coef));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 C2Link* Constraint::AddC2Link(Variable* var){
-	C2Link* link = new C2Link(var, this);
+	UTRef<C2Link> link(new C2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 R2Link* Constraint::AddR2Link(Variable* var){
-	R2Link* link = new R2Link(var, this);
+	UTRef<R2Link> link(new R2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 M2Link* Constraint::AddM2Link(Variable* var){
-	M2Link* link = new M2Link(var, this);
+	UTRef<M2Link> link(new M2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 X3Link* Constraint::AddX3Link(Variable* var){
-	X3Link* link = new X3Link(var, this);
+	UTRef<X3Link> link(new X3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 C3Link* Constraint::AddC3Link(Variable* var){
-	C3Link* link = new C3Link(var, this);
+	UTRef<C3Link> link(new C3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 R3Link* Constraint::AddR3Link(Variable* var){
-	R3Link* link = new R3Link(var, this);
+	UTRef<R3Link> link(new R3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;
 }
 
 M3Link* Constraint::AddM3Link(Variable* var){
-	M3Link* link = new M3Link(var, this);
+	UTRef<M3Link> link(new M3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
 	return link;

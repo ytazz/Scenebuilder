@@ -179,7 +179,7 @@ bool ModelContainer::LoadModel(int id, const string& filename, MeshProp* meshPro
 	}
 
 	/// メッシュへコンバート
-	UTRef<Model> model = new Model();
+	UTRef<Model> model(new Model());
 	try{
 		float s = (float)meshProp->scale;
 		Affinef aff = Affinef::Scale(s,s,s);

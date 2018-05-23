@@ -86,7 +86,7 @@ void LogReader::ParseHeader(){
 
 void LogReader::ParseBinary(){
 	while(ptr + sizeof(real_t) + nbytes <= ptr_end){
-		LogReader::Snapshot* snap = new LogReader::Snapshot();
+		UTRef<LogReader::Snapshot> snap(new LogReader::Snapshot());
 		snap->time = *(real_t*)ptr;
 		ptr += sizeof(real_t);
 
@@ -181,7 +181,7 @@ void LogReader::Read(int idx){
 		Message::Error("LogReader: index out of range");
 		return;
 	}
-	Snapshot* snap = snapshots[idx];
+	auto& snap = snapshots[idx];
 
 	// 各オブジェクトについて型情報をもとに文字列をパースしてプロパティを設定
 	int nObj = (int)infos.size();

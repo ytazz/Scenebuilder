@@ -53,7 +53,7 @@ public:
 	XMLNode(XML* _xml, const string& tn);
 };
 
-class XML : public Tree{
+class XML : public UTRefCount, public Tree{
 public:
 	int       curId;
 	Converter converter;

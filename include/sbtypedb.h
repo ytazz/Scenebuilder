@@ -131,7 +131,7 @@ class XML;
 /** 型情報データベース
 
  **/
-class TypeDB : public UTRefCount{
+class TypeDB{
 protected:
 	vector< UTRef<TypeInfo> >	types;
 	

@@ -144,7 +144,7 @@ Calc::math_func_t Calc::GetFunc(string_iterator_pair str){
 }
 
 Calc::Term* Calc::CreateTerm(int type){
-	Term* term = new Term();
+	UTRef<Term> term = new Term();
 	term->type = type;
 
 	terms.push_back(term);

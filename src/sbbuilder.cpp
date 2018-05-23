@@ -87,7 +87,7 @@ void Builder::FillProperty(TypeInfo* type, Property* prop){
 	}
 
 	for(uint i = 0; i < type->attrs.size(); i++){
-		AttrInfo* attr = type->attrs[i];
+		auto& attr = type->attrs[i];
 
 		if(attr->primId == Primitive::Path)
 			continue;
@@ -111,7 +111,7 @@ void Builder::AddLinks(int srcId, int refId, TypeInfo* type){
 		AddLinks(srcId, refId, base);
 	}
 	for(uint i = 0; i < type->attrs.size(); i++){
-		AttrInfo* attr = type->attrs[i];
+		auto& attr = type->attrs[i];
 
 		if(attr->primId == Primitive::Path){
 			string path = GetAttrValue(attr->name);	

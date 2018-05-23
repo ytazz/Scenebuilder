@@ -271,7 +271,7 @@ void SVG::LoadPath(Path* path, XMLNode* node){
 
 void SVG::Load(XMLNode* node){
 	if(node->name == "g"){
-		Layer* l = new Layer();
+		UTRef<Layer> l(new Layer());
 		l->name         = node->GetAttr("id", false);
 		l->inkscapeName = node->GetAttr("inkscape:label", false);
 		l->shown        = !(node->GetAttr("style", false) == "display:none");
@@ -280,7 +280,7 @@ void SVG::Load(XMLNode* node){
 	}
 
 	if(node->name == "path"){
-		Path* p = new Path();
+		UTRef<Path> p(new Path());
 		p->layer = layerStack.back();
 		paths.push_back(p);
 		LoadPath(p, node);

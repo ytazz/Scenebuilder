@@ -8,7 +8,7 @@
 
 namespace Scenebuilder{;
 
-class BitmapImage : public UTRefCount{
+class BitmapImage{
 public:
 	uint			width;
 	uint			height;

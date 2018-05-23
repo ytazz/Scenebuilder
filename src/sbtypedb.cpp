@@ -113,8 +113,7 @@ uint AttrInfo::CalcBytes(){
 //-------------------------------------------------------------------------------------------------
 
 AttrInfo* TypeInfo::GetAttr(int attrId){
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
+	for(auto& attr : attrs){
 		if(attr->id == attrId)
 			return attr;
 	}
@@ -122,8 +121,7 @@ AttrInfo* TypeInfo::GetAttr(int attrId){
 }
 
 AttrInfo* TypeInfo::GetAttr(const string& attrName){
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
+	for(auto& attr : attrs){
 		if(attr->name == attrName)
 			return attr;
 	}
@@ -146,17 +144,15 @@ void TypeInfo::ToXML(XML* xml){
 	node->SetAttr("baseId", (ss.str(""), ss << baseId, ss.str()) );
 	node->SetAttr("szProp", (ss.str(""), ss << szProp, ss.str()) );
 
-	for(uint i = 0; i < attrs.size(); i++)
-		attrs[i]->ToXML(xml, nodeId);
+	for(auto& attr : attrs)
+		attr->ToXML(xml, nodeId);
 }
 
 void TypeInfo::SetDefault(Property* prop, int cat){
 	if(baseId != -1)
 		db->GetType(baseId)->SetDefault(prop, cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
-
+	for(auto& attr: attrs){
 		if(attr->cat & cat){
 			attr->Set(attr->def, prop);
 		}
@@ -167,9 +163,7 @@ void TypeInfo::FromString(Tokenizer& tok, Property* prop, int cat){
 	if(baseId != -1)
 		db->GetType(baseId)->FromString(tok, prop, cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
-
+	for(auto& attr : attrs){
 		if(tok.IsEnd())
 			break;
 		if(attr->cat & cat){
@@ -188,9 +182,7 @@ void TypeInfo::ToString(ostream& os, Property* prop, int cat){
 	if(baseId != -1)
 		db->GetType(baseId)->ToString(os, prop, cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
-
+	for(auto& attr : attrs){
 		if(attr->cat & cat){
 			attr->ToString(os, prop);
 			os << ";";
@@ -202,9 +194,7 @@ void TypeInfo::FromBinary(const byte*& buf, Property* prop, int cat){
 	if(baseId != -1)
 		db->GetType(baseId)->FromBinary(buf, prop, cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
-
+	for(auto& attr : attrs){
 		if(attr->cat & cat){
 			attr->FromBinary(buf, prop);
 			buf += attr->CalcBytes();
@@ -216,9 +206,7 @@ void TypeInfo::ToBinary(byte*& buf, Property* prop, int cat){
 	if(baseId != -1)
 		db->GetType(baseId)->ToBinary(buf, prop, cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
-
+	for(auto& attr : attrs){
 		if(attr->cat & cat)
 			attr->ToBinary(buf, prop);
 	}
@@ -229,8 +217,7 @@ uint TypeInfo::CalcBytes(int cat){
 	if(baseId != -1)
 		sz = db->GetType(baseId)->CalcBytes(cat);
 
-	for(uint i = 0; i < attrs.size(); i++){
-		AttrInfo* attr = attrs[i];
+	for(auto& attr : attrs){
 		if(attr->cat & cat)
 			sz += attr->CalcBytes();
 	}
@@ -275,8 +262,7 @@ int TypeDB::AddType(const string& name, size_t sz, PropertyConstructor construct
 }
 
 TypeInfo* TypeDB::GetType(int typeId){
-	for(uint i = 0; i < types.size(); i++){
-		TypeInfo* type = types[i];
+	for(auto& type : types){
 		if(type->id == typeId)
 			return type;
 	}
@@ -284,8 +270,7 @@ TypeInfo* TypeDB::GetType(int typeId){
 }
 
 TypeInfo* TypeDB::GetType(const string& typeName){
-	for(uint i = 0; i < types.size(); i++){
-		TypeInfo* type = types[i];
+	for(auto& type : types){
 		if(type->name == typeName)
 			return type;
 	}
@@ -310,8 +295,7 @@ bool TypeDB::KindOf(int typeId, int baseId){
 
 void TypeDB::EnumDerivedTypes(int baseId, vector<int>& derived){
 	derived.clear();
-	for(uint i = 0; i < types.size(); i++){
-		TypeInfo* type = types[i];
+	for(auto& type : types){
 		if(KindOf(type->id, baseId))
 			derived.push_back(type->id);
 	}
@@ -322,8 +306,8 @@ void TypeDB::FromXML(XML* xml){
 	vector<int> children;
 	xml->GetChildren(rootId, children);
 
-	for(uint i = 0; i < children.size(); i++){
-		XMLNode* node = xml->GetNode(children[i]);
+	for(int cid : children){
+		XMLNode* node = xml->GetNode(cid);
 		string name = node->GetName();
 		//if(name != "type")
 		//	continue;
@@ -332,8 +316,8 @@ void TypeDB::FromXML(XML* xml){
 }
 
 void TypeDB::ToXML(XML* xml){
-	for(uint i = 0; i < types.size(); i++)
-		types[i]->ToXML(xml);
+	for(auto& type : types)
+		type->ToXML(xml);
 }
 
 void TypeDB::Save(string filename){

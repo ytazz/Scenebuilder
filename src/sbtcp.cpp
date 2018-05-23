@@ -197,7 +197,7 @@ public:
 	}
 
 	void StartSession(){
-		TCPSessionImplAsio* s = new TCPSessionImplAsio(this, (int)sessions.size(), ioService);
+		UTRef<TCPSessionImplAsio> s(new TCPSessionImplAsio(this, (int)sessions.size(), ioService));
 		sessions.push_back(s);
 		acceptor->async_accept(s->GetSocket(), boost::bind(&TCPServerImplAsio::OnAccept, this, _1));
 	}
@@ -430,7 +430,7 @@ public:
 				to.tv_sec  = 0;
 				to.tv_usec = 1000*owner->listenInterval;
 				if(select(0, &fd, 0, 0, &to)){
-					UTRef<TCPSessionImplWinsock> s = new TCPSessionImplWinsock(this, (int)sessions.size());
+					UTRef<TCPSessionImplWinsock> s(new TCPSessionImplWinsock(this, (int)sessions.size()));
 					if((s->sock = ::accept(sock, NULL, NULL)) == INVALID_SOCKET){
 						Message::Error("accept failed");
 						closesocket(sock);

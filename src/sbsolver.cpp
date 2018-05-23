@@ -66,7 +66,7 @@ void Solver::AddVar(Variable* var){
 }
 
 void Solver::DeleteVar(Variable* var){
-	vars.erase(find(vars.begin(), vars.end(), var));
+	RemoveFromArray(vars, var);
 	ready = false;
 }
 
@@ -77,7 +77,7 @@ void Solver::AddCon(Constraint* con){
 }
 
 void Solver::DeleteCon(Constraint* con){
-	cons.erase(find(cons.begin(), cons.end(), con));
+	RemoveFromArray(cons, con);
 	ready = false;
 }
 
@@ -138,7 +138,7 @@ void Solver::SetVariableWeight(ID mask, real_t weight){
 
 real_t Solver::CalcError(ID mask, bool sum_or_max){
 	real_t E = 0.0;
-	for(Constraint* con : cons){
+	for(auto& con : cons){
 		if(mask.Match(con) && con->enabled && con->active){
 			for(int k = 0; k < con->nelem; k++){
 				if(sum_or_max)
@@ -159,14 +159,14 @@ void Solver::Clear(){
 }
 
 void Solver::Reset(){
-	for(Variable* var : vars)
+	for(auto& var : vars)
 		var->Reset();
 }
 
 void Solver::Init(){
 	// リクエスト処理
 	for(Request& req : requests){
-		for(Variable* var : vars){
+		for(auto& var : vars){
 			if(!req.mask.Match(var))
 				continue;
 			if(req.type == Request::Type::Lock){
@@ -176,7 +176,7 @@ void Solver::Init(){
 				var->weight = req.weight;
 			}
 		}
-		for(Constraint* con : cons){
+		for(auto& con : cons){
 			if(!req.mask.Match(con))
 				continue;
 			if(req.type == Request::Type::Enable){
@@ -199,10 +199,10 @@ void Solver::Init(){
 	int maxVarType  = 0;
 	int maxConType  = 0;
 	int maxConLevel = 0;
-	for(Variable* var : vars){
+	for(auto& var : vars){
 		maxVarType = std::max(maxVarType, var->tag);
 	}
-	for(Constraint* con : cons){
+	for(auto& con : cons){
 		maxConType  = std::max(maxConType , con->tag  );
 		maxConLevel = std::max(maxConLevel, con->level);
 	}
@@ -255,7 +255,7 @@ real_t Solver::CalcUpdatedObjective(real_t alpha){
 
 real_t Solver::CalcObjective(){
 	real_t obj = 0.0;
-	for(Constraint* con : cons){
+	for(auto& con : cons){
 		if(!con->enabled)
 			continue;
 		
@@ -335,7 +335,7 @@ void Solver::Prepare(){
 	timer.CountUS();
 
 	vars_unlocked.clear();
-	for(Variable* var : vars){
+	for(auto& var : vars){
 		if(!var->locked)
 			vars_unlocked.push_back(var);
 	}
@@ -347,7 +347,7 @@ void Solver::Prepare(){
 	for(int i = 0; i < (int)conInfoType .size(); i++) conInfoType [i] = ConstraintInfo();
 	for(int i = 0; i < (int)conInfoLevel.size(); i++) conInfoLevel[i] = ConstraintInfo();
 
-	for(Variable* var : vars){
+	for(auto& var : vars){
 		if(var->tag == -1)
 			continue;
 		varInfoType[var->tag].num++;
@@ -358,7 +358,7 @@ void Solver::Prepare(){
 	cons_active.clear();
 	for(int i = 0; i < (int)cons_level.size(); i++)
 		cons_level[i].clear();
-	for(Constraint* con : cons){
+	for(auto& con : cons){
 		conInfoType [con->tag  ].num++;
 		conInfoLevel[con->level].num++;
 
@@ -383,16 +383,16 @@ void Solver::Prepare(){
 		}
 	}
 	// links pointing to active constraints and unlocked variables
-	for(Constraint* con : cons_active){
+	for(auto& con : cons_active){
 		con->links_active.clear();
-		for(Link* link : con->links){
+		for(auto& link : con->links){
 			if(!link->var->locked)
 				con->links_active.push_back(link);
 		}
 	}
-	for(Variable* var : vars_unlocked){
+	for(auto& var : vars_unlocked){
 		var->links_active.clear();
-		for(Link* link : var->links){
+		for(auto& link : var->links){
 			if(link->con->active)
 				var->links_active.push_back(link);
 		}
@@ -403,17 +403,17 @@ void Solver::Prepare(){
 
 void Solver::CalcDirection(){
 	if(param.methodMajor == Method::Major::SteepestDescent){
-		for(Variable* var : vars_unlocked){
+		for(auto& var : vars_unlocked){
 			var->ResetState();
 		}
-		for(Constraint* con : cons_active){
+		for(auto& con : cons_active){
 			for(int k = 0; k < con->nelem; k++)
 				con->UpdateGradient(k);
 		}	
 	}
 	if(param.methodMajor == Method::Major::GaussNewton){
-		for(Constraint* con : cons_active)
-				con->CalcCorrection();
+		for(auto& con : cons_active)
+			con->CalcCorrection();
 
 		if(param.methodMinor == Method::Minor::Direct){
 			timer.CountUS();
@@ -422,7 +422,7 @@ void Solver::CalcDirection(){
 			int dimcon          = 0;
 			int idxvar          = 0;
 			int idxcon          = 0;
-			for(Variable* var : vars_unlocked){
+			for(auto& var : vars_unlocked){
 				var->index = dimvar;
 				dimvar += var->nelem;
 				if(var->weight != 0.0){
@@ -430,7 +430,7 @@ void Solver::CalcDirection(){
 					dimvar_weighted += var->nelem;
 				}
 			}
-			for(Constraint* con : cons_active){
+			for(auto& con : cons_active){
 				con->index = dimcon;
 				dimcon += con->nelem;
 			}
@@ -447,13 +447,13 @@ void Solver::CalcDirection(){
 			b.clear();
 			pivot.resize(dimcon);
 
-			for(Constraint* con : cons_active){
-				for(Link* link : con->links_active){
+			for(auto& con : cons_active){
+				for(auto& link : con->links_active){
 					link->RegisterCoef(A, con->weight);
 				}
 				con->RegisterCorrection(b);
 			}
-			for(Variable* var : vars_unlocked){
+			for(auto& var : vars_unlocked){
 				if(var->weight != 0.0){
 					for(int j = 0; j < var->nelem; j++)
 						A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
@@ -510,28 +510,28 @@ void Solver::CalcDirection(){
 #endif
 			int t3 = timer.CountUS();
 			
-			for(Variable* var : vars_unlocked){
+			for(auto& var : vars_unlocked){
 				var->RegisterDelta(dx);
 			}
 
 			//DSTR << "t1 t2 t3 " << t1 << " " << t2 << " " << t3 << endl;
 		}
 		else{
-			for(Variable*   var : vars_unlocked) var->Prepare   ();
-			for(Variable*   var : vars_unlocked) var->ResetState();
-			for(Constraint* con : cons_active  ) con->ResetState();
+			for(auto& var : vars_unlocked) var->Prepare   ();
+			for(auto& var : vars_unlocked) var->ResetState();
+			for(auto& con : cons_active  ) con->ResetState();
 
 			for(int n = 0; n < param.numIter[0]; n++){
-				for(Variable* var : vars){
+				for(auto& var : vars){
 					for(int k = 0; k < var->nelem; k++)
 						var->UpdateVar3(k);
 				}
 
 				if(param.methodMinor == Method::Minor::Jacobi){
-					for(Variable* var : vars){
+					for(auto& var : vars){
 						var->dz.clear();
 					}
-					for(Constraint* con : cons_active){
+					for(auto& con : cons_active){
 						for(int k = 0; k < con->nelem; k++)
 							con->UpdateConjugate(k);
 					}
@@ -541,18 +541,15 @@ void Solver::CalcDirection(){
 		}
 	}
 	if(param.methodMajor == Method::Major::Prioritized){
-		for(Constraint* con : cons_active)
-			con->CalcCorrection();
-
-		for(Constraint* con : cons_active)
-			con->ResetState();
+		for(auto& con : cons_active) con->CalcCorrection();
+		for(auto& con : cons_active) con->ResetState();
 
 		for(int L = (int)conInfoLevel.size()-1; L >= 0; L--){
 			timer.CountUS();
 	
 			for(int n = 1; n <= param.numIter[L]; n++){
 				for(int l = 0; l <= L; l++){
-					for(Constraint* con : cons_level[l]){
+					for(auto& con : cons_level[l]){
 						for(int k = 0; k < con->nelem; k++)
 							con->UpdateMultiplier(k);
 					}
@@ -601,7 +598,7 @@ void Solver::Step(){
 	state.timeStep = timer.CountUS();
 
 	// 変数を更新
-	for(Variable* var : vars_unlocked)
+	for(auto& var : vars_unlocked)
 		var->Modify(state.stepSize);
 
 	real_t objPrev = state.obj;

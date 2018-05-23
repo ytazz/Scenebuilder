@@ -45,7 +45,17 @@ struct Buffer : vector<byte>{
 		idx = (uint)size() - offset;
 	}
 
-	///
+	template<typename T>
+	void Read(T* var, uint sz){
+		Read((byte*)var, sizeof(T)*sz);
+	}
+
+	template<typename T>
+	void Write(const T* var, uint sz){
+		Write((const byte*)var, sizeof(T)*sz);
+	}
+
+	template<>
 	void Read(byte* var, uint sz){
 		if(idx + sz > size())
 			throw InvalidOperation();
@@ -53,7 +63,7 @@ struct Buffer : vector<byte>{
 		idx += sz;
 	}
 
-	///
+	template<>
 	void Write(const byte* var, uint sz){
 		if(idx + sz > size())
 			resize(idx + sz);

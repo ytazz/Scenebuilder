@@ -154,7 +154,7 @@ public:
 /* モデルコンテナ
    - 各種アダプタが利用するためにモデルを格納する
  */
-class ModelContainer : public UTRefCount{
+class ModelContainer{
 public:
 	SceneBase*	scene;
 

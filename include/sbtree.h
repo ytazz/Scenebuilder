@@ -89,7 +89,7 @@ struct TreeNode : UTRefCount{
 	virtual ~TreeNode(){}
 };
 
-class Tree : public TreeBase, public UTRefCount{
+class Tree : public TreeBase{
 protected:
 	typedef std::vector< UTRef<TreeNode> >		Nodes;
 	Nodes	nodes;

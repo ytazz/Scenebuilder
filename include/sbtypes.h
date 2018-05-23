@@ -9,6 +9,7 @@
 #include <Base/BaseUtility.h>
 using namespace Spr;
 
+#include <memory>
 #include <vector>
 #include <locale>
 #include <functional>
@@ -180,6 +181,14 @@ typedef FixedStr<char, 32>  str32_t;
 typedef FixedStr<char, 256>	str256_t;
 
 // remove elements from array
+template<class T, class E>
+void RemoveFromArray(vector< shared_ptr<T> >& arr, E elem){
+	for(vector< shared_ptr<T> >::iterator it = arr.begin(); it != arr.end(); ){
+		if(it->get() == elem)
+			 it = arr.erase(it);
+		else it++;
+	}
+}
 template<class T, class E>
 void RemoveFromArray(vector<T>& arr, E elem){
 	for(vector<T>::iterator it = arr.begin(); it != arr.end(); ){

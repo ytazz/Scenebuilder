@@ -202,7 +202,7 @@ void Loader3DS::Load(const string& filename){
 
 	// マテリアル名からマテリアルインデックスを取得
 	for(uint i = 0; i < objects.size(); i++){
-		Object* obj = objects[i];
+		auto& obj = objects[i];
 
 		for(uint j = 0; j < obj->materialList.size(); j++){
 			FaceMaterial& fmat = obj->materialList[j];
@@ -223,7 +223,7 @@ void Loader3DS::Load(const string& filename){
 
 void Loader3DS::Convert(Model* model, const Affinef& aff){
 	for(uint i = 0; i < objects.size(); i++){
-		Object* obj = objects[i];
+		auto& obj = objects[i];
 
 		for(uint j = 0; j < obj->materialList.size(); j++){
 			FaceMaterial& fmat = obj->materialList[j];

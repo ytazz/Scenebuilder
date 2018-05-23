@@ -106,7 +106,7 @@ public:
 /* OpenGL Vertex Array Object (VAO)
 	- Meshから変換して描画に用いる
  */
-class VertexArray : public UTRefCount{
+class VertexArray{
 public:
 	/// シェーダ上の頂点属性インデックス（nVidia / Springhead仕様に準拠）
 	struct Attribute{

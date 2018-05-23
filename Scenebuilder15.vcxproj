@@ -57,7 +57,6 @@
     <ClInclude Include="include\sbsceneremote.h" />
     <ClInclude Include="include\sbsceneshared.h" />
     <ClInclude Include="include\sbsci.h" />
-    <ClInclude Include="include\sbservice.h" />
     <ClInclude Include="include\sbshared.h" />
     <ClInclude Include="include\sbsolver.h" />
     <ClInclude Include="include\sbtcp.h" />
@@ -107,7 +106,6 @@
     <ClCompile Include="src\sbsceneremote.cpp" />
     <ClCompile Include="src\sbsceneshared.cpp" />
     <ClCompile Include="src\sbsci.cpp" />
-    <ClCompile Include="src\sbservice.cpp" />
     <ClCompile Include="src\sbshared.cpp" />
     <ClCompile Include="src\sbsolver.cpp" />
     <ClCompile Include="src\sbtcp.cpp" />
