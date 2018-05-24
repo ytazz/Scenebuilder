@@ -562,7 +562,7 @@ public:
 				fd.fd_array[0] = sock;
 				to.tv_sec  = 0;
 				to.tv_usec = 1000*owner->connectTimeout;
-				int ret = select(0, &fd, 0, 0, &to);
+				int ret = select(0, 0, &fd, 0, &to);
 				if(ret == 0){
 					Message::Error("connect timeout");
 					return false;
@@ -653,7 +653,7 @@ void TCPServer::SetCallback(TCPServerCallback* cb){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 TCPClient::TCPClient(bool use_asio){
-	connectTimeout  = 1000;
+	connectTimeout  = 10000;
 	receiveInterval = 100;
 	sendTimeout     = 100;
 
