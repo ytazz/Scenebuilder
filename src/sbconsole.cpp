@@ -67,7 +67,13 @@ void Console::SetCursorPosition(int x, int y){
 }
 
 void Console::Write(int x, int y, const string& str){
-	copy(str.begin(), str.end(), buffer.begin() + (numColumns*y+x));
+	int len = (int)str.size();
+	int sz  = (int)buffer.size();
+	int i0  = (numColumns*y+x);
+	int i1  = i0 + len;
+	if( 0 <= i0 && i0 < sz &&
+		0 <= i1 && i1 < sz )
+		copy(str.begin(), str.end(), buffer.begin() + i0);
 }
 
 void Console::Fill(int x, int y, int w, int h, char c){
