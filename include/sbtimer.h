@@ -8,7 +8,7 @@
 
 namespace Scenebuilder{;
 
-/// タイマコールバック
+/// timer callback
 class TimerCallback{
 public:
 	virtual void OnTimer() = 0;
@@ -20,23 +20,23 @@ public:
 	typedef map<uint, Timer*>  IdMap;
 	static IdMap idMap;
 
-	uint			id;			///< タイマID
-	uint			res;		///< タイマ分解能
-	TimerCallback*	callback;	///< タイマコールバック関数
+	uint			id;			///< timer ID
+	uint			res;		///< timer resolution
+	TimerCallback*	callback;	///< timer callback function
 	
 public:
 	void SetCallback  (TimerCallback* _callback);
 	void SetResolution(uint res);
 	
-	/** @brief タイマ始動
-		@param delay	タイマ周期[ms]
+	/** @brief start the timer
+		@param delay    timer period [ms]
 	 */
 	bool	Start(uint delay);
 
-	/// タイマ停止
+	/// stop the timer
 	void	Stop();
 
-	/// システム時刻[ms]
+	/// get system time in [ms]
 	static uint	GetTime();
 
 	 Timer();
