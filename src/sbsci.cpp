@@ -4,8 +4,6 @@
 #include <sbsci.h>
 #include <sbmessage.h>
 
-#include <Foundation/UTPreciseTimer.h>
-
 namespace Scenebuilder{;
 
 Sci::Sci(){

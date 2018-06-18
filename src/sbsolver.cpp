@@ -7,8 +7,8 @@
 # include <mkl_lapacke.h>
 #endif
 
-#include <Foundation/UTPreciseTimer.h>
-static UTPreciseTimer timer;
+#include <Foundation/UTQPTimer.h>
+static UTQPTimer timer;
 
 namespace Scenebuilder{;
 
