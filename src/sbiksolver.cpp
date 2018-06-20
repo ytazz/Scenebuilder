@@ -226,7 +226,7 @@ void IKSolver::CompPosIK(){
 	mode                 = Mode::Pos;
 	param.minStepSize    = 0.0;
 	param.maxStepSize    = 1.0;
-	param.cutoffStepSize = 0.0;
+	param.cutoffStepSize = 0.01;
 	param.hastyStepSize  = true;
 	
 	Prepare();
