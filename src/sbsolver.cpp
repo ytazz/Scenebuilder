@@ -348,8 +348,6 @@ void Solver::Prepare(){
 	for(int i = 0; i < (int)conInfoLevel.size(); i++) conInfoLevel[i] = ConstraintInfo();
 
 	for(auto& var : vars){
-		if(var->tag == -1)
-			continue;
 		varInfoType[var->tag].num++;
 		if(var->locked)
 			varInfoType[var->tag].numLocked++;

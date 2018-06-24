@@ -16,7 +16,7 @@ public:
 
 	int Match(ID* id){
 		// tagが未指定のマスクは必ずマッチする
-		if(tag == -1)
+		if(tag == 0)
 			return 1;
 		// tag不一致
 		if(tag != id->tag)
@@ -31,7 +31,7 @@ public:
 		return 3;
 	}
 
-	ID(int _tag = -1, void* _owner = 0, void* _owner2 = 0, string _name = ""){
+	ID(int _tag = 0, void* _owner = 0, void* _owner2 = 0, string _name = ""){
 		tag    = _tag;
 		owner  = _owner;
 		owner2 = _owner2;
