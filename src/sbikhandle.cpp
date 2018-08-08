@@ -7,6 +7,8 @@
 
 namespace Scenebuilder{;
 
+static const real_t pi = M_PI;
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKHandle::PosCon::PosCon(IKHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
@@ -71,7 +73,12 @@ void IKHandle::OriCon::CalcCoef(){
 }
 void IKHandle::OriCon::CalcDeviation(){
 	quat_t qerror = handle->sockOriAbs.Conjugated() * handle->desOri;
-	y = handle->sockOriAbs * (qerror.Theta() * qerror.Axis());
+	vec3_t axis   = qerror.Axis ();
+	real_t theta  = qerror.Theta();
+	if(theta > pi)
+		theta -= 2*pi;
+
+	y = handle->sockOriAbs * (theta * axis);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

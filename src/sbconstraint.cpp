@@ -3,6 +3,8 @@
 
 namespace Scenebuilder{;
 
+static const real_t pi = M_PI;
+
 Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
 	nelem	   = n;
 	level      = 0;
@@ -236,7 +238,11 @@ void FixConQ::CalcDeviation(){
 	quat_t q0 = desired;
 	quat_t q1 = ((QVar*)links[0]->var)->val;
 	quat_t qerror = q0.Conjugated() * q1;
-	y = q0 * (qerror.Theta() * qerror.Axis());
+	vec3_t axis   = qerror.Axis ();
+	real_t theta  = qerror.Theta();
+	if(theta > pi)
+		theta -= 2*pi;
+	y = q0 * (theta * axis);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -271,7 +277,11 @@ void MatchConQ::CalcDeviation(){
 	quat_t q0 = ((QVar*)links[0]->var)->val;
 	quat_t q1 = ((QVar*)links[1]->var)->val;
 	quat_t qerror = q0.Conjugated() * q1;
-	y = q0 * (qerror.Theta() * qerror.Axis());
+	vec3_t axis   = qerror.Axis ();
+	real_t theta  = qerror.Theta();
+	if(theta > pi)
+		theta -= 2*pi;
+	y = q0 * (theta * axis);
 }
 
 //-------------------------------------------------------------------------------------------------
