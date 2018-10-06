@@ -13,11 +13,13 @@ public:
 	boost::random::mt19937                     rng;
 	boost::random::uniform_int_distribution<>  uniInt;
 	boost::random::uniform_real_distribution<> uniReal;
+	boost::random::normal_distribution<>       normal;
 
 public:
-	void   Seed      (int    _seed);
-	int    SampleInt (int    _min, int    _max);
-	real_t SampleReal(real_t _min, real_t _max);
+	void   Seed          (int    _seed);
+	int    SampleInt     (int    _min, int    _max);
+	real_t SampleReal    (real_t _min, real_t _max);
+	real_t SampleNormal  ();
 
 };
 
@@ -39,6 +41,10 @@ real_t SamplerImpl::SampleReal(real_t _min, real_t _max){
 
 	uniReal.param(boost::random::uniform_real_distribution<>::param_type(_min, _max));
 	return uniReal(rng);
+}
+
+real_t SamplerImpl::SampleNormal(){
+	return normal(rng);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,6 +71,10 @@ int Sampler::SampleInt(int _min, int _max){
 
 real_t Sampler::SampleReal(real_t _min, real_t _max){
 	return impl->SampleReal(_min, _max);
+}
+
+real_t Sampler::SampleNormal(){
+	return impl->SampleNormal();
 }
 
 }

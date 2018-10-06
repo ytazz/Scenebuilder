@@ -11,10 +11,11 @@ class Sampler{
 
 public:
 
-	void   Seed      (int    _seed);
-	bool   SampleBool();
-	int    SampleInt (int    _min, int    _max);
-	real_t SampleReal(real_t _min, real_t _max);
+	void   Seed        (int    _seed);
+	bool   SampleBool  ();
+	int    SampleInt   (int    _min, int    _max);
+	real_t SampleReal  (real_t _min, real_t _max);
+	real_t SampleNormal();
 
 	 Sampler();
 	~Sampler();

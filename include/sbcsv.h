@@ -13,6 +13,7 @@ namespace Scenebuilder{;
 class CsvReader{
 public:
 	struct Row{
+		string line;
 		vector<string_iterator_pair>	col;
 	};
 	vector<Row>	row;
@@ -41,35 +42,46 @@ public:
 		int len = (int)ifs.tellg();
 		ifs.seekg(0, ifs.beg);
 
-		contents.resize(len);
-		ifs.read(&contents[0], len);
-	
-		ifs.close();
+		// read all contents at once
+		//contents.resize(len);
+		//ifs.read(&contents[0], len);
+		//ifs.close();
 	
 		// ‚Ü‚¸s”‚ğ”‚¦‚é
-		rowIt.Set(contents, "\n", compress);
+		//rowIt.Set(contents, "\n", compress);
+		//int nrow = 0;
+		//for(; !rowIt.IsEnd(); rowIt.Next())
+		//	nrow++;
 		int nrow = 0;
-		for(; !rowIt.IsEnd(); rowIt.Next())
+		string line;
+		while(!ifs.eof()){
+			std::getline(ifs, line);
 			nrow++;
+		}
+
 		row.resize(nrow);
 
-		rowIt.Set(contents, "\n", compress);
-		for(int i = 0; !rowIt.IsEnd(); rowIt.Next(), i++){
+		//rowIt.Set(contents, "\n", compress);
+		//for(int i = 0; !rowIt.IsEnd(); rowIt.Next(), i++){
+		ifs.clear();
+		ifs.seekg(0, ifs.beg);
+		for(int i = 0; !ifs.eof(); i++){
 			Row& r = row[i];
-
+			
 			// ‹ós‚Ìê‡‚Ís‚Ì‚İ’Ç‰Á‚µ—ñ‚Íì‚ç‚È‚¢
-			string_iterator_pair str = rowIt.GetToken();
-			if(str.empty())
+			//string_iterator_pair str = rowIt.GetToken();
+			std::getline(ifs, r.line);
+			if(r.line.empty())
 				continue;
 
 			// —ñ”‚ğ”‚¦‚é
-			colIt.Set(str, delim, compress);
+			colIt.Set(r.line, delim, compress);
 			int ncol = 0;
 			for(; !colIt.IsEnd(); colIt.Next())
 				ncol++;
 			r.col.resize(ncol);
 			
-			colIt.Set(str, delim, compress);
+			colIt.Set(r.line, delim, compress);
 			for(int j = 0; !colIt.IsEnd(); colIt.Next(), j++){
 				r.col[j] = colIt.GetToken();
 			}

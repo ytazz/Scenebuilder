@@ -16,7 +16,7 @@ vec3_t ToRollPitchYaw(const quat_t& q){
 	quat_t qroll = quat_t::Rot(-angles[1], 'y') * quat_t::Rot(-angles[2], 'z') * q;
 	angles[0] = 2.0f * atan2(qroll[1], qroll[0]);
 
-	// yaw angle nees wrapping
+	// yaw angle needs wrapping
 	if(angles[0] >  pi) angles[0] -= 2.0*pi;
 	if(angles[0] < -pi) angles[0] += 2.0*pi;
 
