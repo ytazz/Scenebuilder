@@ -114,7 +114,7 @@ size_t Sci::FlushTxBuffer(){
 
 	uint32_t nBytesWritten;
 #ifdef _WIN32
-	WriteFile(handle, (LPVOID)&txBuffer[0], (DWORD)txBuffer.size(), &nBytesWritten, 0);
+	WriteFile(handle, (LPVOID)&txBuffer[0], (DWORD)txBuffer.size(), (LPDWORD)&nBytesWritten, 0);
 
 	FlushFileBuffers(handle);
 #endif
@@ -136,7 +136,7 @@ size_t Sci::Out(const byte* c, size_t n){
 	else{
 		uint32_t nBytesWritten;
 #ifdef _WIN32
-		WriteFile(handle, (LPVOID)c, (DWORD)n, &nBytesWritten, 0);
+		WriteFile(handle, (LPVOID)c, (DWORD)n, (LPDWORD)&nBytesWritten, 0);
 		FlushFileBuffers(handle);
 #endif
 		txTotal += nBytesWritten;
@@ -154,7 +154,7 @@ size_t Sci::In(byte* c, size_t n, bool full){
 	uint32_t nread;
 	while(nreadTotal < n){
 #ifdef _WIN32
-		ReadFile(handle, (LPVOID)c, (DWORD)(n - nreadTotal), &nread, 0 );
+		ReadFile(handle, (LPVOID)c, (DWORD)(n - nreadTotal), (LPDWORD)&nread, 0 );
 #endif
 		nreadTotal += nread;
 
