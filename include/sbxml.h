@@ -93,6 +93,9 @@ public:
 		catch(...){}
 	}
 
+	XML(){}
+	virtual ~XML(){}
+
 };
 
 }

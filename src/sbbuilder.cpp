@@ -245,8 +245,8 @@ void Builder::ProcessNode(int nodeId){
 		ImportProp prop;
 		FillProperty(type, &prop);
 
-		string path     = prop.path;
-		string filename = prop.filename;
+		string path     = (const char*)prop.path;
+		string filename = (const char*)prop.filename;
 		
 		// if import path is specified:
 		if(!path.empty()) try{
@@ -306,7 +306,7 @@ void Builder::ProcessNode(int nodeId){
 	else if(type->id == LinkProp::id){
 		LinkProp prop;
 		FillProperty(type, &prop);
-		string n    = prop.name;
+		string n    = (const char*)prop.name;
 		string name = scene->AssignName(n, type, curObjId);
 	
 		Link(curObjId, curObjId, string(prop.path), name);

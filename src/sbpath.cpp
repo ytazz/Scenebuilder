@@ -1,5 +1,8 @@
 ﻿#include <sbpath.h>
-#include <windows.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -87,8 +90,12 @@ bool Path::IsFile() const{
 }
 
 bool Path::IsDir() const{
+#ifdef _WIN32
 	int att = GetFileAttributes(c_str());
 	return (att != -1 && (att & FILE_ATTRIBUTE_DIRECTORY) != 0);
+#else
+	return false;
+#endif
 }
 
 bool Path::IsAbsolute() const{
@@ -101,9 +108,11 @@ bool Path::IsRelative() const{
 
 Path Path::Current(){
 	Path ret;
+#ifdef _WIN32
 	size_t sz = GetCurrentDirectory(0, 0);
 	ret.resize(sz+1);
 	GetCurrentDirectory((DWORD)sz, &ret[0]);
+#endif
 	return ret;
 }
 

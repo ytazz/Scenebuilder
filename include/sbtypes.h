@@ -69,10 +69,10 @@ struct basic_string_iterator_pair : pair< typename basic_string<T>::const_iterat
 	typedef typename basic_string<T>::const_iterator iterator_type;
 	typedef pair<iterator_type, iterator_type>       base_type;
 	
-	iterator_type begin()const{ return first;  }
-	iterator_type end  ()const{ return second; }
-	bool          empty()const{ return second == first; }
-	size_t        size ()const{ return second - first;  }
+	iterator_type begin()const{ return this->first;  }
+	iterator_type end  ()const{ return this->second; }
+	bool          empty()const{ return this->second == this->first; }
+	size_t        size ()const{ return this->second - this->first;  }
 
 	basic_string_iterator_pair(){}
 	basic_string_iterator_pair(iterator_type f, iterator_type s):base_type(f, s){}
@@ -91,8 +91,8 @@ basic_string_iterator_pair<T> eat_white(basic_string_iterator_pair<T> str){
 
 	std::locale loc;
 
-	basic_string_iterator_pair<T>::iterator_type i0 = str.begin();
-	basic_string_iterator_pair<T>::iterator_type i1 = str.end();
+	typename basic_string_iterator_pair<T>::iterator_type i0 = str.begin();
+	typename basic_string_iterator_pair<T>::iterator_type i1 = str.end();
 	while(i0 != i1 && std::isspace(*(i1-1), loc))
 		i1--;
 	while(i0 != i1 && std::isspace(*i0, loc))
@@ -155,7 +155,7 @@ struct FixedStr{
 	}
 	
 	size_t  capacity()const{
-		return FixedStr<n>::length;
+		return FixedStr<T,n>::length;
 	}
 	size_t	size()const{
 		size_t i = 0;
@@ -183,7 +183,7 @@ typedef FixedStr<char, 256>	str256_t;
 // remove elements from array
 template<class T, class E>
 void RemoveFromArray(vector< shared_ptr<T> >& arr, E elem){
-	for(vector< shared_ptr<T> >::iterator it = arr.begin(); it != arr.end(); ){
+	for(typename vector< shared_ptr<T> >::iterator it = arr.begin(); it != arr.end(); ){
 		if(it->get() == elem)
 			 it = arr.erase(it);
 		else it++;
@@ -191,7 +191,7 @@ void RemoveFromArray(vector< shared_ptr<T> >& arr, E elem){
 }
 template<class T, class E>
 void RemoveFromArray(vector<T>& arr, E elem){
-	for(vector<T>::iterator it = arr.begin(); it != arr.end(); ){
+	for(typename vector<T>::iterator it = arr.begin(); it != arr.end(); ){
 		if(*it == elem)
 			it = arr.erase(it);
 		else it++;

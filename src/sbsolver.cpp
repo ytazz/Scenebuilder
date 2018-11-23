@@ -4,7 +4,11 @@
 #define USE_MKL
 
 #if defined USE_MKL
-# include <mkl_lapacke.h>
+# ifdef _WIN32
+#  include <mkl_lapacke.h>
+# else
+#  include <lapacke.h>
+# endif
 #endif
 
 #include <Foundation/UTQPTimer.h>

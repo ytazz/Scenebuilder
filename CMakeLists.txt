@@ -4,7 +4,14 @@ project(Scenebuilder)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
+set(SPRINGHEAD_DIR "" CACHE PATH "root directory of Springhead")
+
+set(CMAKE_CXX_FLAGS "-O2 -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor")
+
 include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${SPRINGHEAD_DIR}/core/include)
+include_directories(${SPRINGHEAD_DIR}/core/src)
 
 add_library(Scenebuilder
 	src/sbadaptor.cpp
@@ -15,17 +22,14 @@ add_library(Scenebuilder
 	src/sbconverter.cpp
 	src/sbcriticalsection.cpp
 	src/sbevent.cpp
-	src/sbikavoid.cpp
 	src/sbikbody.cpp
 	src/sbikhandle.cpp
 	src/sbikjoint.cpp
-	src/sbikplane.cpp
 	src/sbiksolver.cpp
 	src/sbimage.cpp
 	src/sbimagebmp.cpp
 	src/sbimagepng.cpp
 	src/sbimagesvg.cpp
-	src/sbinterface.cpp
 	src/sblink.cpp
 	src/sblogger.cpp
 	src/sbmesh.cpp
@@ -47,7 +51,6 @@ add_library(Scenebuilder
 	src/sbsci.cpp
 	src/sbshared.cpp
 	src/sbsolver.cpp
-	src/sbsync.cpp
 	src/sbtcp.cpp
 	src/sbthread.cpp
 	src/sbtimer.cpp

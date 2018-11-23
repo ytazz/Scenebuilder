@@ -207,7 +207,7 @@ private:
 	struct List : Array< ListNode<T> >{
 		/// adds a list node to list [first, last]
 		void AddToList(int idx, int& first, int& last){
-			ListNode<T>* node = Get(idx);
+			ListNode<T>* node = this->Get(idx);
 			if(first == -1 && last == -1){
 				node->prev = -1;
 				node->next = -1;
@@ -217,16 +217,16 @@ private:
 			else{
 				node->prev = last;
 				node->next = -1;
-				ListNode<T>* lastNode = Get(last);
+				ListNode<T>* lastNode = this->Get(last);
 				lastNode->next = idx; 
 				last = idx;
 			}
 		}
 		/// removes a list node from list [first, last]
 		void RemoveFromList(int idx, int& first, int& last){
-			ListNode<T>* node = Get(idx);
-			ListNode<T>* prevNode = Get(node->prev);
-			ListNode<T>* nextNode = Get(node->next);
+			ListNode<T>* node = this->Get(idx);
+			ListNode<T>* prevNode = this->Get(node->prev);
+			ListNode<T>* nextNode = this->Get(node->next);
 
 			// 消すノードの前をつなぎかえ
 			if(prevNode){
@@ -253,7 +253,7 @@ private:
 		int	FindInList(P pred, int first){
 			int idx = first;
 			while(idx != -1){
-				ListNode<T>* node = Get(idx);
+				ListNode<T>* node = this->Get(idx);
 				if(pred(node->val))
 					return idx;
 				idx = node->next;
@@ -264,8 +264,8 @@ private:
 		void DeleteList(int first){
 			int idx = first;
 			while(idx != -1){
-				ListNode<T>* node = Get(idx);
-				Delete(idx);
+				ListNode<T>* node = this->Get(idx);
+				this->Delete(idx);
 				idx = node->next;
 			}
 		}
@@ -274,7 +274,7 @@ private:
 			vals.clear();
 			int idx = first;
 			while(idx != -1){
-				ListNode<T>* node = Get(idx);
+				ListNode<T>* node = this->Get(idx);
 				vals.push_back(node->val);
 				idx = node->next;
 			}

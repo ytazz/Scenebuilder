@@ -1,5 +1,8 @@
 ﻿#include <sbmutex.h>
-#include <windows.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -34,7 +37,10 @@ bool Mutex::Create(){
 	Close();
 
 	// nameが指定されていれば名前つき，なければ名前なしミューテックスを作成
-	void* h = (void*)CreateMutexA(0, 1, (name == "" ? (const char*)0 : (const char*)name));
+	void* h = 0;
+#ifdef _WIN32
+	h = (void*)CreateMutexA(0, 1, (name == "" ? (const char*)0 : (const char*)name));
+#endif
 	if(!h)
 		return false;
 	handles[this] = h;
@@ -43,8 +49,10 @@ bool Mutex::Create(){
 
 void Mutex::Close(){
 	void* h = GetHandle();
+#ifdef _WIN32
 	if(h)
 		CloseHandle(h);
+#endif
 }
 
 bool Mutex::Lock(uint timeout){
@@ -53,6 +61,7 @@ bool Mutex::Lock(uint timeout){
 		return Create();
 	}
 	else{
+#ifdef _WIN32
 		int res = WaitForSingleObject(h, timeout);
 		// 占有プロセスが解放せずに落ちた
 		if(res == WAIT_ABANDONED)
@@ -67,6 +76,7 @@ bool Mutex::Lock(uint timeout){
 		// エラー
 		if(res == WAIT_FAILED)
 			return false;
+#endif
 		return false;
 	}
 }
@@ -75,7 +85,9 @@ void Mutex::Unlock(){
 	void* h = GetHandle();
 	if(!h)
 		return;
+#ifdef _WIN32
 	ReleaseMutex(h);
+#endif
 }
 
 }

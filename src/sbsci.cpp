@@ -1,5 +1,7 @@
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+#endif
 
 #include <sbsci.h>
 #include <sbmessage.h>
@@ -22,6 +24,7 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
 	//既存の接続（もしあれば）を解除
 	Terminate();
 
+#ifdef _WIN32
 	// 通信ポートを開く
 	handle = CreateFile(
 		port.c_str(),
@@ -78,7 +81,8 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
 	SetCommTimeouts(handle, &timeouts );
 	
 	PurgeComm(handle, PURGE_RXCLEAR | PURGE_TXCLEAR);
-	
+#endif
+
 	isOnline  = true;
 	rxTotal = 0;
 	txTotal = 0;
@@ -87,7 +91,9 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
 
 void Sci::Terminate(){
 	if(isOnline){
+#ifdef _WIN32
 		CloseHandle(handle);
+#endif
 		handle = 0;
 
 		isOnline = false;
@@ -106,10 +112,12 @@ size_t Sci::FlushTxBuffer(){
 	if(!txBufferEnabled)
 		return 0;
 
-	DWORD nBytesWritten;
+	uint32_t nBytesWritten;
+#ifdef _WIN32
 	WriteFile(handle, (LPVOID)&txBuffer[0], (DWORD)txBuffer.size(), &nBytesWritten, 0);
 
 	FlushFileBuffers(handle);
+#endif
 	txBuffer.clear();
 
 	txTotal += nBytesWritten;
@@ -126,10 +134,11 @@ size_t Sci::Out(const byte* c, size_t n){
 		return n;
 	}
 	else{
-		DWORD nBytesWritten;
+		uint32_t nBytesWritten;
+#ifdef _WIN32
 		WriteFile(handle, (LPVOID)c, (DWORD)n, &nBytesWritten, 0);
 		FlushFileBuffers(handle);
-	
+#endif
 		txTotal += nBytesWritten;
 
 		return nBytesWritten;
@@ -141,10 +150,12 @@ size_t Sci::In(byte* c, size_t n, bool full){
 	if(!isOnline)
 		throw Exception();
 
-	DWORD nreadTotal = 0;
-	DWORD nread;
+	uint32_t nreadTotal = 0;
+	uint32_t nread;
 	while(nreadTotal < n){
+#ifdef _WIN32
 		ReadFile(handle, (LPVOID)c, (DWORD)(n - nreadTotal), &nread, 0 );
+#endif
 		nreadTotal += nread;
 
 		if(!full || nread == 0 || nreadTotal == n)
@@ -159,12 +170,13 @@ size_t Sci::In(byte* c, size_t n, bool full){
 }
 
 void Sci::CountBytes(size_t* rx, size_t* tx){
-	DWORD _rx, _tx;
+	uint32_t _rx, _tx;
+#ifdef _WIN32
 	COMSTAT stat;
 	ClearCommError(handle, 0, &stat);
 	_rx = stat.cbInQue;
 	_tx = stat.cbOutQue;
-
+#endif
 	if(rx)
 		*rx = _rx;
 	if(tx)

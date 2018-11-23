@@ -1,5 +1,8 @@
 ﻿#include <sbcriticalsection.h>
-#include <windows.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -7,26 +10,40 @@ namespace Scenebuilder{;
 
 class CriticalSectionImpl{
 public:
+#ifdef _WIN32
 	CRITICAL_SECTION	cs;
+#endif
 
 	CriticalSectionImpl(uint spin){
+#ifdef _WIN32
 		InitializeCriticalSectionAndSpinCount(&cs, spin);
+#endif
 	}
 
 	~CriticalSectionImpl(){
+#ifdef _WIN32
 		DeleteCriticalSection(&cs);
+#endif
 	}
 
 	void Enter(){
+#ifdef _WIN32
 		EnterCriticalSection(&cs);
+#endif
 	}
 
 	bool TryEnter(){
+#ifdef _WIN32
 		return (TryEnterCriticalSection(&cs) == TRUE);
+#else
+		return false;
+#endif
 	}
 
 	void Leave(){
+#ifdef _WIN32
 		LeaveCriticalSection(&cs);
+#endif
 	}
 };
 

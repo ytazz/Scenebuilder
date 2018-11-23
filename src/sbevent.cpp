@@ -1,5 +1,8 @@
 ﻿#include <sbevent.h>
-#include <windows.h>
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -25,7 +28,10 @@ bool Event::Create(bool manual){
 	Close();
 
 	// nameが指定されていれば名前つき，なければ名前なしイベントを作成
-	void* h = (void*)CreateEventA(0, manual, 0, (name.empty() ? 0 : name.c_str()));
+	void* h = 0;
+#ifdef _WIN32
+	h = (void*)CreateEventA(0, manual, 0, (name.empty() ? 0 : name.c_str()));
+#endif
 	if(!h)
 		return false;
 	handles[this] = h;
@@ -34,8 +40,10 @@ bool Event::Create(bool manual){
 
 void Event::Close(){
 	void* h = GetHandle();
+#ifdef _WIN32
 	if(h)
 		CloseHandle(h);
+#endif
 }
 
 bool Event::Wait(uint timeout){
@@ -44,7 +52,7 @@ bool Event::Wait(uint timeout){
 		Create();
 		h = GetHandle();
 	}
-	
+#ifdef _WIN32
 	int res = WaitForSingleObject(h, timeout);
 	// 取得成功
 	if(res == WAIT_OBJECT_0)
@@ -55,10 +63,12 @@ bool Event::Wait(uint timeout){
 	// エラー
 	if(res == WAIT_FAILED)
 		return false;
+#endif
 	return false;
 }
 
 int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
+#ifdef _WIN32
 	vector<HANDLE>	handles;
 	for(uint i = 0; i < num; i++){
 		void* h = ev[i]->GetHandle();
@@ -83,6 +93,7 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 	// エラー
 	if(res == WAIT_FAILED)
 		return -1;
+#endif
 	return -1;
 }
 
@@ -92,7 +103,9 @@ void Event::Set(){
 		Create();
 		h = GetHandle();
 	}
+#ifdef _WIN32
 	SetEvent(h);
+#endif
 }
 
 bool Event::IsSet(){
@@ -108,7 +121,9 @@ void Event::Reset(){
 		Create();
 		h = GetHandle();
 	}
+#ifdef _WIN32
 	ResetEvent(h);
+#endif
 }
 
 }

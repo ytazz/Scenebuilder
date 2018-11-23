@@ -17,7 +17,9 @@ using namespace boost;
 using namespace boost::asio;
 using boost::asio::ip::udp;
 
-#include <winsock2.h>
+#ifdef _WIN32
+# include <winsock2.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -75,6 +77,7 @@ public:
 	}
 };
 
+#ifdef _WIN32
 class UDPSenderImplWinsock : public UDPSenderImpl{
 public:
 	WSADATA      wsa;
@@ -115,13 +118,16 @@ public:
 	UDPSenderImplWinsock(){
 	}
 };
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 UDPSender::UDPSender(bool use_asio){
 	if(use_asio)
 		 impl = new UDPSenderImplAsio   ();
+#ifdef _WIN32
 	else impl = new UDPSenderImplWinsock();
+#endif
 }
 
 UDPSender::~UDPSender(){
@@ -210,6 +216,7 @@ public:
 
 };
 
+#ifdef _WIN32
 class UDPReceiverImplWinsock : public UDPReceiverImpl, public Thread{
 public:
 	WSADATA       wsa;
@@ -267,13 +274,16 @@ public:
 	}
 
 };
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 UDPReceiver::UDPReceiver(bool use_asio){
 	if(use_asio)
 		 impl = new UDPReceiverImplAsio   ();
+#ifdef _WIN32
 	else impl = new UDPReceiverImplWinsock();
+#endif
 }
 
 UDPReceiver::~UDPReceiver(){

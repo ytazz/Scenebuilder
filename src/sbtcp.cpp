@@ -17,7 +17,9 @@ using namespace boost;
 using namespace boost::asio;
 using boost::asio::ip::tcp;
 
-#include <winsock2.h>
+#ifdef _WIN32
+# include <winsock2.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -342,6 +344,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
 class TCPSessionImplWinsock : public TCPSessionImpl, public Thread{
 public:
 	SOCKET  sock;
@@ -621,6 +624,7 @@ public:
 	}
 	virtual ~TCPClientImplWinsock(){}
 };
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -630,7 +634,9 @@ TCPServer::TCPServer(bool use_asio){
 
 	if(use_asio)
 		 impl = new TCPServerImplAsio();
+#ifdef _WIN32
 	else impl = new TCPServerImplWinsock();
+#endif
 	impl->owner = this;
 }
 
@@ -659,7 +665,9 @@ TCPClient::TCPClient(bool use_asio){
 
 	if(use_asio)
 		 impl = new TCPClientImplAsio();
+#ifdef _WIN32
 	else impl = new TCPClientImplWinsock();
+#endif
 	impl->owner = this;
 }
 

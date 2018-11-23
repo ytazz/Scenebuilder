@@ -1,7 +1,9 @@
 ﻿#include <sbconverter.h>
 #include <sbtokenizer.h>
 
-#include <windows.h>
+#ifdef _WIN32
+# include <windows.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -89,10 +91,12 @@ void Converter::ConvertString(string& str, const wstring& wstr, bool utf8){
 		str.clear();
 		return;
 	}
+#ifdef _WIN32
 	uint cp = (utf8 ? CP_UTF8 : CP_ACP);
 	int sz = (int)WideCharToMultiByte(cp, 0, &wstr[0], (int)wstr.size(), 0, 0, 0, 0);
 	str.resize(sz);
 	WideCharToMultiByte(cp, 0, &wstr[0], (int)wstr.size(), &str[0], sz, 0, 0);
+#endif
 }
 
 void Converter::ConvertString(wstring& wstr, const string& str, bool utf8){
@@ -100,11 +104,12 @@ void Converter::ConvertString(wstring& wstr, const string& str, bool utf8){
 		wstr.clear();
 		return;
 	}
+#ifdef _WIN32
 	uint cp = (utf8 ? CP_UTF8 : CP_ACP);
 	int sz = (int)MultiByteToWideChar(cp, 0, &str[0], (int)str.size(), 0, 0);
 	wstr.resize(sz);
 	MultiByteToWideChar(cp, 0, &str[0], (int)str.size(), &wstr[0], sz);
-	return;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------

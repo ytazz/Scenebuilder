@@ -55,7 +55,6 @@ struct Buffer : vector<byte>{
 		Write((const byte*)var, sizeof(T)*sz);
 	}
 
-	template<>
 	void Read(byte* var, uint sz){
 		if(idx + sz > size())
 			throw InvalidOperation();
@@ -63,7 +62,6 @@ struct Buffer : vector<byte>{
 		idx += sz;
 	}
 
-	template<>
 	void Write(const byte* var, uint sz){
 		if(idx + sz > size())
 			resize(idx + sz);
