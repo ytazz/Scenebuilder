@@ -7,13 +7,9 @@
 namespace Scenebuilder{;
 
 /**
-	Windows Eventのラッパー
+	event object
  */
 class Event{
-protected:
-	typedef std::map<void*, void*>	HandleDB;
-	static HandleDB	handles;
-
 public:
 	string	name;
 
@@ -49,10 +45,6 @@ public:
 		- manual resetの場合に限る
 	 */
 	void Reset();
-
-	/* 内部ハンドルを取得
-	 */
-	void*	GetHandle();
 
 	Event();
 	~Event();
