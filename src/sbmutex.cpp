@@ -6,7 +6,23 @@
 
 namespace Scenebuilder{;
 
-std::map<void*, void*>	Mutex::handles;
+struct MutexHandle{
+#if defined _WIN32
+	HANDLE handle;
+#elif defined __unix__
+	pthread_mutex_t  mutex;
+#endif
+};
+
+typedef std::map<void*, MutexHandle>	MutexHandles;
+static MutexHandles  mutexHandles;		///< オブジェクトアドレスとミューテックスハンドルとの対応
+
+MutexHandle* GetMutexHandle(Mutex* mutex){
+	MutexHandles::iterator it = mutexHandles.find(mutex);
+	if(it != mutexHandles.end())
+		return &it->second;
+	return 0;
+}
 
 Mutex::Mutex(){
 
@@ -26,43 +42,41 @@ Mutex::~Mutex(){
 		Close();
 }
 
-void* Mutex::GetHandle(){
-	HandleDB::iterator it = handles.find(this);
-	if(it != handles.end())
-		return it->second;
-	return 0;
-}
-
 bool Mutex::Create(){
 	Close();
 
 	// nameが指定されていれば名前つき，なければ名前なしミューテックスを作成
-	void* h = 0;
-#ifdef _WIN32
-	h = (void*)CreateMutexA(0, 1, (name == "" ? (const char*)0 : (const char*)name));
-#endif
-	if(!h)
+	MutexHandle h;
+#if defined _WIN32
+	h.handle = (void*)CreateMutexA(0, 1, (name == "" ? (const char*)0 : (const char*)name));
+	if(!h.handle)
 		return false;
-	handles[this] = h;
+#elif defined __unix__
+	if(pthread_mutex_init(&h.mutex, 0))
+		return false;
+#endif
+	mutexHandles[this] = h;
 	return true;
 }
 
 void Mutex::Close(){
-	void* h = GetHandle();
-#ifdef _WIN32
-	if(h)
-		CloseHandle(h);
+	MutexHandle* h = GetMutexHandle(this);
+#if defined _WIN32
+	if(h->handle)
+		CloseHandle(h->handle);
+#elif defined __unix__
+	pthread_mutex_destroy(&h->mutex);
 #endif
 }
 
 bool Mutex::Lock(uint timeout){
-	void* h = GetHandle();
+	MutexHandle* h = GetMutexHandle(this);
 	if(!h){
 		return Create();
 	}
 	else{
-#ifdef _WIN32
-		int res = WaitForSingleObject(h, timeout);
+#if defined _WIN32
+		int res = WaitForSingleObject(h->handle, timeout);
 		// 占有プロセスが解放せずに落ちた
 		if(res == WAIT_ABANDONED)
 			// 新しく作成
@@ -76,17 +90,23 @@ bool Mutex::Lock(uint timeout){
 		// エラー
 		if(res == WAIT_FAILED)
 			return false;
+#elif defined __unix__
+		if(pthread_mutex_lock(&h->mutex))
+			return false;
+		return true;
 #endif
 		return false;
 	}
 }
 
 void Mutex::Unlock(){
-	void* h = GetHandle();
+	MutexHandle* h = GetMutexHandle(this);
 	if(!h)
 		return;
-#ifdef _WIN32
-	ReleaseMutex(h);
+#if defined _WIN32
+	ReleaseMutex(h->handle);
+#elif defined __unix__
+	pthread_mutex_unlock(&h->mutex);
 #endif
 }
 

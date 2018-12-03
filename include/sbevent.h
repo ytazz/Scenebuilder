@@ -24,7 +24,7 @@ public:
 	 */
 	bool Wait(uint timeout = 1000);
 
-	/** 複数のイベントを待つ
+	/** 複数のイベントを待つ  * caution: windows only
 		@param  evBegin		イベントへのポインタを格納した配列の先頭
 		@param  num			イベント数
 		@param  wait_all	trueなら全てのイベントが発行するまで待つ．falseならいずれかのイベントが発行するまで待つ

@@ -15,6 +15,13 @@ struct EventHandle{
 	sem_t   sem;
 #endif
 	bool manual;
+
+	EventHandle(){
+#if defined _WIN32
+		handle = 0;
+#elif defined __unix__
+#endif
+	}
 };
 
 typedef std::map<void*, EventHandle> EventHandles;
@@ -55,6 +62,8 @@ bool Event::Create(bool manual){
 
 void Event::Close(){
 	EventHandle* h = GetEventHandle(this);
+	if(!h)
+		return;
 #if defined _WIN32
 	if(h->handle)
 		CloseHandle(h->handle);

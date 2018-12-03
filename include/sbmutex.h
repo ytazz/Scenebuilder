@@ -19,12 +19,8 @@ private:
 	Mutex(const Mutex& ){}	///< 誤って呼ばれないように
 
 protected:
-	typedef std::map<void*, void*>	HandleDB;
-	static HandleDB	handles;		///< オブジェクトアドレスとミューテックスハンドルとの対応
-
 	Mutex*  target;
 
-	void*	GetHandle();
 	bool	Create();
 	void	Close();
 
