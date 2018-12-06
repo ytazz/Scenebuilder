@@ -1,7 +1,9 @@
 ﻿#include <sbcriticalsection.h>
 
-#ifdef _WIN32
+#if defined _WIN32
 # include <windows.h>
+#elif defined __unix__
+# include <pthread.h>
 #endif
 
 namespace Scenebuilder{;
@@ -10,25 +12,33 @@ namespace Scenebuilder{;
 
 class CriticalSectionImpl{
 public:
-#ifdef _WIN32
+#if defined _WIN32
 	CRITICAL_SECTION	cs;
+#elif defined __unix__
+	mutex_t  mutex;
 #endif
 
 	CriticalSectionImpl(uint spin){
-#ifdef _WIN32
+#if defined _WIN32
 		InitializeCriticalSectionAndSpinCount(&cs, spin);
+#elif defined __unix__
+		pthread_mutex_init(&mutex);
 #endif
 	}
 
 	~CriticalSectionImpl(){
-#ifdef _WIN32
+#if defined _WIN32
 		DeleteCriticalSection(&cs);
+#elif defined __unix__
+		pthread_mutex_destroy(&mutex);
 #endif
 	}
 
 	void Enter(){
-#ifdef _WIN32
+#if defined _WIN32
 		EnterCriticalSection(&cs);
+#elif defined __unix__
+		pthread_mutex_lock(&mutex);
 #endif
 	}
 
@@ -41,8 +51,10 @@ public:
 	}
 
 	void Leave(){
-#ifdef _WIN32
+#if defined _WIN32
 		LeaveCriticalSection(&cs);
+#elif defined __unix__
+		pthread_mutex_unlock(&mutex);
 #endif
 	}
 };
