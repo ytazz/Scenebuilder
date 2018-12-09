@@ -13,8 +13,8 @@ protected:
 
 public:
 	// 
-	static char        Delim (){ return '\\'; }
-	static const char* Delims(){ return "/\\"; }
+	static char        Delim ();
+	static const char* Delims();
 
 	// extract file extension without period
 	string Ext() const;

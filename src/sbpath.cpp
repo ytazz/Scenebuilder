@@ -1,10 +1,25 @@
 ﻿#include <sbpath.h>
 
-#ifdef _WIN32
+#if defined _WIN32
 # include <windows.h>
+#elif defined __unix__
+# include <unistd.h>
+# include <sys/stat.h>
 #endif
 
 namespace Scenebuilder{;
+
+char Path::Delim(){
+#if defined _WIN32
+	return '\\';
+#else
+	return '/';
+#endif
+}
+
+const char* Path::Delims(){
+	return "/\\";
+}
 
 Path::Path(const string& s):string(s){
 	ReplaceDelim();
@@ -90,9 +105,13 @@ bool Path::IsFile() const{
 }
 
 bool Path::IsDir() const{
-#ifdef _WIN32
+#if defined _WIN32
 	int att = GetFileAttributes(c_str());
 	return (att != -1 && (att & FILE_ATTRIBUTE_DIRECTORY) != 0);
+#elif defined __unix__
+	struct stat buffer;
+	stat(c_str(), &buffer);
+	return buffer.st_mode & S_IFDIR;
 #else
 	return false;
 #endif
@@ -108,10 +127,14 @@ bool Path::IsRelative() const{
 
 Path Path::Current(){
 	Path ret;
-#ifdef _WIN32
+#if defined _WIN32
 	size_t sz = GetCurrentDirectory(0, 0);
 	ret.resize(sz+1);
 	GetCurrentDirectory((DWORD)sz, &ret[0]);
+#elif defined __unix__
+	char str[1024];
+	getcwd(str, 1024]);
+	ret = str;
 #endif
 	return ret;
 }
