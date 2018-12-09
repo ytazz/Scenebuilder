@@ -6,9 +6,11 @@
 #include <functional>
 using namespace std::placeholders;
 
-#include <windows.h>
-#undef min
-#undef max
+#ifdef _WIN32
+# include <windows.h>
+# undef min
+# undef max
+#endif
 
 #define AUTO(T, X, EXP) T X = static_cast<T>(EXP)
 
@@ -124,8 +126,10 @@ AdaptorSprPH::GenericJointCallback::GenericJointCallback(){
 }
 
 AdaptorSprPH::GenericJointCallback::~GenericJointCallback(){
+#ifdef _WIN32
 	if(hDll)
 		FreeLibrary((HMODULE)hDll);
+#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -206,6 +210,7 @@ void AdaptorSprPH::JointAux::OnChange(Aux* caller){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 void AdaptorSprPH::GenericJointCallback::Init(){
+#ifdef _WIN32
 	hSetParam               = (SetParamFunc              )GetProcAddress((HMODULE)hDll, "SetParamFunc"              );
 	hIsCyclic               = (IsCyclicFunc              )GetProcAddress((HMODULE)hDll, "IsCyclicFunc"              );
 	hGetMovableAxes         = (GetMovableAxesFunc        )GetProcAddress((HMODULE)hDll, "GetMovableAxesFunc"        );
@@ -216,6 +221,7 @@ void AdaptorSprPH::GenericJointCallback::Init(){
 	hCompJointCoriolisAccel = (CompJointCoriolisAccelFunc)GetProcAddress((HMODULE)hDll, "CompJointCoriolisAccelFunc");
 	hCompRelativePosition   = (CompRelativePositionFunc  )GetProcAddress((HMODULE)hDll, "CompRelativePositionFunc"  );
 	hCompRelativeVelocity   = (CompRelativeVelocityFunc  )GetProcAddress((HMODULE)hDll, "CompRelativeVelocityFunc"  );
+#endif
 }
 
 void AdaptorSprPH::GenericJointCallback::SetParam(PHGenericJointIf* jnt, const string& name, double value){
@@ -557,6 +563,7 @@ int AdaptorSprPH::CreateObject(int id){
 
 				// DLLをロード
 				Path path = Path(scene->GetLocation(id)) + Path(filename);
+#ifdef _WIN32
 				(HMODULE&)hDll = LoadLibrary(path.c_str());
 				if(!hDll){
 					for(uint i = 0; i < dllSearchPaths.size(); i++){
@@ -570,6 +577,7 @@ int AdaptorSprPH::CreateObject(int id){
 					Message::Error("failed to load dll for generic joint: %s", prop1d->filename);
 					return SupportState::Ignored;
 				}
+#endif
 			}
 		}
 		if(genericJoint){

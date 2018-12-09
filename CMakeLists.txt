@@ -6,14 +6,69 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 set(SPRINGHEAD_DIR "" CACHE PATH "root directory of Springhead")
 
-set(CMAKE_CXX_FLAGS "-O2 -std=c++11 -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor -Wno-reorder")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/adaptors)
 include_directories(${SPRINGHEAD_DIR}/core/include)
 include_directories(${SPRINGHEAD_DIR}/core/src)
 
-add_library(Scenebuilder
+set(BUILD_DIMP_ADAPTOR false CACHE BOOL "build dimp adaptor or not")
+
+set(SCENEBUILDER_HEADERS
+	include/sbadaptor.h
+	include/sbbuilder.h
+	include/sbcalc.h
+	include/sbconsole.h
+	include/sbconstraint.h
+	include/sbconverter.h
+	include/sbcriticalsection.h
+	include/sbevent.h
+	include/sbikbody.h
+	include/sbikhandle.h
+	include/sbikjoint.h
+	include/sbiksolver.h
+	include/sbimage.h
+	include/sbimagebmp.h
+	include/sbimagepng.h
+	include/sbimagesvg.h
+	include/sblink.h
+	include/sblogger.h
+	include/sbmesh.h
+	include/sbmessage.h
+	include/sbmodel.h
+	include/sbmodel3ds.h
+	include/sbmodelobj.h
+	include/sbmodelpmx.h
+	include/sbmodelstl.h
+	include/sbmutex.h
+	include/sbpath.h
+	include/sbrandom.h
+	include/sbremote.h
+	include/sbrollpitchyaw.h
+	include/sbscene.h
+	include/sbscenelocal.h
+	include/sbsceneremote.h
+	include/sbsceneshared.h
+	include/sbsci.h
+	include/sbshared.h
+	include/sbsolver.h
+	include/sbtcp.h
+	include/sbthread.h
+	include/sbtimer.h
+	include/sbtokenizer.h
+	include/sbtree.h
+	include/sbtypedb.h
+	include/sbtypes.h
+	include/sbudp.h
+	include/sbvariable.h
+	include/sbxml.h
+)
+
+set(SCENEBUILDER_SOURCES
 	src/sbadaptor.cpp
 	src/sbbuilder.cpp
 	src/sbcalc.cpp
@@ -62,3 +117,11 @@ add_library(Scenebuilder
 	src/sbvariable.cpp
 	src/sbxml.cpp
 )
+
+add_library(Scenebuilder ${SCENEBUILDER_SOURCES})
+
+install(TARGETS Scenebuilder DESTINATION lib)
+install(FILES ${SCENEBUILDER_HEADERS} DESTINATION include)
+
+add_subdirectory(adaptors)
+

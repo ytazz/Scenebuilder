@@ -120,24 +120,6 @@ public:
 		Converter::FromString(str, val);
 		return val;
 	}
-	
-	// スピード優先で部分特殊化
-	template<>
-	int Get<int>(string_iterator_pair str){
-		return atoi(to_string(str).c_str());
-	}
-	template<>
-	uint Get<uint>(string_iterator_pair str){
-		return (uint)atoi(to_string(str).c_str());
-	}
-	template<>
-	float Get<float>(string_iterator_pair str){
-		return (float)atof(to_string(str).c_str());
-	}
-	template<>
-	double Get<double>(string_iterator_pair str){
-		return (double)atof(to_string(str).c_str());
-	}
 
 	/// i行, j列の要素を型変換して返す
 	template<class T>
@@ -151,5 +133,23 @@ public:
 	}
 
 };
+
+// スピード優先で部分特殊化
+template<>
+inline int CsvReader::Get<int>(string_iterator_pair str){
+	return atoi(to_string(str).c_str());
+}
+template<>
+inline uint CsvReader::Get<uint>(string_iterator_pair str){
+	return (uint)atoi(to_string(str).c_str());
+}
+template<>
+inline float CsvReader::Get<float>(string_iterator_pair str){
+	return (float)atof(to_string(str).c_str());
+}
+template<>
+inline double CsvReader::Get<double>(string_iterator_pair str){
+	return (double)atof(to_string(str).c_str());
+}
 
 }
