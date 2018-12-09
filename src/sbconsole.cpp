@@ -38,11 +38,11 @@ void Console::SetBufferSize(int nrow, int ncol){
 	coninfo.srWindow.Bottom = nrow;
 	
 	SetConsoleScreenBufferInfoEx(hStdout, &coninfo);
+#endif
 
 	numRows    = nrow;
 	numColumns = ncol;
 	buffer.resize(ncol * nrow);
-#endif
 }
 
 void Console::SetDisplaySize(int nrow, int ncol){
