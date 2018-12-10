@@ -1,8 +1,11 @@
 ﻿#include <sbconverter.h>
 #include <sbtokenizer.h>
 
-#ifdef _WIN32
+#if defined _WIN32
 # include <windows.h>
+#elif defined __unix__
+# include <boost/locale.hpp>
+using namespace boost::locale::conv;
 #endif
 
 namespace Scenebuilder{;
@@ -91,11 +94,15 @@ void Converter::ConvertString(string& str, const wstring& wstr, bool utf8){
 		str.clear();
 		return;
 	}
-#ifdef _WIN32
+#if defined _WIN32
 	uint cp = (utf8 ? CP_UTF8 : CP_ACP);
 	int sz = (int)WideCharToMultiByte(cp, 0, &wstr[0], (int)wstr.size(), 0, 0, 0, 0);
 	str.resize(sz);
 	WideCharToMultiByte(cp, 0, &wstr[0], (int)wstr.size(), &str[0], sz, 0, 0);
+#elif defined __unix__
+	// just copy
+	str.resize(wstr.size());
+	copy(wstr.begin(), wstr.end(), str.begin());
 #endif
 }
 
@@ -104,11 +111,15 @@ void Converter::ConvertString(wstring& wstr, const string& str, bool utf8){
 		wstr.clear();
 		return;
 	}
-#ifdef _WIN32
+#if defined _WIN32
 	uint cp = (utf8 ? CP_UTF8 : CP_ACP);
 	int sz = (int)MultiByteToWideChar(cp, 0, &str[0], (int)str.size(), 0, 0);
 	wstr.resize(sz);
 	MultiByteToWideChar(cp, 0, &str[0], (int)str.size(), &wstr[0], sz);
+#elif defined __unix__
+	// just copy
+	wstr.resize(str.size());
+	copy(str.begin(), str.end(), wstr.begin());
 #endif
 }
 
