@@ -3,7 +3,7 @@
 #if defined _WIN32
 # include <windows.h>
 #elif defined __unix__
-# include <semaphore.h>
+# include <pthread.h>
 #endif
 
 namespace Scenebuilder{;
@@ -12,7 +12,9 @@ struct EventHandle{
 #if defined _WIN32
 	HANDLE  handle;
 #elif defined __unix__
-	sem_t   sem;
+	pthread_mutex_t  mutex;
+	pthread_cond_t   cond;
+	bool value;
 #endif
 	bool manual;
 
@@ -52,7 +54,9 @@ bool Event::Create(bool manual){
 	if(!h.handle)
 		return false;
 #elif defined __unix__
-	if(sem_init(&h.sem, 0, 0))
+	if(pthread_cond_init(&h.cond, 0))
+		return false;
+	if(pthread_mutex_init(&h.mutex, 0))
 		return false;
 #endif
 	h.manual = manual;
@@ -68,7 +72,8 @@ void Event::Close(){
 	if(h->handle)
 		CloseHandle(h->handle);
 #elif defined __unix__
-	sem_destroy(&h->sem);
+	pthread_cond_destroy(&h.cond);
+	pthread_mutex_destroy(&h.mutex);
 #endif
 }
 
@@ -99,11 +104,11 @@ bool Event::Wait(uint timeout){
 		ts.tv_sec++;
 		ts.tv_nsec -= _1e9;
 	}
-	if(sem_timedwait(&h->sem, &ts))
+	
+	if(pthread_mutex_lock(&h->mutex))
 		return false;
-	// increment manually to emulate manual-reset event
-	if(h->manual)
-		sem_post(&h->sem);
+	if(pthread_cond_timedwait(&h->cond, &h->mutex, &ts))
+		return false;
 
 	return true;
 #endif
@@ -124,18 +129,20 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 
 	uint res = WaitForMultipleObjects(num, &handles[0], wait_all, timeout);
 
-	// イベント検知
+	// event detected
 	if(WAIT_OBJECT_0 <= res && res < WAIT_OBJECT_0 + num){
 		if(wait_all)
 			return 0;
 		return res - WAIT_OBJECT_0;
 	}
-	// タイムアウト
+	// timed out
 	if(res == WAIT_TIMEOUT)
 		return -1;
-	// エラー
+	// error
 	if(res == WAIT_FAILED)
 		return -1;
+#else
+# error "this function is implemented for Win32 only"
 #endif
 	return -1;
 }
@@ -149,11 +156,12 @@ void Event::Set(){
 #if defined _WIN32
 	SetEvent(h->handle);
 #elif defined __unix__
-	int val;
-	sem_getvalue(&h->sem, &val);
-	if(val == 0)
-		sem_post(&h->sem);
+	h->value = true;
+	pthread_cond_broadcast(&h->cond);
 #endif
+
+	for(EventGroup* gr : groups)
+		gr->Set();
 }
 
 bool Event::IsSet(){
@@ -161,13 +169,9 @@ bool Event::IsSet(){
 	return Wait(0);
 #elif defined __unix__
 	EventHandle* h = GetEventHandle(this);
-	if(!h){
-		Create();
-		h = GetEventHandle(this);
-	}
-	int val;
-	sem_getvalue(&h->sem, &val);
-	return val == 1;
+	if(h)
+		return h->value;
+	return false;
 #endif
 }
 
@@ -180,12 +184,28 @@ void Event::Reset(){
 #if defined _WIN32
 	ResetEvent(h->handle);
 #elif defined __unix__
-	// wait to decrement counter
-	int val;
-	sem_getvalue(&h->sem, &val);
-	if(val == 1)
-		sem_wait(&h->sem);
+	h->value = false;
 #endif
+}
+
+void EventGroup::Add(Event* ev){
+	push_back(ev);
+	ev->groups.push_back(this);
+}
+
+int EventGroup::Wait(uint timeout){
+	for(Event* ev : *this)
+		ev->Reset();
+
+	if(!Event::Wait(timeout))
+		return -1;
+
+	for(int i = 0; i < (int)size(); i++){
+		if(at(i)->IsSet())
+			return i;
+	}
+
+	return -1;
 }
 
 }
