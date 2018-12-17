@@ -22,7 +22,9 @@ struct EventHandle{
 #if defined _WIN32
 		handle = 0;
 #elif defined __unix__
+		value  = false;
 #endif
+		manual = false;
 	}
 };
 
@@ -54,10 +56,14 @@ bool Event::Create(bool manual){
 	if(!h.handle)
 		return false;
 #elif defined __unix__
-	if(pthread_cond_init(&h.cond, 0))
+	if(pthread_cond_init(&h.cond, 0)){
+		cout << "cond init failed" << endl;
 		return false;
-	if(pthread_mutex_init(&h.mutex, 0))
+	}
+	if(pthread_mutex_init(&h.mutex, 0)){
+		cout << "mutex init failed" << endl;
 		return false;
+	}
 #endif
 	h.manual = manual;
 	eventHandles[this] = h;
@@ -72,8 +78,8 @@ void Event::Close(){
 	if(h->handle)
 		CloseHandle(h->handle);
 #elif defined __unix__
-	pthread_cond_destroy(&h.cond);
-	pthread_mutex_destroy(&h.mutex);
+	pthread_cond_destroy(&h->cond);
+	pthread_mutex_destroy(&h->mutex);
 #endif
 }
 
@@ -105,11 +111,31 @@ bool Event::Wait(uint timeout){
 		ts.tv_nsec -= _1e9;
 	}
 	
-	if(pthread_mutex_lock(&h->mutex))
-		return false;
-	if(pthread_cond_timedwait(&h->cond, &h->mutex, &ts))
-		return false;
-
+	while(!h->value){
+		//cout << "mutex locking..." << endl;
+		if(pthread_mutex_lock(&h->mutex)){
+			cout << "mutex lock failed" << endl;
+			return false;
+		}
+		//cout << "mutex locked" << endl;
+		//cout << "cond waiting..." << endl;
+		int ret = pthread_cond_timedwait(&h->cond, &h->mutex, &ts);
+		//cout << "mutex unlocking..." << endl;
+		pthread_mutex_unlock(&h->mutex);
+		if(ret == ETIMEDOUT){
+			cout << "cond wait timed out" << endl;
+			return false;
+		}
+		if(ret == EINTR){
+			cout << "cond wait interrupted" << endl;
+			return false;
+		}
+	}
+	// reset here if this event is auto-reset
+	if(!h->manual)
+		h->value = false;
+	
+	cout << "cond wait succeeded" << endl;	
 	return true;
 #endif
 	return false;
@@ -141,13 +167,12 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 	// error
 	if(res == WAIT_FAILED)
 		return -1;
-#else
-# error "this function is implemented for Win32 only"
 #endif
 	return -1;
 }
 
 void Event::Set(){
+	//cout << "setting event" << endl;
 	EventHandle* h = GetEventHandle(this);
 	if(!h){
 		Create();
@@ -157,9 +182,12 @@ void Event::Set(){
 	SetEvent(h->handle);
 #elif defined __unix__
 	h->value = true;
+	pthread_mutex_lock(&h->mutex);
 	pthread_cond_broadcast(&h->cond);
+	pthread_mutex_unlock(&h->mutex);
 #endif
 
+	//cout << "setting groups " << groups.size() << endl;
 	for(EventGroup* gr : groups)
 		gr->Set();
 }
@@ -169,8 +197,14 @@ bool Event::IsSet(){
 	return Wait(0);
 #elif defined __unix__
 	EventHandle* h = GetEventHandle(this);
-	if(h)
-		return h->value;
+	if(h){
+		bool ret = h->value;
+		// reset here if this event is auto-reset
+		if(!h->manual)
+			h->value = false;
+		return ret;
+	}
+
 	return false;
 #endif
 }
@@ -194,9 +228,6 @@ void EventGroup::Add(Event* ev){
 }
 
 int EventGroup::Wait(uint timeout){
-	for(Event* ev : *this)
-		ev->Reset();
-
 	if(!Event::Wait(timeout))
 		return -1;
 
