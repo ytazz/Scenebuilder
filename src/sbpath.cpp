@@ -133,7 +133,7 @@ Path Path::Current(){
 	GetCurrentDirectory((DWORD)sz, &ret[0]);
 #elif defined __unix__
 	char str[1024];
-	getcwd(str, 1024]);
+	getcwd(str, 1024);
 	ret = str;
 #endif
 	return ret;

@@ -3,7 +3,7 @@
 #if defined _WIN32
 # include <windows.h>
 #elif defined __unix__
-# include <semaphore.h>
+# include <pthread.h>
 #endif
 
 namespace Scenebuilder{;
@@ -12,7 +12,9 @@ struct EventHandle{
 #if defined _WIN32
 	HANDLE  handle;
 #elif defined __unix__
-	sem_t   sem;
+	pthread_mutex_t  mutex;
+	pthread_cond_t   cond;
+	bool value;
 #endif
 	bool manual;
 
@@ -20,7 +22,9 @@ struct EventHandle{
 #if defined _WIN32
 		handle = 0;
 #elif defined __unix__
+		value  = false;
 #endif
+		manual = false;
 	}
 };
 
@@ -52,8 +56,14 @@ bool Event::Create(bool manual){
 	if(!h.handle)
 		return false;
 #elif defined __unix__
-	if(sem_init(&h.sem, 0, 0))
+	if(pthread_cond_init(&h.cond, 0)){
+		cout << "cond init failed" << endl;
 		return false;
+	}
+	if(pthread_mutex_init(&h.mutex, 0)){
+		cout << "mutex init failed" << endl;
+		return false;
+	}
 #endif
 	h.manual = manual;
 	eventHandles[this] = h;
@@ -68,7 +78,8 @@ void Event::Close(){
 	if(h->handle)
 		CloseHandle(h->handle);
 #elif defined __unix__
-	sem_destroy(&h->sem);
+	pthread_cond_destroy(&h->cond);
+	pthread_mutex_destroy(&h->mutex);
 #endif
 }
 
@@ -99,12 +110,32 @@ bool Event::Wait(uint timeout){
 		ts.tv_sec++;
 		ts.tv_nsec -= _1e9;
 	}
-	if(sem_timedwait(&h->sem, &ts))
-		return false;
-	// increment manually to emulate manual-reset event
-	if(h->manual)
-		sem_post(&h->sem);
-
+	
+	while(!h->value){
+		//cout << "mutex locking..." << endl;
+		if(pthread_mutex_lock(&h->mutex)){
+			cout << "mutex lock failed" << endl;
+			return false;
+		}
+		//cout << "mutex locked" << endl;
+		//cout << "cond waiting..." << endl;
+		int ret = pthread_cond_timedwait(&h->cond, &h->mutex, &ts);
+		//cout << "mutex unlocking..." << endl;
+		pthread_mutex_unlock(&h->mutex);
+		if(ret == ETIMEDOUT){
+			cout << "cond wait timed out" << endl;
+			return false;
+		}
+		if(ret == EINTR){
+			cout << "cond wait interrupted" << endl;
+			return false;
+		}
+	}
+	// reset here if this event is auto-reset
+	if(!h->manual)
+		h->value = false;
+	
+	cout << "cond wait succeeded" << endl;	
 	return true;
 #endif
 	return false;
@@ -124,16 +155,16 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 
 	uint res = WaitForMultipleObjects(num, &handles[0], wait_all, timeout);
 
-	// イベント検知
+	// event detected
 	if(WAIT_OBJECT_0 <= res && res < WAIT_OBJECT_0 + num){
 		if(wait_all)
 			return 0;
 		return res - WAIT_OBJECT_0;
 	}
-	// タイムアウト
+	// timed out
 	if(res == WAIT_TIMEOUT)
 		return -1;
-	// エラー
+	// error
 	if(res == WAIT_FAILED)
 		return -1;
 #endif
@@ -141,6 +172,7 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 }
 
 void Event::Set(){
+	//cout << "setting event" << endl;
 	EventHandle* h = GetEventHandle(this);
 	if(!h){
 		Create();
@@ -149,11 +181,15 @@ void Event::Set(){
 #if defined _WIN32
 	SetEvent(h->handle);
 #elif defined __unix__
-	int val;
-	sem_getvalue(&h->sem, &val);
-	if(val == 0)
-		sem_post(&h->sem);
+	h->value = true;
+	pthread_mutex_lock(&h->mutex);
+	pthread_cond_broadcast(&h->cond);
+	pthread_mutex_unlock(&h->mutex);
 #endif
+
+	//cout << "setting groups " << groups.size() << endl;
+	for(EventGroup* gr : groups)
+		gr->Set();
 }
 
 bool Event::IsSet(){
@@ -161,13 +197,15 @@ bool Event::IsSet(){
 	return Wait(0);
 #elif defined __unix__
 	EventHandle* h = GetEventHandle(this);
-	if(!h){
-		Create();
-		h = GetEventHandle(this);
+	if(h){
+		bool ret = h->value;
+		// reset here if this event is auto-reset
+		if(!h->manual)
+			h->value = false;
+		return ret;
 	}
-	int val;
-	sem_getvalue(&h->sem, &val);
-	return val == 1;
+
+	return false;
 #endif
 }
 
@@ -180,12 +218,25 @@ void Event::Reset(){
 #if defined _WIN32
 	ResetEvent(h->handle);
 #elif defined __unix__
-	// wait to decrement counter
-	int val;
-	sem_getvalue(&h->sem, &val);
-	if(val == 1)
-		sem_wait(&h->sem);
+	h->value = false;
 #endif
+}
+
+void EventGroup::Add(Event* ev){
+	push_back(ev);
+	ev->groups.push_back(this);
+}
+
+int EventGroup::Wait(uint timeout){
+	if(!Event::Wait(timeout))
+		return -1;
+
+	for(int i = 0; i < (int)size(); i++){
+		if(at(i)->IsSet())
+			return i;
+	}
+
+	return -1;
 }
 
 }

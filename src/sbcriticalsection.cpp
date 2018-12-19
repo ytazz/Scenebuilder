@@ -15,14 +15,14 @@ public:
 #if defined _WIN32
 	CRITICAL_SECTION	cs;
 #elif defined __unix__
-	mutex_t  mutex;
+	pthread_mutex_t  mutex;
 #endif
 
 	CriticalSectionImpl(uint spin){
 #if defined _WIN32
 		InitializeCriticalSectionAndSpinCount(&cs, spin);
 #elif defined __unix__
-		pthread_mutex_init(&mutex);
+		pthread_mutex_init(&mutex, 0);
 #endif
 	}
 

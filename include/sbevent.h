@@ -6,12 +6,15 @@
 
 namespace Scenebuilder{;
 
+class EventGroup;
+
 /**
 	event object
  */
 class Event{
 public:
-	string	name;
+	string	     name;
+	vector<EventGroup*>  groups;
 
 public:
 	bool	Create(bool manual = false);
@@ -48,6 +51,17 @@ public:
 
 	Event();
 	~Event();
+};
+
+/**
+	group of event objects
+ */
+class EventGroup : public Event, public vector<Event*>{
+public:
+	void Add(Event* ev);
+
+	int Wait(uint timeout);
+
 };
 
 }
