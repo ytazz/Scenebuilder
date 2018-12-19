@@ -111,6 +111,8 @@ size_t Sci::FlushTxBuffer(){
 
 	if(!txBufferEnabled)
 		return 0;
+	if(txBuffer.empty())
+		return 0;
 
 	uint32_t nBytesWritten;
 #ifdef _WIN32
@@ -123,6 +125,12 @@ size_t Sci::FlushTxBuffer(){
 	txTotal += nBytesWritten;
 
 	return nBytesWritten;
+}
+
+void Sci::ClearRxBuffer(){
+#ifdef _WIN32
+	PurgeComm(handle, PURGE_RXCLEAR);
+#endif
 }
 
 size_t Sci::Out(const byte* c, size_t n){

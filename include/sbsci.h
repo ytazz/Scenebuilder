@@ -42,6 +42,9 @@ public:
 	/// 出力バッファをフラッシュ
 	size_t FlushTxBuffer ();
 
+	/// 入力バッファをクリア
+	void ClearRxBuffer();
+
 	/** @brief 送信
 		@param c	送信データ
 		@param n	送信要求バイト数
