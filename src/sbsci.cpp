@@ -14,6 +14,12 @@ Sci::Sci(){
 	txBufferEnabled = false;
 	rxTotal         = 0;
 	txTotal         = 0;
+
+	rxTimeoutPerByte    = 10;
+	rxTimeoutMultiplier = 10;
+	rxTimeout           = 1000;
+	txTimeoutMultiplier = 10;
+	txTimeout           = 1000;
 }
 
 Sci::~Sci(){
@@ -73,11 +79,11 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
 		throw Exception();
 	
 	COMMTIMEOUTS timeouts;
-	timeouts.ReadIntervalTimeout         = 10;
-	timeouts.ReadTotalTimeoutMultiplier  = 10;
-	timeouts.ReadTotalTimeoutConstant    = 1000;
-	timeouts.WriteTotalTimeoutMultiplier = 10;
-	timeouts.WriteTotalTimeoutConstant   = 1000;
+	timeouts.ReadIntervalTimeout         = 	 rxTimeoutPerByte   ;
+	timeouts.ReadTotalTimeoutMultiplier  = 	 rxTimeoutMultiplier;
+	timeouts.ReadTotalTimeoutConstant    = 	 rxTimeout          ;
+	timeouts.WriteTotalTimeoutMultiplier = 	 txTimeoutMultiplier;
+	timeouts.WriteTotalTimeoutConstant   = 	 txTimeout          ;
 	SetCommTimeouts(handle, &timeouts );
 	
 	PurgeComm(handle, PURGE_RXCLEAR | PURGE_TXCLEAR);

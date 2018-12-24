@@ -10,6 +10,12 @@ public:
 	void*	handle;       ///< ƒnƒ“ƒhƒ‹
 	void*   overlapped;
 	bool	isOnline;     ///< Ú‘±’†
+
+	int rxTimeoutPerByte   ;
+	int rxTimeoutMultiplier;
+	int rxTimeout          ;
+	int txTimeoutMultiplier;
+	int txTimeout          ;
 	
 	bool         txBufferEnabled;
 	vector<byte> txBuffer;
