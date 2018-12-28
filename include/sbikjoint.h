@@ -99,6 +99,7 @@ public:
 	class PosCon : public ConBase{
 	public:
 		virtual void CalcDeviation();
+		virtual void Project(real_t& l, uint k);
 		PosCon(IKMate* _mate, const string& _name);
 	};
 	class VelCon : public ConBase{
@@ -114,6 +115,8 @@ public:
 
 public:
 	real_t distance;
+	vec3_t rangeMin;
+	vec3_t rangeMax;
 
 	IKBody*    rootBody;       ///< sock側とplug側の共通の親
 
@@ -216,6 +219,31 @@ public:
 	virtual void Draw   (GRRenderIf* render);
 
 	IKJoint(IKSolver* _solver, int _type, const string& _name);
+};
+
+
+/*
+	checks complex kinematic constraints
+	checking only (returns ok or not)
+ */
+class IKLimit : public UTRefCount, public IKJointBase{
+public:
+	struct Type{
+		enum{
+			Conic,
+		};
+	};
+
+	real_t  angle;
+	
+public:
+	virtual void Update ();
+	
+	real_t  CalcError();
+	
+public:	
+	IKLimit(IKSolver* _solver, int _type, const string& _name);
+
 };
 
 }

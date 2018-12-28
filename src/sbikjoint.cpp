@@ -8,19 +8,18 @@
 
 namespace Scenebuilder{;
 
+const real_t pi  = (real_t)M_PI;
 const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKMate::ConBase::ConBase(IKMate* _mate, const string& _name):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, _name), 1.0){	
-	if(mate->type == IKMate::Type::PointToPoint)
-		nelem = 3;
-	if(mate->type == IKMate::Type::PointToLine)
-		nelem = 2;
-	if(mate->type == IKMate::Type::PointToPlane)
-		nelem = 1;
-	if(mate->type == IKMate::Type::Distance)
-		nelem = 1;
+	switch(mate->type){
+	case IKMate::Type::PointToPoint: nelem = 3; break;
+	case IKMate::Type::PointToLine : nelem = 2; break;
+	case IKMate::Type::PointToPlane: nelem = 1; break;
+	case IKMate::Type::Distance    : nelem = 1; break;
+	}
 }
 
 void IKMate::ConBase::CalcCoef(){
@@ -29,17 +28,19 @@ void IKMate::ConBase::CalcCoef(){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
 			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->sockPosAbs - jnt->sockPosAbs));
-			if(mate->type == IKMate::Type::PointToPoint){
+			switch(mate->type){
+			case IKMate::Type::PointToPoint:
 				((C3Link*)links[idx++])->SetCoef(-r);
-			}
-			if(mate->type == IKMate::Type::PointToLine){
+				break;
+			case IKMate::Type::PointToLine:
 				((C2Link*)links[idx++])->SetCoef(-vec2_t(r[0], r[1]));
-			}
-			if(mate->type == IKMate::Type::PointToPlane){
+				break;
+			case IKMate::Type::PointToPlane:
 				((SLink*)links[idx++])->SetCoef(-r[2]);
-			}
-			if(mate->type == IKMate::Type::Distance){
+				break;
+			case IKMate::Type::Distance:
 				((SLink*)links[idx++])->SetCoef(-mate->pos_diff * r);
+				break;
 			}
 		}
 	}
@@ -47,17 +48,19 @@ void IKMate::ConBase::CalcCoef(){
 		IKJoint* jnt = b->parJoint;
 		for(int i = 0; i < jnt->ndof; i++){
 			vec3_t r = mate->sockOriAbs.Conjugated() * (jnt->Jv_abs[i] + jnt->Jw_abs[i] % (mate->plugPosAbs - jnt->sockPosAbs));
-			if(mate->type == IKMate::Type::PointToPoint){
+			switch(mate->type){
+			case IKMate::Type::PointToPoint:
 				((C3Link*)links[idx++])->SetCoef(r);
-			}
-			if(mate->type == IKMate::Type::PointToLine){
+				break;
+			case IKMate::Type::PointToLine:
 				((C2Link*)links[idx++])->SetCoef(vec2_t(r[0], r[1]));
-			}
-			if(mate->type == IKMate::Type::PointToPlane){
+				break;
+			case IKMate::Type::PointToPlane:
 				((SLink*)links[idx++])->SetCoef(r[2]);
-			}
-			if(mate->type == IKMate::Type::Distance){
+				break;
+			case IKMate::Type::Distance:
 				((SLink*)links[idx++])->SetCoef(mate->pos_diff * r);
+				break;
 			}
 		}
 	}
@@ -92,20 +95,50 @@ IKMate::PosCon::PosCon(IKMate* _mate, const string& _name):ConBase(_mate, _name)
 }
 
 void IKMate::PosCon::CalcDeviation(){
-	if(mate->type == IKMate::Type::PointToPoint){
+	switch(mate->type){
+	case IKMate::Type::PointToPoint:
 		y = mate->pos_diff;
-	}
-	if(mate->type == IKMate::Type::PointToLine){
-		y[0] = mate->pos_diff[0];
-		y[1] = mate->pos_diff[1];
-	}
-	if(mate->type == IKMate::Type::PointToPlane){
-		y[0] = mate->pos_diff[2];
-	}
-	if(mate->type == IKMate::Type::Distance){
+		break;
+	case IKMate::Type::PointToLine:
+		y[0] = mate->pos_diff.x;
+		y[1] = mate->pos_diff.y;
+		break;
+	case IKMate::Type::PointToPlane:
+		if(mate->rangeMin.z < mate->rangeMax.z){
+			if(mate->pos_diff.z <= mate->rangeMin.z){
+				y[0] = mate->pos_diff.z - mate->rangeMin.z;
+				active = true;
+			}
+			else if(mate->pos_diff.z >= mate->rangeMax.z){
+				y[0] = mate->pos_diff.z - mate->rangeMax.z;
+				active = true;
+			}
+			else{
+				y[0] = 0.0;
+				active = false;
+			}
+		}
+		else{
+			y[0] = mate->pos_diff.z;
+			active = true;
+		}
+		break;
+	case IKMate::Type::Distance:
 		y[0] = mate->pos_diff.square() - mate->distance * mate->distance;
+		break;
 	}
 }
+
+void IKMate::PosCon::Project(real_t& l, uint k){
+	if(mate->type == IKMate::Type::PointToPlane){
+		if(mate->rangeMin.z < mate->rangeMax.z){
+			if(mate->pos_diff.z <= mate->rangeMin.z)
+				l = std::max(0.0, l);
+			if(mate->pos_diff.z >= mate->rangeMax.z)
+				l = std::min(0.0, l);
+		}
+	}
+}		
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -136,18 +169,20 @@ IKMate::VelCon::VelCon(IKMate* _mate, const string& _name):ConBase(_mate, _name)
 }
 
 void IKMate::VelCon::CalcDeviation(){
-	if(mate->type == IKMate::Type::PointToPoint){
+	switch(mate->type){
+	case IKMate::Type::PointToPoint:
 		y = mate->vel_diff;
-	}
-	if(mate->type == IKMate::Type::PointToLine){
+		break;
+	case IKMate::Type::PointToLine:
 		y[0] = mate->vel_diff[0];
 		y[1] = mate->vel_diff[1];
-	}
-	if(mate->type == IKMate::Type::PointToPlane){
+		break;
+	case IKMate::Type::PointToPlane:
 		y[0] = mate->vel_diff[2];
-	}
-	if(mate->type == IKMate::Type::Distance){
+		break;
+	case IKMate::Type::Distance:
 		y[0] = mate->pos_diff * mate->vel_diff;
+		break;
 	}
 }
 
@@ -180,18 +215,20 @@ IKMate::AccCon::AccCon(IKMate* _mate, const string& _name):ConBase(_mate, _name)
 }
 
 void IKMate::AccCon::CalcDeviation(){
-	if(mate->type == IKMate::Type::PointToPoint){
+	switch(mate->type){
+	case IKMate::Type::PointToPoint:
 		y = mate->acc_diff;
-	}
-	if(mate->type == IKMate::Type::PointToLine){
+		break;
+	case IKMate::Type::PointToLine:
 		y[0] = mate->acc_diff[0];
 		y[1] = mate->acc_diff[1];
-	}
-	if(mate->type == IKMate::Type::PointToPlane){
+		break;
+	case IKMate::Type::PointToPlane:
 		y[0] = mate->acc_diff[2];
-	}
-	if(mate->type == IKMate::Type::Distance){
+		break;
+	case IKMate::Type::Distance:
 		y[0] = mate->pos_diff * mate->acc_diff + mate->vel_diff.square();
+		break;
 	}
 }
 
@@ -390,23 +427,13 @@ void IKMate::Draw(GRRenderIf* render){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IKJoint::IKJoint(IKSolver* _solver, int _type, const string& _name):IKJointBase(_solver, _type, _name){
-	if(type == Type::Hinge){
-		ndof = 1;
-	}
-	if(type == Type::Slider){
-		ndof = 1;
-	}
-	if(type == Type::Universaljoint){
-		ndof = 2;
-	}
-	if(type == Type::Balljoint){
-		ndof = 3;
-	}
-	if(type == Type::Freejoint){
-		ndof = 6;
-	}
-	if(type == Type::Fixjoint){
-		ndof = 0;
+	switch(type){
+	case Type::Hinge         : ndof = 1; break;
+	case Type::Slider        : ndof = 1; break;
+	case Type::Universaljoint: ndof = 2; break;
+	case Type::Balljoint     : ndof = 3; break;
+	case Type::Freejoint     : ndof = 6; break;
+	case Type::Fixjoint      : ndof = 0; break;
 	}
 
 	for(int i = 0; i < 6; i++){
@@ -477,9 +504,9 @@ void IKJoint::AddCon(){
 
 void IKJoint::Reset(){
 	for(int i = 0; i < ndof; i++){
-		q_var  [i]->val = q_ini  [i];
-		qd_var [i]->val = qd_ini [i];
-		qdd_var[i]->val = qdd_ini[i];
+		q  [i] = q_var  [i]->val = q_ini  [i];
+		qd [i] = qd_var [i]->val = qd_ini [i];
+		qdd[i] = qdd_var[i]->val = qdd_ini[i];
 	}
 
 	if(solver->mode == IKSolver::Mode::Force){
@@ -673,5 +700,71 @@ void IKJoint::Draw(GRRenderIf* render){
 		render->DrawLine(p0, p1);
 	}
 }	
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+IKLimit::IKLimit(IKSolver* _solver, int _type, const string& _name):IKJointBase(_solver, _type, _name){
+
+}
+
+void IKLimit::Update(){
+	IKJointBase::Update();
+
+	if(solver->mode == IKSolver::Mode::Pos){
+		sockOffsetAbs = sockBody->ori_var->val * sockPos;
+		sockPosAbs    = sockBody->pos_var->val + sockOffsetAbs;
+		sockOriAbs    = sockBody->ori_var->val * sockOri;
+		plugOffsetAbs = plugBody->ori_var->val * plugPos;
+		plugPosAbs    = plugBody->pos_var->val + plugOffsetAbs;
+		plugOriAbs    = plugBody->ori_var->val * plugOri;
+	}
+}
+
+real_t IKLimit::CalcError(){
+	if(solver->mode == IKSolver::Mode::Pos){
+		if(type == IKLimit::Type::Conic){
+			// define coordinate frame whole z-axis points from socket origin to plug origin
+			mat3_t R;
+			R.col(2) = plugPosAbs - sockPosAbs;
+			R.col(2).unitize();
+			R.col(0) = vec3_t(0.0, 1.0, 0.0) % R.col(2);
+			R.col(1) = R.col(2) % R.col(0);
+
+			// z-axes of socket and plug in this coordinate frame
+			vec3_t zsock = R.trans() * (sockOriAbs * vec3_t(0.0, 0.0, 1.0));
+			vec3_t zplug = R.trans() * (plugOriAbs * vec3_t(0.0, 0.0, 1.0));
+
+			// polar coordinates
+			real_t theta_sock = atan2(zsock.y, zsock.x);
+			real_t phi_sock   = asin (zsock.z);
+			real_t theta_plug = atan2(zplug.y, zplug.x);
+			real_t phi_plug   = asin (zplug.z);
+
+			// phi must be smaller than angle
+			real_t e;
+			e = abs(phi_sock) - angle;
+			if(e > 0.0)
+				return e;
+			e = abs(phi_plug) - angle;
+			if(e > 0.0)
+				return e;
+
+			// projected angles
+			real_t angle_sock = acos(cos(angle)/cos(phi_sock));
+			real_t angle_plug = acos(cos(angle)/cos(phi_plug));
+
+			// difference of theta must be smaller than the sum of projected angles
+			real_t theta_diff = theta_plug - theta_sock;
+			if(theta_diff >  pi) theta_diff -= 2.0*pi;
+			if(theta_diff < -pi) theta_diff += 2.0*pi;
+
+			e = abs(theta_diff) - (abs(angle_sock) + abs(angle_plug));
+			if(e > 0.0)
+				return e;
+		}
+	}
+
+	return 0.0;
+}
 
 }

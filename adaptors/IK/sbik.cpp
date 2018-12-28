@@ -205,8 +205,9 @@ int AdaptorIK::CreateObject(int id){
 		if(IsUndefined(sockId) || IsUndefined(plugId))
 			return SupportState::Undefined;
 
-		int  jntType  = -1;
-		int  mateType = -1;
+		int  jntType   = -1;
+		int  mateType  = -1;
+		int  limitType = -1;
 		if(type == HingeProp::id){
 			jntType = IKJoint::Type::Hinge;
 		}
@@ -237,6 +238,9 @@ int AdaptorIK::CreateObject(int id){
 		else if(type == DistanceProp::id){
 			mateType = IKMate::Type::Distance;
 		}
+		else if(type == ConicLimitProp::id){
+			limitType = IKLimit::Type::Conic;
+		}
 		else{
 			Message::Error("%s: unsupported joint type", name.c_str());
 			return SupportState::Ignored;
@@ -251,6 +255,8 @@ int AdaptorIK::CreateObject(int id){
 			ikJoint = ikSolver.AddJoint(jntType, name);
 		if(mateType != -1)
 			ikJoint = ikSolver.AddMate(mateType, name);
+		if(limitType != -1)
+			ikJoint = ikSolver.AddLimit(limitType, name);
 		
 		// 親子関係を設定
 		IKBody* sockBody = sockAux->body->ikBody;
@@ -518,6 +524,17 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 				}
 			}
 		}
+		if(typedb->KindOf(type, PointToPlaneProp::id)){
+			AUTO(PointToPlaneProp*, ptpProp, prop);
+			IKMate* ikMate = ((IKMate*)jointAux->ikJoint);
+		
+			if(cat & AttrCategory::Param){
+				if(download){
+					ikMate->rangeMin.z = ptpProp->range[0];
+					ikMate->rangeMax.z = ptpProp->range[1];
+				}
+			}
+		}
 		if(typedb->KindOf(type, DistanceProp::id)){
 			AUTO(DistanceProp*, distProp, prop);
 			IKMate* ikMate = ((IKMate*)jointAux->ikJoint);
@@ -525,6 +542,16 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 			if(cat & AttrCategory::Param){
 				if(download){
 					ikMate->distance = distProp->distance;
+				}
+			}
+		}
+		if(typedb->KindOf(type, ConicLimitProp::id)){
+			AUTO(ConicLimitProp*, coneProp, prop);
+			IKLimit* ikLimit = ((IKLimit*)jointAux->ikJoint);
+		
+			if(cat & AttrCategory::Param){
+				if(download){
+					ikLimit->angle = coneProp->angle;
 				}
 			}
 		}

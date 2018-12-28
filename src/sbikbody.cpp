@@ -142,8 +142,8 @@ void IKBody::AddCon(){
 }
 
 void IKBody::Reset(){
-	pos_var->val = pos_ini;
-	ori_var->val = ori_ini;
+	pos = pos_var->val = pos_ini;
+	ori = ori_var->val = ori_ini;
 }
 
 void IKBody::Prepare(){

@@ -2,11 +2,14 @@
 #include <sbikbody.h>
 #include <sbikjoint.h>
 #include <sbikhandle.h>
+#include <sbmessage.h>
 
 #include <Foundation/UTQPTimer.h>
 static UTQPTimer timer;
 
 namespace Scenebuilder{;
+
+static const real_t inf = numeric_limits<real_t>::max();
 
 //-------------------------------------------------------------------------------------------------
 
@@ -90,6 +93,18 @@ void IKSolver::DeleteMate(IKMate* mate){
 	ready = false;
 }
 
+IKLimit* IKSolver::AddLimit(int _type, const string& _name){
+	UTRef<IKLimit> limit(new IKLimit(this, _type, _name));
+	ikLimits.push_back(limit);
+	ready = false;
+	return limit;
+}
+
+void IKSolver::DeleteLimit(IKLimit* limit){
+	RemoveFromArray(ikLimits, limit);
+	ready = false;
+}
+
 IKHandle* IKSolver::AddHandle(IKBody* ikBody, const string& _name){
 	UTRef<IKHandle> handle(new IKHandle(this, ikBody, _name));
 	ikHandles.push_back(handle);
@@ -135,6 +150,7 @@ void IKSolver::Init(){
 	for(auto& body        : ikBodies      ) body       ->Init();
 	for(auto& joint       : ikJoints      ) joint      ->Init();
 	for(auto& mate        : ikMates       ) mate       ->Init();
+	for(auto& limit       : ikLimits      ) limit      ->Init();
 	for(auto& handle      : ikHandles     ) handle     ->Init();
 	for(auto& jointHandle : ikJointHandles) jointHandle->Init();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->Init();
@@ -142,6 +158,7 @@ void IKSolver::Init(){
 	for(auto& body        : ikBodies      ) body       ->AddVar();
 	for(auto& joint       : ikJoints      ) joint      ->AddVar();
 	for(auto& mate        : ikMates       ) mate       ->AddVar();
+	for(auto& limit       : ikLimits      ) limit      ->AddVar();
 	for(auto& handle      : ikHandles     ) handle     ->AddVar();
 	for(auto& jointHandle : ikJointHandles) jointHandle->AddVar();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->AddVar();
@@ -149,6 +166,7 @@ void IKSolver::Init(){
 	for(auto& body        : ikBodies      ) body       ->AddCon();
 	for(auto& joint       : ikJoints      ) joint      ->AddCon();
 	for(auto& mate        : ikMates       ) mate       ->AddCon();
+	for(auto& limit       : ikLimits      ) limit      ->AddCon();
 	for(auto& handle      : ikHandles     ) handle     ->AddCon();
 	for(auto& jointHandle : ikJointHandles) jointHandle->AddCon();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->AddCon();
@@ -180,6 +198,7 @@ void IKSolver::Prepare(){
 	for(auto& body        : ikBodies      ) body       ->Prepare();
 	for(auto& joint       : ikJoints      ) joint      ->Prepare();
 	for(auto& mate        : ikMates       ) mate       ->Prepare();
+	for(auto& limit       : ikLimits      ) limit      ->Prepare();
 	for(auto& handle      : ikHandles     ) handle     ->Prepare();
 	for(auto& jointHandle : ikJointHandles) jointHandle->Prepare();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->Prepare();
@@ -193,6 +212,7 @@ void IKSolver::Finish(){
 	for(auto& body        : ikBodies      ) body       ->Finish();
 	for(auto& joint       : ikJoints      ) joint      ->Finish();
 	for(auto& mate        : ikMates       ) mate       ->Finish();
+	for(auto& limit       : ikLimits      ) limit      ->Finish();
 	for(auto& handle      : ikHandles     ) handle     ->Finish();
 	for(auto& jointHandle : ikJointHandles) jointHandle->Finish();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->Finish();
@@ -212,6 +232,7 @@ void IKSolver::Update(){
 	
 	for(auto& joint       : ikJoints      ) joint      ->Update();
 	for(auto& mate        : ikMates       ) mate       ->Update();
+	for(auto& limit       : ikLimits      ) limit      ->Update();
 	for(auto& handle      : ikHandles     ) handle     ->Update();
 	for(auto& jointHandle : ikJointHandles) jointHandle->Update();
 	for(auto& comHandle   : ikComHandles  ) comHandle  ->Update();
@@ -226,7 +247,7 @@ void IKSolver::CompPosIK(){
 	mode                 = Mode::Pos;
 	param.minStepSize    = 0.0;
 	param.maxStepSize    = 1.0;
-	param.cutoffStepSize = 0.01;
+	param.cutoffStepSize = 1.0e-10;
 	param.hastyStepSize  = true;
 	
 	Prepare();
@@ -293,7 +314,14 @@ void IKSolver::CompInertia(const vec3_t& origin, mat3_t& I){
 
 real_t IKSolver::CalcObjective(){
 	Update();
-	return Solver::CalcObjective();
+
+	real_t obj = Solver::CalcObjective();
+
+	for(IKLimit* lim : ikLimits){
+		obj += 1000000000.0*lim->CalcError();
+	}
+
+	return obj;
 }
 
 void IKSolver::CalcDirection(){

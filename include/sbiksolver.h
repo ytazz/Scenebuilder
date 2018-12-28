@@ -11,12 +11,14 @@ namespace Scenebuilder{;
 class IKBody;
 class IKJoint;
 class IKMate;
+class IKLimit;
 class IKHandle;
 class IKJointHandle;
 class IKComHandle;
 typedef vector< UTRef<IKBody       > > IKBodyRefs;
 typedef vector< UTRef<IKJoint      > > IKJointRefs;
 typedef vector< UTRef<IKMate       > > IKMateRefs;
+typedef vector< UTRef<IKLimit      > > IKLimitRefs;
 typedef vector< UTRef<IKHandle     > > IKHandleRefs;
 typedef vector< UTRef<IKJointHandle> > IKJointHandleRefs;
 typedef vector< UTRef<IKComHandle  > > IKComHandleRefs;
@@ -103,6 +105,7 @@ public:
 	IKBodyRefs        ikBodies;
 	IKJointRefs       ikJoints;
 	IKMateRefs        ikMates;
+	IKLimitRefs       ikLimits;
 	IKHandleRefs      ikHandles;
 	IKJointHandleRefs ikJointHandles;
 	IKComHandleRefs   ikComHandles;
@@ -131,6 +134,9 @@ public:
 
 	IKMate*     AddMate   (int _type, const string& name = "");
 	void        DeleteMate(IKMate* mate);
+
+	IKLimit*    AddLimit   (int _type, const string& name = "");
+	void        DeleteLimit(IKLimit* limit);
 
 	/// 拘束を追加
 	IKHandle*   AddHandle   (IKBody* sockBody, const string& name = "");

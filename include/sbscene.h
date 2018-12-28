@@ -675,7 +675,7 @@ struct PointToPlaneProp : JointProp{
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(PointToPlaneProp), &Construct, JointProp::id);
 		db->GetType(id)
-			->AddAttr("range", Primitive::Vec2, 1, OFFSET(PointToPlaneProp, range), vec2_t(), AttrCategory::Param, Dimension::M);
+			->AddAttr("range", Primitive::Vec2, 1, OFFSET(PointToPlaneProp, range), vec2_t(), AttrCategory::Param, Dimension::L);
 	}
 };
 struct LineToLineProp : JointProp{
@@ -688,6 +688,7 @@ struct LineToLineProp : JointProp{
 };
 struct PlaneToPlaneProp : JointProp{
 	static int id;
+
 	static string GetName(){ return "plane_to_plane"; }
 	static void Construct(Property* p){ new(p) PlaneToPlaneProp; }
 	static void Register(TypeDB* db){
@@ -707,6 +708,21 @@ struct DistanceProp : JointProp{
 			->AddAttr("distance", Primitive::Real, 1, OFFSET(DistanceProp, distance), 0.0, AttrCategory::Param, Dimension::L);
 	}
 };
+
+struct ConicLimitProp : JointProp{
+	static int id;
+
+	real_t angle;
+
+	static string GetName(){ return "conic_limit"; }
+	static void Construct(Property* p){ new(p) ConicLimitProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(ConicLimitProp), &Construct, JointProp::id);
+		db->GetType(id)
+			->AddAttr("angle", Primitive::Real, 1, OFFSET(ConicLimitProp, angle), 0.0, AttrCategory::Param, Dimension::R);
+	}
+};
+
 
 /** Gear
 	- 歯車
