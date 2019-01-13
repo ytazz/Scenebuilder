@@ -149,7 +149,7 @@ public:
 	IKComHandle*  AddComHandle   (const string& name = "");
 	void          DeleteComHandle(IKComHandle* handle);
 
-	/** 逆キネ計算を行う
+	/** compute inverse kinematics
 	 **/
 	void	CompPosIK  ();
 	void	CompVelIK  ();

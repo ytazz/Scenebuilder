@@ -2,6 +2,11 @@
 
 #ifdef _WIN32
 # include <windows.h>
+#else
+# include <sys/mman.h>
+# include <sys/stat.h>
+# include <fcntl.h>
+# include <unistd.h>
 #endif
 
 namespace Scenebuilder{;
@@ -22,6 +27,13 @@ void SharedMemory::Create(const char* _name, size_t _sz){
 
 	if(!hFile || GetLastError() == ERROR_ALREADY_EXISTS)
 		throw FileError();
+#else
+	// append '/' in front of shared memory name
+	str n[256];
+	sprintf(n, "/%s", _name);
+	hFile = shm_open(n, O_RDWR | O_CREAT, 0644); 
+
+	ftruncate(hFile, sz); 
 #endif
 	name = _name;
 }
@@ -32,6 +44,11 @@ void SharedMemory::Open(const char* _name){
 
 #ifdef _WIN32
 	hFile = OpenFileMappingA(FILE_MAP_WRITE, FALSE, _name);
+#else
+	// append '/' in front of shared memory name
+	str n[256];
+	sprintf(n, "/%s", _name);
+	hFile = shm_open(n, O_RDWR, 0644);
 #endif
 	if(!hFile)
 		throw FileError();
@@ -50,6 +67,8 @@ void SharedMemory::Close(){
 
 	if(hFile)
 		CloseHandle(hFile);
+#else
+	close(hFile);
 #endif
 
 	hFile = NULL;
@@ -66,6 +85,8 @@ byte* SharedMemory::Get(size_t offset, size_t sz){
 		UnmapViewOfFile(pView);
 
 	pView = (byte*)MapViewOfFile(hFile, FILE_MAP_WRITE, 0, (DWORD)offset, (DWORD)sz);
+#else
+	pView = (byte*) mmap(NULL, sz, PROT_READ|PROT_WRITE, MAP_SHARED, hFile, 0); 
 #endif
 
 	return pView;

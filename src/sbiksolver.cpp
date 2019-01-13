@@ -244,11 +244,7 @@ void IKSolver::CompPosIK(){
 	if(!ready)
 		Init();
 
-	mode                 = Mode::Pos;
-	param.minStepSize    = 0.0;
-	param.maxStepSize    = 1.0;
-	param.cutoffStepSize = 1.0e-10;
-	param.hastyStepSize  = true;
+	mode = Mode::Pos;
 	
 	Prepare();
 	timeUpdate = 0;
@@ -263,9 +259,7 @@ void IKSolver::CompVelIK(){
 		Init();
 
 	mode = Mode::Vel;
-	param.minStepSize = 1.0;
-	param.maxStepSize = 1.0;
-
+	
 	Prepare();
 	Solver::Step();
 	Finish();
@@ -276,9 +270,7 @@ void IKSolver::CompAccIK(){
 		Init();
 
 	mode = Mode::Acc;
-	param.minStepSize = 1.0;
-	param.maxStepSize = 1.0;
-
+	
 	Prepare();
 	Solver::Step();
 	Finish();
@@ -289,9 +281,7 @@ void IKSolver::CompForceIK(){
 		Init();
 
 	mode = Mode::Force;
-	param.minStepSize = 1.0;
-	param.maxStepSize = 1.0;
-
+	
 	Prepare();
 	Solver::Step();
 	Finish();

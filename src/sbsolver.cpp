@@ -332,7 +332,10 @@ real_t Solver::CalcStepSize(){
 			}
 		}
 	}
-	return 0.5 * (a[0] + a[2]);
+	// returning average step size may cause drifting behavior in infeasible problems
+	// returning lower value is safer
+	//return 0.5 * (a[0] + a[2]);
+	return a[0];
 }
 
 void Solver::Prepare(){
