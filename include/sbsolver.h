@@ -34,12 +34,19 @@ public:
 				GaussSeidel,
 			};
 		};
+		struct Lapack{
+			enum{
+				DGELS,
+				DPOSV,
+			};
+		};
 	};
 	
 	struct Param{
 		bool           verbose;
 		int            methodMajor;
 		int            methodMinor;
+		int            methodLapack;
 		vector<int>    numIter;          ///< マイナループの反復回数
 		real_t         minStepSize;
 		real_t         maxStepSize;

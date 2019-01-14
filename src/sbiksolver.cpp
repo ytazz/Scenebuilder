@@ -6,6 +6,7 @@
 
 #include <Foundation/UTQPTimer.h>
 static UTQPTimer timer;
+static UTQPTimer timer2;
 
 namespace Scenebuilder{;
 
@@ -17,8 +18,9 @@ IKSolver::IKSolver(){
 	numIter = 3;
 	gravity = vec3_t(0.0, 0.0, -9.8);
 	
-	param.methodMajor = Solver::Method::Major::GaussNewton;
-	param.methodMinor = Solver::Method::Minor::Direct;
+	param.methodMajor  = Solver::Method::Major ::GaussNewton;
+	param.methodMinor  = Solver::Method::Minor ::Direct;
+	param.methodLapack = Solver::Method::Lapack::DGELS;
 
 	bodyColor  .name = "black"  ; bodyColor  .Init();
 	jointColor .name = "black"  ; jointColor .Init();
@@ -248,10 +250,14 @@ void IKSolver::CompPosIK(){
 	
 	Prepare();
 	timeUpdate = 0;
+	timer2.CountUS();
 	for(int i = 0; i < numIter; i++){
 		Solver::Step();
 	}
+	timeStep = timer2.CountUS();
 	Finish();
+
+	//DSTR << "tprepare " << timePrepare << " timeStep " << timeStep << " timeFinish " << timeFinish << endl;
 }
 
 void IKSolver::CompVelIK(){

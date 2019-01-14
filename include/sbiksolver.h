@@ -99,6 +99,7 @@ public:
 	int     timeInit;
 	int     timeReset;
 	int     timePrepare;
+	int     timeStep;
 	int     timeFinish;
 	int     timeUpdate;
 	

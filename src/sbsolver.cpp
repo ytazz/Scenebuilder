@@ -13,6 +13,7 @@
 
 #include <Foundation/UTQPTimer.h>
 static UTQPTimer timer;
+static UTQPTimer timer2;
 
 namespace Scenebuilder{;
 
@@ -24,6 +25,7 @@ Solver::Param::Param(){
 	verbose        = false;
 	methodMajor    = Solver::Method::Major::GaussNewton;
 	methodMinor    = Solver::Method::Minor::GaussSeidel;
+	methodLapack   = Solver::Method::Lapack::DGELS;
 	minStepSize    =  0.01;
 	maxStepSize    = 10.0;
 	cutoffStepSize =  0.001;
@@ -421,7 +423,7 @@ void Solver::CalcDirection(){
 			con->CalcCorrection();
 
 		if(param.methodMinor == Method::Minor::Direct){
-			timer.CountUS();
+			timer2.CountUS();
 			int dimvar          = 0;
 			int dimvar_weighted = 0;
 			int dimcon          = 0;
@@ -439,13 +441,13 @@ void Solver::CalcDirection(){
 				con->index = dimcon;
 				dimcon += con->nelem;
 			}
-			int t1 = timer.CountUS();
+			int t1 = timer2.CountUS();
 
 			// 変数あるいは拘束の数が不正
 			if(dimvar == 0 || dimcon == 0)
 				return;
 			
-			timer.CountUS();
+			timer2.CountUS();
 			A.resize(dimcon + dimvar_weighted, dimvar);
 			b.resize(dimcon + dimvar_weighted);
 			A.clear();
@@ -464,47 +466,52 @@ void Solver::CalcDirection(){
 						A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
 				}
 			}
-			int t2 = timer.CountUS();
+			int t2 = timer2.CountUS();
 			
-			timer.CountUS();
+			timer2.CountUS();
 #if defined USE_MKL
 			int nb = std::max(dimcon + dimvar_weighted, dimvar);
 			b2.resize(nb);
 			for(int i = 0; i < dimcon + dimvar_weighted; i++)
 				b2[i] = b[i];
 			
-			// dgels
-			//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << " dimvar_weighted: " << dimvar_weighted << endl;
-			int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
-			if(info < 0){
-				Message::Error("dgels: %d-th argument illegal", -info);
-			}
-			if(info > 0){
-				Message::Error("dgels: matrix not full-rank");
-			}
-			// dgelsd
-			//vector<real_t> S;
-			//S.resize(std::min(dimcon, dimvar));
-			//real_t rcond = 0.01;
-			//int    rank;
-			//static vector<real_t> work;
-			//static vector<int> iwork;
-			//const int lwork  = 100000;
-			//work.resize(lwork);
-			//iwork.resize(lwork);
-			//LAPACKE_dgelsd_work(LAPACK_COL_MAJOR, dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny,
-			//	&S[0], rcond, &rank,
-			//	&work[0], lwork, &iwork[0]);
-			//DSTR << "rank " << rank << endl;
+			if(param.methodLapack == Method::Lapack::DGELS){
+				// dgels
+				//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << " dimvar_weighted: " << dimvar_weighted << endl;
+				int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
+				if(info < 0){
+					Message::Error("dgels: %d-th argument illegal", -info);
+				}
+				if(info > 0){
+					Message::Error("dgels: matrix not full-rank");
+				}
+				// dgelsd
+				//vector<real_t> S;
+				//S.resize(std::min(dimcon, dimvar));
+				//real_t rcond = 0.01;
+				//int    rank;
+				//static vector<real_t> work;
+				//static vector<int> iwork;
+				//const int lwork  = 100000;
+				//work.resize(lwork);
+				//iwork.resize(lwork);
+				//LAPACKE_dgelsd_work(LAPACK_COL_MAJOR, dimcon, dimvar, 1, &J[0][0], dimcon, &y2[0], ny,
+				//	&S[0], rcond, &rank,
+				//	&work[0], lwork, &iwork[0]);
+				//DSTR << "rank " << rank << endl;
 			
-			// dgesv
-			//vector<int> pivot;
-			//pivot.resize(dimcon);
-			//LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &JtrJ[0][0], dimcon, &pivot[0], &y2[0], dimcon);
+				// dgesv
+				//vector<int> pivot;
+				//pivot.resize(dimcon);
+				//LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &JtrJ[0][0], dimcon, &pivot[0], &y2[0], dimcon);
+			}
+			if(param.methodLapack == Method::Lapack::DPOSV){
+				// dposv
+				AtrA = A.trans()*A;
+				b2 = A.trans()*b;
+				LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &AtrA[0][0], dimcon, &b2[0], dimcon);
+			}
 
-			// dposv
-			//LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &JtrJ[0][0], dimcon, &y2[0], dimcon);
-			
 			dx.resize(dimvar);
 			for(int i = 0; i < dimvar; i++)
 				dx[i] = b2[i];
@@ -513,7 +520,7 @@ void Solver::CalcDirection(){
 			Atrb = A.trans()*b;
 			dx   = AtrA.inv()*Atrb;
 #endif
-			int t3 = timer.CountUS();
+			int t3 = timer2.CountUS();
 			
 			for(auto& var : vars_unlocked){
 				var->RegisterDelta(dx);
@@ -550,7 +557,7 @@ void Solver::CalcDirection(){
 		for(auto& con : cons_active) con->ResetState();
 
 		for(int L = (int)conInfoLevel.size()-1; L >= 0; L--){
-			timer.CountUS();
+			timer2.CountUS();
 	
 			for(int n = 1; n <= param.numIter[L]; n++){
 				for(int l = 0; l <= L; l++){
@@ -611,7 +618,11 @@ void Solver::Step(){
 	state.objDiff  = state.obj - objPrev;
 	if(param.verbose){
 		//Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
-		DSTR << "iter:" << state.iterCount << " step:" << state.stepSize << " obj:" << state.obj << endl;
+		//DSTR << "iter:"  << state.iterCount
+		//	 << " step:" << state.stepSize
+		//	 << " obj:"  << state.obj
+		//	 << " tdir:" << state.timeDir
+		//	 << " tstep:" << state.timeStep << endl;
 	}
 	state.iterCount++;
 }
