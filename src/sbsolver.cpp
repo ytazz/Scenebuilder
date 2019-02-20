@@ -617,12 +617,12 @@ void Solver::Step(){
 	state.obj      = CalcObjective();
 	state.objDiff  = state.obj - objPrev;
 	if(param.verbose){
-		//Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
-		//DSTR << "iter:"  << state.iterCount
-		//	 << " step:" << state.stepSize
-		//	 << " obj:"  << state.obj
-		//	 << " tdir:" << state.timeDir
-		//	 << " tstep:" << state.timeStep << endl;
+		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
+		DSTR << "iter:"  << state.iterCount
+			 << " step:" << state.stepSize
+			 << " obj:"  << state.obj
+			 << " tdir:" << state.timeDir
+			 << " tstep:" << state.timeStep << endl;
 	}
 	state.iterCount++;
 }
