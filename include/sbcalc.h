@@ -2,6 +2,8 @@
 
 #include <sbtypes.h>
 
+#include <map>
+
 namespace Scenebuilder{;
 
 /** 計算式を文字列で受け取り数値に変換
@@ -53,8 +55,12 @@ protected:
 			Sub,	///< 減算
 			Mul,	///< 乗算
 			Div,	///< 除算
+			Not,
+			Or,
+			And,
 			Pow,	///< 指数
 			Num,	///< 数値
+			Var,
 			Expr,	///< 式
 			Func,	///< 関数
 			Unit,	///< 単位
@@ -66,6 +72,7 @@ protected:
 	struct Term : UTRefCount{
 		int		    type;
 		real_t	    val;
+		string      varname;
 		math_func_t func;
 
 		Term* parent;
@@ -80,6 +87,8 @@ protected:
 	vector< UTRef<Term> >	terms;
 	Term*	root;
 	Term*	cur;
+
+	std::map<string, real_t>  vars;
 
 	void	Reset();
 	Term*	CreateTerm(int type);
@@ -103,6 +112,10 @@ public:
 
 	/// 関数を取得
 	static math_func_t GetFunc(string_iterator_pair str);
+
+    /// register variable
+	void    SetVariable(const string& name, real_t val);
+	real_t  GetVariable(const string& name);
 
 	/** @brief 式を計算
 

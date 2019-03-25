@@ -143,6 +143,18 @@ Calc::math_func_t Calc::GetFunc(string_iterator_pair str){
 	throw CalcSyntaxError();
 }
 
+void Calc::SetVariable(const string& name, real_t val){
+	vars[name] = val;
+}
+
+real_t Calc::GetVariable(const string& name){
+	map<string, real_t>::iterator it = vars.find(name);
+	if(it == vars.end())
+		return 0.0;
+
+	return it->second;
+}
+
 Calc::Term* Calc::CreateTerm(int type){
 	UTRef<Term> term = new Term();
 	term->type = type;
@@ -172,7 +184,7 @@ real_t Calc::operator()(string_iterator_pair eval, int dim){
 
 		char c = *it;
 		if(c == '+'){
-			if(prev && (prev->type == Op::Num || prev->type == Op::Expr))
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
 				CreateTerm(Op::Add);
 			else
 				CreateTerm(Op::Plus);
@@ -180,15 +192,20 @@ real_t Calc::operator()(string_iterator_pair eval, int dim){
 			continue;
 		}
 		if(c == '-'){
-			if(prev && (prev->type == Op::Num || prev->type == Op::Expr))
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
 				CreateTerm(Op::Sub);
 			else
 				CreateTerm(Op::Minus);
 			it++;
 			continue;
 		}
+		if(c == '!'){
+			CreateTerm(Op::Not);
+			it++;
+			continue;
+		}
 		if(c == '*'){
-			if(prev && (prev->type == Op::Num || prev->type == Op::Expr))
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
 				CreateTerm(Op::Mul);
 			else
 				throw CalcSyntaxError();
@@ -196,15 +213,41 @@ real_t Calc::operator()(string_iterator_pair eval, int dim){
 			continue;
 		}
 		if(c == '/'){
-			if(prev && (prev->type == Op::Num || prev->type == Op::Expr))
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
 				CreateTerm(Op::Div);
 			else
 				throw CalcSyntaxError();
 			it++;
 			continue;
 		}
+		// logical OR
+		//  it could be either | or || (bitwise OR is not supported)
+		if(c == '|'){
+			if(it+1 != iend && *(it+1) == '|')
+				it++;
+			
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
+				CreateTerm(Op::Or);
+			else
+				throw CalcSyntaxError();
+			it++;
+			continue;
+		}
+		// logical AND
+		//  it could be either & or && (bitwise AND is not supported)
+		if(c == '&'){
+			if(it+1 != iend && *(it+1) == '&')
+				it++;
+			
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
+				CreateTerm(Op::And);
+			else
+				throw CalcSyntaxError();
+			it++;
+			continue;
+		}
 		if(c == '^'){
-			if(prev && (prev->type == Op::Num || prev->type == Op::Expr))
+			if(prev && (prev->type == Op::Num || prev->type == Op::Expr || prev->type == Op::Var))
 				CreateTerm(Op::Pow);
 			else
 				throw CalcSyntaxError();
@@ -220,6 +263,24 @@ real_t Calc::operator()(string_iterator_pair eval, int dim){
 			if(!cur->parent)
 				throw CalcSyntaxError();
 			cur = cur->parent;
+			it++;
+			continue;
+		}
+		if(c == '$'){
+			it++;
+			if(it == iend || *it != '(')
+				throw SyntaxError();
+			it++;
+			string_iterator_pair strval;
+			strval.first = it;
+			while(it != iend && (isalpha(*it) || isdigit(*it)))
+				it++;
+			strval.second = it;
+			if(it == iend || *it != ')')
+				throw SyntaxError();
+
+			Term* t = CreateTerm(Op::Var);
+			t->varname = string(strval.first, strval.second);
 			it++;
 			continue;
 		}
@@ -349,6 +410,15 @@ real_t Calc::Eval(Calc::Term* term, bool* unitSpecified){
 		}
 	}
 
+	// substitute values to variables
+	for(it = term->children.begin(); it != term->children.end(); it++){
+		Term* child = *it;
+		if(child->type == Op::Var){
+			child->val = GetVariable(child->varname);
+			child->type = Op::Num;
+		}
+	}
+
 	// 関数
 	for(it = term->children.begin(); it != term->children.end(); ){
 		Term* child = *it;
@@ -397,6 +467,16 @@ real_t Calc::Eval(Calc::Term* term, bool* unitSpecified){
 				continue;
 			}
 			// それ以外はエラー
+			throw CalcSyntaxError();
+		}
+		if(child->type == Op::Not){
+			if(!next)
+				throw CalcSyntaxError();
+			if(next->type == Op::Num){
+				next->val = !next->val;
+				it = term->children.erase(it);
+				continue;
+			}
 			throw CalcSyntaxError();
 		}
 		// 次へ
@@ -475,6 +555,32 @@ real_t Calc::Eval(Calc::Term* term, bool* unitSpecified){
 				throw CalcSyntaxError();
 			// 前の数値項を演算結果に置換し，演算子と後ろの数値項は削除
 			prev->val = prev->val - next->val;
+			it = term->children.erase(it);
+			it = term->children.erase(it);
+			continue;
+		}
+		it++;
+	}
+	// || &&
+	for(it = term->children.begin(); it != term->children.end(); ){
+		Term* child = *it;
+		Term* prev  = (it == term->children.begin() ? 0 : *(it-1));
+		Term* next  = (it+1 == term->children.end() ? 0 : *(it+1));
+
+		if(child->type == Op::Or){
+			if(!(prev && next && prev->type == Op::Num && next->type == Op::Num))
+				throw CalcSyntaxError();
+			
+			prev->val = (real_t)((prev->val != 0.0) || (next->val != 0.0));
+			it = term->children.erase(it);
+			it = term->children.erase(it);
+			continue;
+		}
+		if(child->type == Op::And){
+			if(!(prev && next && prev->type == Op::Num && next->type == Op::Num))
+				throw CalcSyntaxError();
+			
+			prev->val = (real_t)((prev->val != 0.0) && (next->val != 0.0));
 			it = term->children.erase(it);
 			it = term->children.erase(it);
 			continue;
