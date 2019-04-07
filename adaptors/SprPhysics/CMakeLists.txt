@@ -4,3 +4,4 @@ add_library(sbsprphysics
   sbsprphysics.cpp
 )
 
+install(TARGETS sbsprphysics DESTINATION lib)

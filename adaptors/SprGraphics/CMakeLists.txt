@@ -4,3 +4,4 @@ add_library(sbsprgraphics
   sbsprgraphics.cpp
 )
 
+install(TARGETS sbsprgraphics DESTINATION lib)

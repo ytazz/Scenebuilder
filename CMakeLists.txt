@@ -4,17 +4,35 @@ project(Scenebuilder)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-set(SPRINGHEAD_DIR "" CACHE PATH "root directory of Springhead")
+if(NOT CMAKE_DEBUG_POSTFIX)
+  set(CMAKE_DEBUG_POSTFIX d)
+endif()
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor -Wno-reorder")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(SPRINGHEAD_DIR   "" CACHE PATH "root directory of Springhead")
+set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
+
+if(UNIX)
+	set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor -Wno-reorder")
+	set(CMAKE_CXX_FLAGS_DEBUG "-g")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+endif()
+
+find_package(Boost REQUIRED COMPONENTS thread)
+find_package(GLEW)
+find_package(PNG)
+find_package(EXPAT)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/adaptors)
 include_directories(${SPRINGHEAD_DIR}/core/include)
 include_directories(${SPRINGHEAD_DIR}/core/src)
+include_directories(${DIMP_DIR})
+include_directories(${Boost_INCLUDE_DIR})
+include_directories(${GLEW_INCLUDE_DIR})
+include_directories(${PNG_PNG_INCLUDE_DIR})
+include_directories(${EXPAT_INCLUDE_DIR})
+include_directories(${MKL_INCLUDE_DIR})
 
 set(BUILD_DIMP_ADAPTOR false CACHE BOOL "build dimp adaptor or not")
 

@@ -8,5 +8,7 @@ if(BUILD_DIMP_ADAPTOR)
 	add_library(sbdimp
 	  sbdimp.cpp
 	)
+	
+	install(TARGETS sbdimp DESTINATION lib)
 endif()
 

@@ -4,3 +4,4 @@ add_library(sbik
   sbik.cpp
 )
 
+install(TARGETS sbik DESTINATION lib)
