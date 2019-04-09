@@ -38,6 +38,7 @@ set(BUILD_DIMP_ADAPTOR false CACHE BOOL "build dimp adaptor or not")
 
 set(SCENEBUILDER_HEADERS
 	include/sbadaptor.h
+	include/sbbuffer.h
 	include/sbbuilder.h
 	include/sbcalc.h
 	include/sbconsole.h
