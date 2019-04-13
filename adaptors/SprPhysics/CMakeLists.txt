@@ -1,7 +1,15 @@
 cmake_minimum_required(VERSION 2.8.12) # Default version on Ubuntu 14.04
 
+set(SCENEBUILDER_SPRPHYSICS_HEADERS
+	sbsprphysics.h
+)
+set(SCENEBUILDER_SPRPHYSICS_SOURCES
+	sbsprphysics.cpp
+)
+
 add_library(sbsprphysics
-  sbsprphysics.cpp
+  ${SCENEBUILDER_SPRPHYSICS_SOURCES}
 )
 
 install(TARGETS sbsprphysics DESTINATION lib)
+install(FILES ${SCENEBUILDER_SPRPHYSICS_HEADERS} DESTINATION include/Scenebuilder/SprPhysics)

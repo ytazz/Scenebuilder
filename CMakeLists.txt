@@ -45,6 +45,7 @@ set(SCENEBUILDER_HEADERS
 	include/sbconstraint.h
 	include/sbconverter.h
 	include/sbcriticalsection.h
+	include/sbcsv.h
 	include/sbevent.h
 	include/sbikbody.h
 	include/sbikhandle.h
@@ -140,7 +141,7 @@ set(SCENEBUILDER_SOURCES
 add_library(Scenebuilder ${SCENEBUILDER_SOURCES})
 
 install(TARGETS Scenebuilder DESTINATION lib)
-install(FILES ${SCENEBUILDER_HEADERS} DESTINATION include)
+install(FILES ${SCENEBUILDER_HEADERS} DESTINATION include/Scenebuilder)
 
 add_subdirectory(adaptors)
 
