@@ -21,4 +21,10 @@ vec3_t VelocityToRollPitchYaw  (const vec3_t& angvel);
 // time derivative of roll-pitch-yaw to angular velocity
 vec3_t VelocityFromRollPitchYaw(const vec3_t& vel   );
 
+// quaternion to axis-angle
+vec3_t ToAxisAngle(const quat_t& q);
+
+// axis-angle to quaternion
+quat_t FromAxisAngle(const vec3_t& v);
+
 }
