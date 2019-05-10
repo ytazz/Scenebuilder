@@ -35,7 +35,11 @@ vec3_t ToAxisAngle(const quat_t& q){
 	if(vnorm == 0.0)
 		return vec3_t();
 
-	return (2.0 * atan2(vnorm, w) / vnorm) * v;
+	real_t theta = 2.0 * atan2(vnorm, w);
+	if(theta >  pi) theta -= 2.0*pi;
+	if(theta < -pi) theta += 2.0*pi;
+
+	return (theta / vnorm) * v;
 }
 
 quat_t FromAxisAngle(const vec3_t& v){
