@@ -29,11 +29,11 @@ void SharedMemory::Create(const char* _name, size_t _sz){
 		throw FileError();
 #else
 	// append '/' in front of shared memory name
-	str n[256];
+	char n[256];
 	sprintf(n, "/%s", _name);
 	hFile = shm_open(n, O_RDWR | O_CREAT, 0644); 
 
-	ftruncate(hFile, sz); 
+	ftruncate(hFile, _sz); 
 #endif
 	name = _name;
 }
@@ -46,7 +46,7 @@ void SharedMemory::Open(const char* _name){
 	hFile = OpenFileMappingA(FILE_MAP_WRITE, FALSE, _name);
 #else
 	// append '/' in front of shared memory name
-	str n[256];
+	char n[256];
 	sprintf(n, "/%s", _name);
 	hFile = shm_open(n, O_RDWR, 0644);
 #endif
