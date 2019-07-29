@@ -138,7 +138,7 @@ set(SCENEBUILDER_SOURCES
 	src/sbxml.cpp
 )
 
-add_library(Scenebuilder ${SCENEBUILDER_SOURCES})
+add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 
 install(TARGETS Scenebuilder DESTINATION lib)
 install(FILES ${SCENEBUILDER_HEADERS} DESTINATION include/Scenebuilder)
