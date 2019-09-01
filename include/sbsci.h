@@ -7,6 +7,14 @@ namespace Scenebuilder{;
 
 class Sci{
 public:
+	struct Parity{
+		enum{
+			None = 0,
+			Odd  = 1,
+			Even = 2
+		};
+	};
+
 	void*	handle;       ///< ハンドル
 	void*   overlapped;
 	bool	isOnline;     ///< 接続中
@@ -29,7 +37,7 @@ public:
 		@param	name	オープンするデバイスファイル．デフォルトはCOM1
 		@param	baud	ボーレート [bps]
 	 */
-	void Init(const string& port, int baud = 57600, int byteSize = 8, int stopBits = 1);
+	void Init(const string& port, int baud = 57600, int byteSize = 8, int stopBits = 1, int parity = Parity::None);
 
 	/** @brief 終了
 		接続を切断する．デストラクタからも呼ばれる．
