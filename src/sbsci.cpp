@@ -26,7 +26,7 @@ Sci::~Sci(){
 	Terminate();
 }
 
-void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
+void Sci::Init(const string& port, int baud, int byteSize, int stopBits, int parity){
 	//既存の接続（もしあれば）を解除
 	Terminate();
 
@@ -54,7 +54,12 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits){
 
 	// パリティなし
 	dcb.fParity		= true;
-	dcb.Parity		= NOPARITY;
+	if(parity == Parity::None)
+		dcb.Parity = NOPARITY;
+	if(parity == Parity::Odd)
+		dcb.Parity = ODDPARITY;
+	if(parity == Parity::Even)
+		dcb.Parity = EVENPARITY;
 
 	// ストップビット1
 	dcb.StopBits	= ONESTOPBIT;

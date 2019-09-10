@@ -132,7 +132,6 @@ public:
 public:
 	/// 内部関数
 	void    Prepare             ();
-	real_t  CalcStepSize        ();
 	real_t  CalcUpdatedObjective(real_t alpha);
 	
 	void AddVar   (Variable* var);      ///< add variable
@@ -150,6 +149,9 @@ public:
 	/// 変数に対する評価関数の微係数を計算する（最急降下法の場合）
 	virtual void    CalcDirection();
 
+	/// calculate step size
+	virtual real_t  CalcStepSize();
+	
 public:
 	/** @brief	enable or disable constraints
 		@param	mask	constraint id mask
