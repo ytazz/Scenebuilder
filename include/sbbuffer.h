@@ -56,10 +56,11 @@ struct Buffer : vector<byte>{
 	}
 
 	void Read(byte* var, uint sz){
-		if(idx + sz > size())
-			throw InvalidOperation();
-		copy(Head(), Head() + sz, var); 
-		idx += sz;
+		//if(idx + sz > size())
+		//	throw InvalidOperation();
+		uint _sz = std::min(sz, (uint)(size()-idx));
+		copy(Head(), Head() + _sz, var); 
+		idx += _sz;
 	}
 
 	void Write(const byte* var, uint sz){
