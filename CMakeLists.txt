@@ -127,6 +127,7 @@ set(SCENEBUILDER_SOURCES
 	src/sbsci.cpp
 	src/sbshared.cpp
 	src/sbsolver.cpp
+	src/sbsolverddp.cpp
 	src/sbtcp.cpp
 	src/sbthread.cpp
 	src/sbtimer.cpp

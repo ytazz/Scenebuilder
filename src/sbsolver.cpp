@@ -36,7 +36,7 @@ Solver::Param::Param(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-Solver::State::State(){
+Solver::Status::Status(){
 	obj       = inf;
 	objDiff   = inf;
 	stepSize  = 0.0;
@@ -161,7 +161,7 @@ void Solver::Clear(){
 	cons    .clear();
 	links   .clear();
 
-	state = State();
+	status = Status();
 }
 
 void Solver::Reset(){
@@ -408,6 +408,50 @@ void Solver::Prepare(){
 	//DSTR << "tcoef " << timeCoef << endl;
 }
 
+void Solver::CalcEquation(){
+	dimvar          = 0;
+	dimvar_weighted = 0;
+	dimcon          = 0;
+	
+	for(auto& var : vars_unlocked){
+		var->index = dimvar;
+		dimvar += var->nelem;
+		if(var->weight != 0.0){
+			var->index_weighted = dimvar_weighted;
+			dimvar_weighted += var->nelem;
+		}
+	}
+	for(auto& con : cons_active){
+		con->index = dimcon;
+		dimcon += con->nelem;
+	}
+	int t1 = timer2.CountUS();
+
+	// 変数あるいは拘束の数が不正
+	if(dimvar == 0 || dimcon == 0)
+		return;
+			
+	timer2.CountUS();
+	A.resize(dimcon + dimvar_weighted, dimvar);
+	b.resize(dimcon + dimvar_weighted);
+	A.clear();
+	b.clear();
+	pivot.resize(dimcon);
+
+	for(auto& con : cons_active){
+		for(auto& link : con->links_active){
+			link->RegisterCoef(A, con->weight);
+		}
+		con->RegisterCorrection(b);
+	}
+	for(auto& var : vars_unlocked){
+		if(var->weight != 0.0){
+			for(int j = 0; j < var->nelem; j++)
+				A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
+		}
+	}
+}
+
 void Solver::CalcDirection(){
 	if(param.methodMajor == Method::Major::SteepestDescent){
 		for(auto& var : vars_unlocked){
@@ -424,50 +468,9 @@ void Solver::CalcDirection(){
 
 		if(param.methodMinor == Method::Minor::Direct){
 			timer2.CountUS();
-			int dimvar          = 0;
-			int dimvar_weighted = 0;
-			int dimcon          = 0;
-			int idxvar          = 0;
-			int idxcon          = 0;
-			for(auto& var : vars_unlocked){
-				var->index = dimvar;
-				dimvar += var->nelem;
-				if(var->weight != 0.0){
-					var->index_weighted = dimvar_weighted;
-					dimvar_weighted += var->nelem;
-				}
-			}
-			for(auto& con : cons_active){
-				con->index = dimcon;
-				dimcon += con->nelem;
-			}
-			int t1 = timer2.CountUS();
-
-			// 変数あるいは拘束の数が不正
-			if(dimvar == 0 || dimcon == 0)
-				return;
-			
-			timer2.CountUS();
-			A.resize(dimcon + dimvar_weighted, dimvar);
-			b.resize(dimcon + dimvar_weighted);
-			A.clear();
-			b.clear();
-			pivot.resize(dimcon);
-
-			for(auto& con : cons_active){
-				for(auto& link : con->links_active){
-					link->RegisterCoef(A, con->weight);
-				}
-				con->RegisterCorrection(b);
-			}
-			for(auto& var : vars_unlocked){
-				if(var->weight != 0.0){
-					for(int j = 0; j < var->nelem; j++)
-						A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
-				}
-			}
+			CalcEquation();
 			int t2 = timer2.CountUS();
-			
+
 			timer2.CountUS();
 #if defined USE_MKL
 			int nb = std::max(dimcon + dimvar_weighted, dimvar);
@@ -512,18 +515,18 @@ void Solver::CalcDirection(){
 				LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &AtrA[0][0], dimcon, &b2[0], dimcon);
 			}
 
-			dx.resize(dimvar);
+			dxvec.resize(dimvar);
 			for(int i = 0; i < dimvar; i++)
-				dx[i] = b2[i];
+				dxvec[i] = b2[i];
 #else
 			AtrA = A.trans()*A;
 			Atrb = A.trans()*b;
-			dx   = AtrA.inv()*Atrb;
+			dxvec = AtrA.inv()*Atrb;
 #endif
 			int t3 = timer2.CountUS();
 			
 			for(auto& var : vars_unlocked){
-				var->RegisterDelta(dx);
+				var->RegisterDelta(dxvec);
 			}
 
 			//DSTR << "t1 t2 t3 " << t1 << " " << t2 << " " << t3 << endl;
@@ -591,6 +594,9 @@ void Solver::CalcDirection(){
 			//DSTR << "level " << L << ": " << ptimer.CountUS() << endl;
 		}
 	}
+	if(param.methodMajor == Method::Major::Prioritized){
+		CalcDirectionDDP();
+	}
 }
 
 void Solver::Step(){
@@ -602,29 +608,29 @@ void Solver::Step(){
 	// 更新方向を計算
 	timer.CountUS();
 	CalcDirection();
-	state.timeDir = timer.CountUS();
+	status.timeDir = timer.CountUS();
 
 	// 直線探索で更新幅を計算
 	timer.CountUS();
-	state.stepSize = CalcStepSize();
-	state.timeStep = timer.CountUS();
+	status.stepSize = CalcStepSize();
+	status.timeStep = timer.CountUS();
 
 	// 変数を更新
 	for(auto& var : vars_unlocked)
-		var->Modify(state.stepSize);
+		var->Modify(status.stepSize);
 
-	real_t objPrev = state.obj;
-	state.obj      = CalcObjective();
-	state.objDiff  = state.obj - objPrev;
+	real_t objPrev = status.obj;
+	status.obj      = CalcObjective();
+	status.objDiff  = status.obj - objPrev;
 	if(param.verbose){
-		Message::Out("iter:%d, step:%f, obj:%f", state.iterCount, state.stepSize, state.obj);
-		DSTR << "iter:"  << state.iterCount
-			 << " step:" << state.stepSize
-			 << " obj:"  << state.obj
-			 << " tdir:" << state.timeDir
-			 << " tstep:" << state.timeStep << endl;
+		Message::Out("iter:%d, step:%f, obj:%f", status.iterCount, status.stepSize, status.obj);
+		DSTR << "iter:"   << status.iterCount
+			 << " step:"  << status.stepSize
+			 << " obj:"   << status.obj
+			 << " tdir:"  << status.timeDir
+			 << " tstep:" << status.timeStep << endl;
 	}
-	state.iterCount++;
+	status.iterCount++;
 }
 
 }
