@@ -318,7 +318,7 @@ void RangeConS::Project(real_t& l, uint k){
 }
 
 //-------------------------------------------------------------------------------------------------
-
+/*
 RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, _scale){
 	AddSLink(var, 1.0);
 	real_t inf = numeric_limits<real_t>::max();
@@ -388,7 +388,7 @@ void RangeConV3::Project(real_t& l, uint k){
 	if(!on_upper[k] && !on_lower[k])
 		l = 0.0;
 }
-
+*/
 //-------------------------------------------------------------------------------------------------
 
 DiffConS::DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
