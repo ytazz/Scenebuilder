@@ -8,7 +8,7 @@
 namespace Scenebuilder{;
 
 /** Solver
-    - 最適化問題と拘束解決問題のソルバ
+    - solver for optimization (constraint error minimization) and optimal control problems
  **/
 
 typedef vector< Variable* >				Variables;
@@ -23,8 +23,9 @@ public:
 		struct Major{
 			enum{
 				SteepestDescent,
-				GaussNewton,   ///< ガウスニュートン　拘束二乗誤差最小化
+				GaussNewton,   ///< Gauss Newton method
 				Prioritized,
+				DDP,           ///< Differential Dynamic Programming
 			};
 		};
 		struct Minor{
@@ -47,7 +48,7 @@ public:
 		int            methodMajor;
 		int            methodMinor;
 		int            methodLapack;
-		vector<int>    numIter;          ///< マイナループの反復回数
+		vector<int>    numIter;          ///< number of minor iterations
 		real_t         minStepSize;
 		real_t         maxStepSize;
 		real_t         cutoffStepSize;
@@ -56,15 +57,15 @@ public:
 		Param();
 	};
 
-	struct State{
-		real_t  obj;        ///< 評価値
-		real_t  objDiff;    ///< 評価値の変化量
-		real_t  stepSize;   ///< ステップ幅
-		int     iterCount;  ///< 累計反復回数
+	struct Status{
+		real_t  obj;        ///< value of objective function
+		real_t  objDiff;    ///< change of value of objective function
+		real_t  stepSize;   ///< step size
+		int     iterCount;  ///< cumulative iteration count
 		int     timeDir;
 		int     timeStep;
 
-		State();
+		Status();
 	};
 
 	struct VariableInfo{
@@ -105,8 +106,52 @@ public:
 		real_t weight;
 	};
 
+	struct SubState : UTRefCount{
+		int        index;
+		Variable*  var;
+	};
+	struct SubInput : UTRefCount{
+		int        index;
+		Variable*  var;
+	};
+	struct SubTransition : UTRefCount{
+		Constraint*  con;
+		SubState*    x1;
+		SubState*    x0;
+		SubInput*    u;
+	};
+	struct SubStateCost : UTRefCount{
+		Constraint*  con;
+		SubState*    x;
+	};
+	struct SubInputCost : UTRefCount{
+		Constraint*  con;
+		SubInput*    u;
+	};
+	struct State : UTRefCount{
+		int        dim;
+		vector< UTRef<SubState> > substate;
+
+		SubState*  Find(Variable* var);
+	};
+	struct Input : UTRefCount{
+		int        dim;
+		vector< UTRef<SubInput> > subinput;
+
+		SubInput*  Find(Variable* var);
+	};
+	struct Transition : UTRefCount{
+		vector< UTRef<SubTransition> > subtran;
+	};
+	struct StateCost : UTRefCount{
+		vector< UTRef<SubStateCost> >  subcost;
+	};
+	struct InputCost : UTRefCount{
+		vector< UTRef<SubInputCost> >  subcost;
+	};
+
 	Param            param;
-	State            state;
+	Status           status;
 	vector<Request>  requests;
 	
 	VariableRefs         vars;			///< array of all variables
@@ -117,11 +162,15 @@ public:
 	
 	LinkRefs        links;			///< array of links
 
-	vmat_t          A, AtrA;
-	vvec_t          b, b2;
-	vvec_t          Atrb;
-	vvec_t          dx;
-	vector<int>     pivot;
+	int         dimvar         ;
+	int         dimvar_weighted;
+	int         dimcon         ;
+	vmat_t      A, AtrA;
+	vvec_t      b, b2;
+	vvec_t      Atrb;
+	vvec_t      yvec;
+	vvec_t      dxvec;
+	vector<int> pivot;
 
 	vector<VariableInfo>    varInfoType;
 	vector<ConstraintInfo>  conInfoType;		///< sum for each constraint category
@@ -129,24 +178,61 @@ public:
 
 	bool  ready;
 
+	vector< UTRef<State> >        state;
+	vector< UTRef<Input> >        input;
+	vector< UTRef<Transition> >   transition;
+	vector< UTRef<StateCost> >    stateCost;
+	vector< UTRef<InputCost> >    inputCost;
+
+	int               N;
+	vector<vvec_t>    dx;
+	vector<vvec_t>    du;
+	vector<vmat_t>    fx;
+	vector<vmat_t>    fu;
+	vector<real_t>    L;
+	vector<vvec_t>    Lx;
+	vector<vmat_t>    Lxx;
+	vector<vvec_t>    Lu;
+	vector<vmat_t>    Luu;
+	vector<real_t>    Q;
+	vector<vvec_t>    Qx;
+	vector<vvec_t>    Qu;
+	vector<vmat_t>    Qxx;
+	vector<vmat_t>    Quu;
+	vector<vmat_t>    Qux;
+	vector<vmat_t>    Quu_inv;
+	vector<vvec_t>    Quu_inv_Qu;
+	vector<real_t>    V;
+	vector<vvec_t>    Vx;
+	vector<vmat_t>    Vxx;
+
 public:
-	/// 内部関数
+	/// internal functions
 	void    Prepare             ();
 	real_t  CalcUpdatedObjective(real_t alpha);
+	void    CalcEquation        ();
+	void    InitDDP             ();
+	void    PrepareDDP          ();
+	void    CalcDirectionDDP    ();
 	
 	void AddVar   (Variable* var);      ///< add variable
 	void DeleteVar(Variable* var);	    ///< delete variable
 	void AddCon   (Constraint* con);    ///< add constraint
 	void DeleteCon(Constraint* con);    ///< delte variable
 
+	void AddStateVar     (Variable* var, int k);
+	void AddInputVar     (Variable* var, int k);
+	void AddTransitionCon(Constraint* con, int k, Variable* var_x1, Variable* var_x0, Variable* var_u);
+	void AddStateCostCon (Constraint* con, int k, Variable* var_x);
+	void AddInputCostCon (Constraint* con, int k, Variable* var_u);
 
 public:
-	/// 実装すべき仮想関数
+	/// virtual function that are to be overridden by derived classes
 
-	/// 評価関数の値を計算する
+	/// evaluate objective function
 	virtual real_t  CalcObjective();
 
-	/// 変数に対する評価関数の微係数を計算する（最急降下法の場合）
+	/// calculate update direction
 	virtual void    CalcDirection();
 
 	/// calculate step size
@@ -175,19 +261,30 @@ public:
 	 */
 	void SetCorrection(ID mask, real_t rate, real_t lim = FLT_MAX);
 
+	/** @brief	set constraint weight
+	    @param  mask    constraint id mask
+		@param  weight  constraint weight
+
+		Solver minimizes the weighted sum of constraint errors and variable changes.
+		This function sets the weight of constraints specified by mask.
+	 */
 	void SetConstraintWeight(ID mask, real_t weight);
 	
+	/** @brief	set variable weight
+	    @param  mask    variable id mask
+		@param  weight  variable weight
+
+		Solver minimizes the weighted sum of constraint errors and variable changes.
+		This function sets the weight of variables specified by mask.
+     */
 	void SetVariableWeight  (ID mask, real_t weight);
 	
 	/** @brief calculate constraint error
 		@param mask			constraint id mask
 		@param sum_or_max	if true, sum of constraint errors is returned. otherwise the maximum is returned.
-		@param abs_or_rel	if true, absolute error is calculated. otherwise relative error is calculated.
-
-		idに合致する拘束について，abs_or_relにしたがって絶対誤差あるいは相対誤差を計算し，
-		sum_or_maxにしたがってそれらの総和あるいは最大値を返す．
-
-		ただし絶対誤差とは誤差ベクトルのノルム，相対誤差とは誤差ベクトルのノルムを，拘束される変数のノルムの和で割ったもの．
+		
+		for constraints with IDs that matches mask, sum of max of constraint error
+		is calculated depending on sum_or_max.
 	 */
 	real_t CalcError(ID mask, bool sum_or_max);
 
