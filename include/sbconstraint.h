@@ -161,6 +161,9 @@ struct RangeConS : Constraint{
 
 	RangeConS(Solver* solver, ID id, SVar* var, real_t _scale);
 };
+
+// 2d/3d range constraint deprecated: activeness cannot be shared by multiple axes
+/*
 class RangeConV2 : public Constraint{
 public:
 	vec2_t	_min, _max;
@@ -181,7 +184,7 @@ public:
 
 	RangeConV3(Solver* solver, ID id, V3Var* var, real_t _scale);
 };
-
+*/
 /**	range constraint for difference of scalar variables
     _min <= var1 - var0 <= _max
  */
