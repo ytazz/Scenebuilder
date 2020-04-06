@@ -65,7 +65,7 @@ void Solver::AddInputVar(Variable* var, int k){
 	input[k]->subinput.push_back(subin);
 }
 
-void Solver::AddTransitionCon(Constraint* con, int k, Variable* var_x1, Variable* var_x0, Variable* var_u){
+void Solver::AddTransitionCon(Constraint* con, int k){
 	if(transition.size() <= k)
 		transition.resize(k+1);
 
@@ -77,13 +77,14 @@ void Solver::AddTransitionCon(Constraint* con, int k, Variable* var_x1, Variable
 	Input* in_u  = input[k+0];
 
 	SubTransition* subtr = new SubTransition();
-	subtr->x0 = st_x0->Find(var_x0);
-	subtr->x1 = st_x1->Find(var_x1);
-	subtr->u  = in_u ->Find(var_u );
+	subtr->con = con;
+	//subtr->x0 = st_x0->Find(var_x0);
+	//subtr->x1 = st_x1->Find(var_x1);
+	//subtr->u  = in_u ->Find(var_u );
 	transition[k]->subtran.push_back(subtr);
 }
 
-void Solver::AddStateCostCon (Constraint* con, int k, Variable* var_x){
+void Solver::AddStateCostCon (Constraint* con, int k){
 	if(stateCost.size() <= k)
 		stateCost.resize(k+1);
 
@@ -96,7 +97,7 @@ void Solver::AddStateCostCon (Constraint* con, int k, Variable* var_x){
 	stateCost[k]->subcost.push_back(subcost);
 }
 
-void Solver::AddInputCostCon (Constraint* con, int k, Variable* var_u){
+void Solver::AddInputCostCon (Constraint* con, int k){
 	if(inputCost.size() <= k)
 		inputCost.resize(k+1);
 
@@ -158,37 +159,44 @@ void Solver::PrepareDDP(){
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
 		for(SubTransition* subtr : tr->subtran){
-			int i0    = subtr    ->con->index;
-			int j0_x0 = subtr->x0->var->index;
-			int j0_u  = subtr->u ->var->index; 
-			int n     = subtr    ->con->nelem;
-			int m_x0  = subtr->x0->var->nelem;
-			int m_u   = subtr->u ->var->nelem;
-
 			// evaluate f
-			subtr->con->CalcRhs(subtr->x1->var);
+			subtr->con->CalcLhs();
+
+			int i0 = subtr->con->index;
+			int n  = subtr->con->nelem;			
 
 			// set fx
-			for(int i = 0; i < n; i++)for(int j = 0; j < m_x0; j++)
-				fx[k][subtr->x1->index+i][subtr->x0->index+j] = -A[i0+i][j0_x0+j];
+			for(SubState* x0 : subtr->x0){
+				int j0 = x0->var->index;
+				int m  = x0->var->nelem;
+				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					fx[k][subtr->x1->index+i][x0->index+j] = -A[i0+i][j0+j];
+			}
 
 			// set fu
-			for(int i = 0; i < n; i++)for(int j = 0; j < m_u; j++)
-				fu[k][subtr->x1->index+i][subtr->u->index+j] = -A[i0+i][j0_u+j];
+			for(SubInput* u : subtr->u){
+				int j0 = u->var->index; 
+				int m  = u->var->nelem;
+				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					fu[k][subtr->x1->index+i][u->index+j] = -A[i0+i][j0+j];
+			}
+
 		}
 	}
 
 	for(int k = 0; k <= N; k++){
-		L[k] = 0.0;
+		L  [k] = 0.0;
+		Lx [k].clear();
+		Lxx[k].clear();
+		Lu [k].clear();
+		Luu[k].clear();
 	}
 	
 	// calculate state cost
 	for(int k = 0; k <= N; k++){
 		for(SubStateCost* subcost : stateCost[k]->subcost){
-			int i0 = subcost   ->con->index;
-			int j0 = subcost->x->var->index;
-			int n  = subcost   ->con->nelem;
-			int m  = subcost->x->var->nelem;
+			int i0 = subcost->con->index;
+			int n  = subcost->con->nelem;
 
 			// sum up L
 			for(int i = 0; i < n; i++){
@@ -196,18 +204,32 @@ void Solver::PrepareDDP(){
 			}
 
 			// calc Lx
-			for(int j = 0; j < m; j++){
-				Lx[k][subcost->x->index+j] = 0.0;
-				for(int i = 0; i < n; i++){
-					Lx[k][subcost->x->index+j] += A[i0+i][j0+j]*yvec[i0*i];
+			for(SubState* x : subcost->x){
+				int j0 = x->var->index;
+				int m  = x->var->nelem;
+
+				// Lx = A^T y
+				for(int j = 0; j < m; j++){
+					Lx[k][x->index+j] = 0.0;
+					for(int i = 0; i < n; i++){
+						Lx[k][x->index+j] += A[i0+i][j0+j]*yvec[i0*i];
+					}
 				}
 			}
 
 			// calc Lxx
-			for(int j1 = 0; j1 < m; j1++)for(int j2 = 0; j2 < m; j2++){
-				Lxx[k][subcost->x->index+j1][subcost->x->index+j2] = 0.0;
-				for(int i = 0; i < n; i++){
-					Lxx[k][subcost->x->index+j1][subcost->x->index+j2] += A[i0+i][j0+j1]*A[i0+i][j0+j2];
+			for(SubState* x0 : subcost->x)for(SubState* x1 : subcost->x){
+				int j00 = x0->var->index;
+				int j01 = x1->var->index;
+				int m0  = x0->var->nelem;
+				int m1  = x1->var->nelem;
+
+				// Lxx = A^T A
+				for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
+					Lxx[k][x0->index+j0][x1->index+j1] = 0.0;
+					for(int i = 0; i < n; i++){
+						Lxx[k][x0->index+j0][x1->index+j1] += A[i0+i][j00+j0]*A[i0+i][j01+j1];
+					}
 				}
 			}
 		}
@@ -216,29 +238,40 @@ void Solver::PrepareDDP(){
 	// calculate input cost
 	for(int k = 0; k < N; k++){
 		for(SubInputCost* subcost : inputCost[k]->subcost){
-			int i0 = subcost   ->con->index;
-			int j0 = subcost->u->var->index;
-			int n  = subcost   ->con->nelem;
-			int m  = subcost->u->var->nelem;
-
+			int i0 = subcost->con->index;
+			int n  = subcost->con->nelem;
+			
 			// sum up L
 			for(int i = 0; i < n; i++){
 				L[k] += 0.5 * square(yvec[i0+i]);
 			}
 
 			// calc Lu
-			for(int j = 0; j < m; j++){
-				Lu[k][subcost->u->index+j] = 0.0;
-				for(int i = 0; i < n; i++){
-					Lu[k][subcost->u->index+j] += A[i0+i][j0+j]*yvec[i0*i];
+			for(SubInput* u : subcost->u){
+				int j0 = u->var->index;
+				int m  = u->var->nelem;
+
+				for(int j = 0; j < m; j++){
+					Lu[k][u->index+j] = 0.0;
+					for(int i = 0; i < n; i++){
+						Lu[k][u->index+j] += A[i0+i][j0+j]*yvec[i0*i];
+					}
 				}
 			}
 
 			// calc Luu
-			for(int j1 = 0; j1 < m; j1++)for(int j2 = 0; j2 < m; j2++){
-				Luu[k][subcost->u->index+j1][subcost->u->index+j2] = 0.0;
-				for(int i = 0; i < n; i++){
-					Luu[k][subcost->u->index+j1][subcost->u->index+j2] += A[i0+i][j0+j1]*A[i0+i][j0+j2];
+			for(SubInput* u0 : subcost->u)for(SubInput* u1 : subcost->u){
+				int j00 = u0->var->index;
+				int j01 = u1->var->index;
+				int m0  = u0->var->nelem;
+				int m1  = u1->var->nelem;
+
+				// Lxx = A^T A
+				for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
+					Luu[k][u0->index+j0][u1->index+j1] = 0.0;
+					for(int i = 0; i < n; i++){
+						Luu[k][u0->index+j0][u1->index+j1] += A[i0+i][j00+j0]*A[i0+i][j01+j1];
+					}
 				}
 			}
 		}

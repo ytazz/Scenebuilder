@@ -594,7 +594,7 @@ void Solver::CalcDirection(){
 			//DSTR << "level " << L << ": " << ptimer.CountUS() << endl;
 		}
 	}
-	if(param.methodMajor == Method::Major::Prioritized){
+	if(param.methodMajor == Method::Major::DDP){
 		CalcDirectionDDP();
 	}
 }

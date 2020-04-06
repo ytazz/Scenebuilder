@@ -30,14 +30,15 @@ public:
 		};
 		struct Minor{
 			enum{
-				Direct,
-				Jacobi,
-				GaussSeidel,
+				Direct,        ///< direct method
+				Jacobi,        ///< Jacobi iterative method
+				GaussSeidel,   ///< Gauss-Seidel iterative method
 			};
 		};
+		/// routine for solving linear equation (when Minor = Direct)
 		struct Lapack{
 			enum{
-				DGELS,
+				DGELS,   
 				DPOSV,
 			};
 		};
@@ -115,18 +116,18 @@ public:
 		Variable*  var;
 	};
 	struct SubTransition : UTRefCount{
-		Constraint*  con;
-		SubState*    x1;
-		SubState*    x0;
-		SubInput*    u;
+		Constraint*         con;
+		SubState*           x1;
+		vector<SubState*>   x0;
+		vector<SubInput*>   u;
 	};
 	struct SubStateCost : UTRefCount{
 		Constraint*  con;
-		SubState*    x;
+		vector<SubState*>   x;
 	};
 	struct SubInputCost : UTRefCount{
 		Constraint*  con;
-		SubInput*    u;
+		vector<SubInput*>   u;
 	};
 	struct State : UTRefCount{
 		int        dim;
@@ -220,11 +221,12 @@ public:
 	void AddCon   (Constraint* con);    ///< add constraint
 	void DeleteCon(Constraint* con);    ///< delte variable
 
-	void AddStateVar     (Variable* var, int k);
-	void AddInputVar     (Variable* var, int k);
-	void AddTransitionCon(Constraint* con, int k, Variable* var_x1, Variable* var_x0, Variable* var_u);
-	void AddStateCostCon (Constraint* con, int k, Variable* var_x);
-	void AddInputCostCon (Constraint* con, int k, Variable* var_u);
+	/// methods for DDP
+	void AddStateVar     (Variable* var, int k);   ///< register var as a sub-state at k
+	void AddInputVar     (Variable* var, int k);   ///< register var as a sub-input at k
+	void AddTransitionCon(Constraint* con, int k);  ///< register con as a transition
+	void AddStateCostCon (Constraint* con, int k);  ///< register con as a state cost at k
+	void AddInputCostCon (Constraint* con, int k);  ///< register con as an input cost at k
 
 public:
 	/// virtual function that are to be overridden by derived classes

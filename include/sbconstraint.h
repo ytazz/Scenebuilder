@@ -98,7 +98,7 @@ public:
 	/// virtual functions to be overridden by derived classes ///
 	virtual void CalcCoef     (){}
 	virtual void CalcDeviation();
-	virtual void CalcRhs      (Variable* var){}
+	virtual void CalcLhs      (){}
 
 public:
 	/// G-S related virtual functions
