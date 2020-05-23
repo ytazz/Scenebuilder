@@ -803,7 +803,7 @@ struct IKJointProp : SceneObjectProp{
 	static void Register(TypeDB* db){
 		id = db->AddType(GetName(), sizeof(IKJointProp), &Construct, SceneObjectProp::id);
 		db->GetType(id)
-			->AddAttr("path", Primitive::Path, 1, 0);
+			->AddAttr("path"  , Primitive::Path, 1, 0);
 	}
 };
 

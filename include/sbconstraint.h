@@ -83,6 +83,7 @@ public:
 	void CalcError();
 	void CalcCorrection();
 	void RegisterCorrection(vvec_t& dydvec);
+	void RegisterDeviation (vvec_t& yvec);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);

@@ -121,12 +121,9 @@ public:
 		vector<SubState*>   x0;
 		vector<SubInput*>   u;
 	};
-	struct SubStateCost : UTRefCount{
+	struct SubCost : UTRefCount{
 		Constraint*  con;
 		vector<SubState*>   x;
-	};
-	struct SubInputCost : UTRefCount{
-		Constraint*  con;
 		vector<SubInput*>   u;
 	};
 	struct State : UTRefCount{
@@ -144,13 +141,10 @@ public:
 	struct Transition : UTRefCount{
 		vector< UTRef<SubTransition> > subtran;
 	};
-	struct StateCost : UTRefCount{
-		vector< UTRef<SubStateCost> >  subcost;
+	struct Cost : UTRefCount{
+		vector< UTRef<SubCost> >  subcost;
 	};
-	struct InputCost : UTRefCount{
-		vector< UTRef<SubInputCost> >  subcost;
-	};
-
+	
 	Param            param;
 	Status           status;
 	vector<Request>  requests;
@@ -182,9 +176,8 @@ public:
 	vector< UTRef<State> >        state;
 	vector< UTRef<Input> >        input;
 	vector< UTRef<Transition> >   transition;
-	vector< UTRef<StateCost> >    stateCost;
-	vector< UTRef<InputCost> >    inputCost;
-
+	vector< UTRef<Cost> >         cost;
+	
 	int               N;
 	vector<vvec_t>    dx;
 	vector<vvec_t>    du;
@@ -195,14 +188,15 @@ public:
 	vector<vmat_t>    Lxx;
 	vector<vvec_t>    Lu;
 	vector<vmat_t>    Luu;
+	vector<vmat_t>    Lux;
 	vector<real_t>    Q;
 	vector<vvec_t>    Qx;
 	vector<vvec_t>    Qu;
 	vector<vmat_t>    Qxx;
 	vector<vmat_t>    Quu;
 	vector<vmat_t>    Qux;
-	vector<vmat_t>    Quu_inv;
-	vector<vvec_t>    Quu_inv_Qu;
+	vector<vmat_t>    Quuinv;
+	vector<vvec_t>    Quuinv_Qu;
 	vector<real_t>    V;
 	vector<vvec_t>    Vx;
 	vector<vmat_t>    Vxx;
@@ -224,9 +218,8 @@ public:
 	/// methods for DDP
 	void AddStateVar     (Variable* var, int k);   ///< register var as a sub-state at k
 	void AddInputVar     (Variable* var, int k);   ///< register var as a sub-input at k
-	void AddTransitionCon(Constraint* con, int k);  ///< register con as a transition
-	void AddStateCostCon (Constraint* con, int k);  ///< register con as a state cost at k
-	void AddInputCostCon (Constraint* con, int k);  ///< register con as an input cost at k
+	void AddTransitionCon(Constraint* con, int k);  ///< register con as a transition at k
+	void AddCostCon      (Constraint* con, int k);  ///< register con as a cost at k
 
 public:
 	/// virtual function that are to be overridden by derived classes

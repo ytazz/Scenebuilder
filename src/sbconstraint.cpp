@@ -105,6 +105,11 @@ void Constraint::RegisterCorrection(vvec_t& dydvec){
 		dydvec[index+n] = weight * dyd[n];
 }
 
+void Constraint::RegisterDeviation(vvec_t& yvec){
+	for(int n = 0; n < nelem; n++)
+		yvec[index+n] = weight * y[n];
+}
+
 void Constraint::ResetState(){
 	dy.clear();
 	l .clear();

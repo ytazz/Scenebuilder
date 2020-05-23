@@ -240,6 +240,9 @@ void Solver::Init(){
 	//		file[i].close();
 	//}
 
+	if(param.methodMajor == Method::Major::DDP)
+		InitDDP();
+
 	ready = true;
 }
 
@@ -432,10 +435,12 @@ void Solver::CalcEquation(){
 		return;
 			
 	timer2.CountUS();
-	A.resize(dimcon + dimvar_weighted, dimvar);
-	b.resize(dimcon + dimvar_weighted);
-	A.clear();
-	b.clear();
+	A   .resize(dimcon + dimvar_weighted, dimvar);
+	b   .resize(dimcon + dimvar_weighted);
+	yvec.resize(dimcon);
+	A   .clear();
+	b   .clear();
+	yvec.clear();
 	pivot.resize(dimcon);
 
 	for(auto& con : cons_active){
@@ -443,6 +448,7 @@ void Solver::CalcEquation(){
 			link->RegisterCoef(A, con->weight);
 		}
 		con->RegisterCorrection(b);
+		con->RegisterDeviation (yvec);
 	}
 	for(auto& var : vars_unlocked){
 		if(var->weight != 0.0){
@@ -478,6 +484,9 @@ void Solver::CalcDirection(){
 			for(int i = 0; i < dimcon + dimvar_weighted; i++)
 				b2[i] = b[i];
 			
+			bool   tryDposv = false;
+			real_t dposvEps = 0.0;
+
 			if(param.methodLapack == Method::Lapack::DGELS){
 				// dgels
 				//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << " dimvar_weighted: " << dimvar_weighted << endl;
@@ -487,6 +496,9 @@ void Solver::CalcDirection(){
 				}
 				if(info > 0){
 					Message::Error("dgels: matrix not full-rank");
+					// try dposv with damping term
+					tryDposv = true;
+					dposvEps = 1.0e-5;
 				}
 				// dgelsd
 				//vector<real_t> S;
@@ -508,9 +520,12 @@ void Solver::CalcDirection(){
 				//pivot.resize(dimcon);
 				//LAPACKE_dgesv(LAPACK_COL_MAJOR, dimcon, 1, &JtrJ[0][0], dimcon, &pivot[0], &y2[0], dimcon);
 			}
-			if(param.methodLapack == Method::Lapack::DPOSV){
+			if(param.methodLapack == Method::Lapack::DPOSV || tryDposv){
 				// dposv
 				AtrA = A.trans()*A;
+				for(int i = 0; i < AtrA.width(); i++)
+					AtrA[i][i] += dposvEps;
+
 				b2 = A.trans()*b;
 				LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &AtrA[0][0], dimcon, &b2[0], dimcon);
 			}
