@@ -277,6 +277,10 @@ real_t Solver::CalcObjective(){
 		obj += con->y.square();
 	}
 
+	// ddp has its own way to calculate cost
+	if(param.methodMajor == Method::Major::DDP)
+		return CalcObjectiveDDP();
+
 	obj *= 0.5;
 
 	return obj;
@@ -610,6 +614,9 @@ void Solver::CalcDirection(){
 		}
 	}
 	if(param.methodMajor == Method::Major::DDP){
+		for(auto& con : cons_active)
+			con->CalcCorrection();
+
 		CalcDirectionDDP();
 	}
 }

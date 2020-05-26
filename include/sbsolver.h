@@ -183,6 +183,7 @@ public:
 	vector<vvec_t>    du;
 	vector<vmat_t>    fx;
 	vector<vmat_t>    fu;
+	vector<vvec_t>    f_cor;
 	vector<real_t>    L;
 	vector<vvec_t>    Lx;
 	vector<vmat_t>    Lxx;
@@ -209,6 +210,8 @@ public:
 	void    InitDDP             ();
 	void    PrepareDDP          ();
 	void    CalcDirectionDDP    ();
+	real_t  CalcObjectiveDDP    ();
+	void    ForwardDynamics     ();
 	
 	void AddVar   (Variable* var);      ///< add variable
 	void DeleteVar(Variable* var);	    ///< delete variable
