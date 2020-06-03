@@ -262,6 +262,24 @@ public:
 };
 
 /**
+	C0 continuity constraint
+ */
+class C0ConS : public Constraint{
+public:
+	real_t h;
+
+	virtual void CalcCoef();
+	C0ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, real_t _scale);
+};
+class C0ConV3 : public Constraint{
+public:
+	real_t h;
+
+	virtual void CalcCoef();
+	C0ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, real_t _scale);
+};
+
+/**
 	C1 continuity constraint
  */
 class C1ConS : public Constraint{
@@ -269,14 +287,14 @@ public:
 	real_t h;
 
 	virtual void CalcCoef();
-	C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, SVar* v1, real_t _scale);
+	C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* a0, SVar* p1, real_t _scale);
 };
 class C1ConV3 : public Constraint{
 public:
 	real_t h;
 
 	virtual void CalcCoef();
-	C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, V3Var* v1, real_t _scale);
+	C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* a0, V3Var* p1, real_t _scale);
 };
 
 }

@@ -230,6 +230,10 @@ void Solver::PrepareDDP(){
 		fu[k].clear();
 
 		for(SubTransition* subtr : tr->subtran){
+			if(!subtr->con->enabled)
+				continue;
+			if(!subtr->con->active)
+				continue;
 			// evaluate f
 			//subtr->con->CalcLhs();
 
@@ -238,6 +242,9 @@ void Solver::PrepareDDP(){
 
 			// set fx
 			for(SubState* x0 : subtr->x0){
+				if(x0->var->locked)
+					continue;
+
 				int j0 = x0->var->index;
 				int m  = x0->var->nelem;
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
@@ -246,6 +253,9 @@ void Solver::PrepareDDP(){
 
 			// set fu
 			for(SubInput* u : subtr->u){
+				if(u->var->locked)
+					continue;
+
 				int j0 = u->var->index; 
 				int m  = u->var->nelem;
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
@@ -424,8 +434,8 @@ void Solver::CalcDirectionDDP(){
 		//DSTR << test << endl;
 	}
 
-	bool fix_x0 = false;
-	if(fix_x0){
+	// if the dimension of x0 is not zero, dx0 is also optimized
+	if(state[0]->dim == 0){
  		dx[0].clear();
 	}
 	else{
@@ -442,6 +452,9 @@ void Solver::CalcDirectionDDP(){
 
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){
+			if(subst->var->locked)
+				continue;
+
 			int j0 = subst->index;
 			for(int j = 0; j < subst->var->nelem; j++){
 				subst->var->dx[j] = dx[k][j0+j];
@@ -450,6 +463,9 @@ void Solver::CalcDirectionDDP(){
 	}
 	for(int k = 0; k < N; k++){
 		for(SubInput* subin : input[k]->subinput){
+			if(subin->var->locked)
+				continue;
+
 			int j0 = subin->index;
 			for(int j = 0; j < subin->var->nelem; j++){
 				subin->var->dx[j] = du[k][j0+j];

@@ -302,8 +302,8 @@ RangeConS::RangeConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint
 
 void RangeConS::CalcDeviation(){
 	real_t s = ((SVar*)links[0]->var)->val;
-	on_lower = (s < _min);
-	on_upper = (s > _max);
+	on_lower = (s <= _min);
+	on_upper = (s >= _max);
 	active = on_lower | on_upper;
 	if(on_lower)
 		y[0] = s - _min;
@@ -461,8 +461,8 @@ void RangeConPlane::CalcCoef(){
 
 void RangeConPlane::CalcDeviation(){
 	real_t s = normal * ( ((V3Var*)links[0]->var)->val - origin);
-	on_lower = (s < _min);
-	on_upper = (s > _max);
+	on_lower = (s <= _min);
+	on_upper = (s >= _max);
 	active = on_lower | on_upper;
 	if(on_lower)
 		y[0] = s - _min;
@@ -537,33 +537,62 @@ void DistanceConV3::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-C1ConS::C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, SVar* v1, real_t _scale):Constraint(solver, 1, id, _scale){
+C0ConS::C0ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, real_t _scale):Constraint(solver, 1, id, _scale){
+	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);
-	AddSLink(p1);
-	AddSLink(v1);
 }
-void C1ConS::CalcCoef(){
-	((SLink*)links[0])->SetCoef(-1.0);
-	((SLink*)links[1])->SetCoef(-0.5 * h);
-	((SLink*)links[2])->SetCoef( 1.0);
-	((SLink*)links[3])->SetCoef(-0.5 * h);
+void C0ConS::CalcCoef(){
+	uint i = 0;
+	((SLink*)links[i++])->SetCoef( 1.0);
+	((SLink*)links[i++])->SetCoef(-1.0);
+	((SLink*)links[i++])->SetCoef(-h  );
 }
 
 //-------------------------------------------------------------------------------------------------
 
-C1ConV3::C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, V3Var* v1, real_t _scale):Constraint(solver, 3, id, _scale){
+C0ConV3::C0ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, _scale){
+	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);
+}
+void C0ConV3::CalcCoef(){
+	uint i = 0;
+	((SLink*)links[i++])->SetCoef( 1.0);
+	((SLink*)links[i++])->SetCoef(-1.0);
+	((SLink*)links[i++])->SetCoef(-h  );
+}
+
+//-------------------------------------------------------------------------------------------------
+
+C1ConS::C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* a0, SVar* p1, real_t _scale):Constraint(solver, 1, id, _scale){
 	AddSLink(p1);
-	AddSLink(v1);
+	AddSLink(p0);
+	AddSLink(v0);
+	AddSLink(a0);
+}
+void C1ConS::CalcCoef(){
+	uint i = 0;
+	((SLink*)links[i++])->SetCoef( 1.0    );
+	((SLink*)links[i++])->SetCoef(-1.0    );
+	((SLink*)links[i++])->SetCoef(-h      );
+	((SLink*)links[i++])->SetCoef(-0.5*h*h);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+C1ConV3::C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* a0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, _scale){
+	AddSLink(p1);
+	AddSLink(p0);
+	AddSLink(v0);
+	AddSLink(a0);
 }
 void C1ConV3::CalcCoef(){
 	uint i = 0;
-	((SLink*)links[i++])->SetCoef(-1.0);
-	((SLink*)links[i++])->SetCoef(-0.5*h);
-	((SLink*)links[i++])->SetCoef( 1.0);
-	((SLink*)links[i++])->SetCoef(-0.5*h);
+	((SLink*)links[i++])->SetCoef( 1.0    );
+	((SLink*)links[i++])->SetCoef(-1.0    );
+	((SLink*)links[i++])->SetCoef(-h      );
+	((SLink*)links[i++])->SetCoef(-0.5*h*h);
 }
 
 }
