@@ -298,6 +298,9 @@ void Solver::PrepareDDP(){
 
 			// calc Lx
 			for(SubState* x : subcost->x){
+				if(x->var->locked)
+					continue;
+
 				int j0 = x->var->index;
 				int m  = x->var->nelem;
 
@@ -311,6 +314,9 @@ void Solver::PrepareDDP(){
 
 			// calc Lxx
 			for(SubState* x0 : subcost->x)for(SubState* x1 : subcost->x){
+				if(x0->var->locked || x1->var->locked)
+					continue;
+
 				int j00 = x0->var->index;
 				int j01 = x1->var->index;
 				int m0  = x0->var->nelem;
@@ -327,6 +333,9 @@ void Solver::PrepareDDP(){
 			if(k < N){
 				// calc Lu
 				for(SubInput* u : subcost->u){
+					if(u->var->locked)
+						continue;
+
 					int j0 = u->var->index;
 					int m  = u->var->nelem;
 
@@ -339,6 +348,9 @@ void Solver::PrepareDDP(){
 
 				// calc Luu
 				for(SubInput* u0 : subcost->u)for(SubInput* u1 : subcost->u){
+					if(u0->var->locked || u1->var->locked)
+						continue;
+
 					int j00 = u0->var->index;
 					int j01 = u1->var->index;
 					int m0  = u0->var->nelem;
@@ -353,6 +365,9 @@ void Solver::PrepareDDP(){
 				}
 				// calc Lux
 				for(SubInput* u : subcost->u)for(SubState* x : subcost->x){
+					if(u->var->locked || x->var->locked)
+						continue;
+
 					int j00 = u->var->index;
 					int j01 = x->var->index;
 					int m0  = u->var->nelem;
@@ -398,23 +413,31 @@ void Solver::CalcDirectionDDP(){
 		for(int i = 0; i < n; i++)
 			Quu[k][i][i] += eps;
 
+		// input dimension could be zero
+		if(n > 0){
 #ifdef USE_MKL
-		Quuinv[k] = Quu[k];
-		LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
-		LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
-		for(int i = 1; i < n; i++) for(int j = 0; j < i; j++)
-			Quuinv[k][i][j] = Quuinv[k][j][i];
+			Quuinv[k] = Quu[k];
+			LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
+			LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
+			for(int i = 1; i < n; i++) for(int j = 0; j < i; j++)
+				Quuinv[k][i][j] = Quuinv[k][j][i];
 #else
-		Quuinv[k] = inv(Quu[k]);
+			Quuinv[k] = inv(Quu[k]);
 #endif
 
-		vmat_t test = Quuinv[k]*Quu[k];
+			vmat_t test = Quuinv[k]*Quu[k];
 
-		Quuinv_Qu[k] = Quuinv[k]*Qu[k];
+			Quuinv_Qu[k] = Quuinv[k]*Qu[k];
 
-		V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
-		Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
-		Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
+			V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
+			Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
+			Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
+		}
+		else{
+			V  [k] = Q  [k];
+			Vx [k] = Qx [k];
+			Vxx[k] = Qxx[k];
+		}
 		
 		// enforce symmetry of Vxx
 		int nx = Vxx[k].width();
