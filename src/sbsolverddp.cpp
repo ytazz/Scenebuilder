@@ -219,6 +219,38 @@ void Solver::InitDDP(){
 
 }
 
+void Solver::ClearDDP(){
+	state     .clear();
+	input     .clear();
+	transition.clear();
+	cost      .clear();
+	
+	N = 0;
+	dx       .clear();
+	du       .clear();
+	fx       .clear();
+	fu       .clear();
+	f_cor    .clear();
+	L        .clear();
+	Lx       .clear();
+	Lxx      .clear();
+	Lu       .clear();
+	Luu      .clear();
+	Lux      .clear();
+	Q        .clear();
+	Qx       .clear();
+	Qu       .clear();
+	Qxx      .clear();
+	Quu      .clear();
+	Qux      .clear();
+	Quuinv   .clear();
+	Quuinv_Qu.clear();
+	V        .clear();
+	Vx       .clear();
+	Vxx      .clear();
+
+}
+
 void Solver::PrepareDDP(){
 	// calculate A and b as whole equation
 	CalcEquation();

@@ -208,6 +208,7 @@ public:
 	real_t  CalcUpdatedObjective(real_t alpha);
 	void    CalcEquation        ();
 	void    InitDDP             ();
+	void    ClearDDP            ();
 	void    PrepareDDP          ();
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();

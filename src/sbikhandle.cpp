@@ -430,6 +430,30 @@ void IKJointHandle::Draw(GRRenderIf* render){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+void IKComHandleBase::AddBody(IKBody* _body){
+	vector<BodyInfo>::iterator it;
+	for(it = bodies.begin(); it != bodies.end(); it++){
+		if(it->body == _body)
+			break;
+	}
+	if(it == bodies.end()){
+		bodies.push_back(BodyInfo());
+		bodies.back().body = _body;
+	}
+	solver->ready = false;
+}
+
+void IKComHandleBase::DeleteBody(IKBody* _body){
+	for(vector<BodyInfo>::iterator it = bodies.begin(); it != bodies.end(); ){
+		if(it->body == _body)
+			 it = bodies.erase(it);
+		else it++;
+	}
+	solver->ready = false;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 IKComHandle::PosCon::PosCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
@@ -562,28 +586,6 @@ IKComHandle::IKComHandle(IKSolver* _solver, const string& _name){
 	totalMass = 0.0;
 }
 
-void IKComHandle::AddBody(IKBody* _body){
-	vector<BodyInfo>::iterator it;
-	for(it = bodies.begin(); it != bodies.end(); it++){
-		if(it->body == _body)
-			break;
-	}
-	if(it == bodies.end()){
-		bodies.push_back(BodyInfo());
-		bodies.back().body = _body;
-	}
-	solver->ready = false;
-}
-
-void IKComHandle::DeleteBody(IKBody* _body){
-	for(vector<BodyInfo>::iterator it = bodies.begin(); it != bodies.end(); ){
-		if(it->body == _body)
-			 it = bodies.erase(it);
-		else it++;
-	}
-	solver->ready = false;
-}
-
 void IKComHandle::GetCurrentPos(      vec3_t& _pos){ _pos      = pos;    }
 void IKComHandle::GetCurrentVel(      vec3_t& _vel){ _vel      = vel;    }
 void IKComHandle::GetCurrentAcc(      vec3_t& _acc){ _acc      = acc;    }
@@ -698,6 +700,112 @@ void IKComHandle::Draw(GRRenderIf* render){
 		p = desPos;
 		render->DrawPoint(p);
 	}
+}	
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+IKMomentumHandle::MomentumCon::MomentumCon(IKMomentumHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+	for(uint i = 0; i < handle->joints.size(); i++){
+		IKJoint* jnt = handle->joints[i].joint;
+		for(int n = 0; n < jnt->ndof; n++){
+			AddC3Link(jnt->qd_var[n]);
+		}
+	}
+	AddSLink (handle->root->vel_var   );
+	AddX3Link(handle->root->angvel_var);
+}
+
+void IKMomentumHandle::MomentumCon::CalcCoef(){
+	/*
+	uint idx = 0;
+	for(uint i = 0; i < handle->joints.size(); i++){
+		IKMomentumHandle::JointInfo& jntInfo = handle->joints[i];
+		IKJoint* jnt = jntInfo.joint;
+
+		for(int n = 0; n < jnt->ndof; n++){
+			vec3_t coef;
+
+			for(uint j = 0; j < jntInfo.bodies.size(); j++){
+				IKMomentumHandle::BodyInfo* bodyInfo = jntInfo.bodies[j];
+				IKBody* body  = bodyInfo->body;
+				real_t  mnorm = bodyInfo->massNorm;
+
+				coef += -1.0 * mnorm * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs));
+			}
+
+			((C3Link*)links[idx++])->SetCoef(coef);
+		}
+	}
+
+	((SLink* )links[idx++])->SetCoef(-1.0);
+	((X3Link*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
+	*/
+}
+
+void IKMomentumHandle::MomentumCon::CalcDeviation(){
+	y = handle->desMom - handle->mom;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+IKMomentumHandle::IKMomentumHandle(IKSolver* _solver, const string& _name){
+	name   = _name;
+	solver = _solver;
+}
+
+void IKMomentumHandle::GetCurrentMomentum(      vec3_t& _mom){ _mom   = mom;    }
+void IKMomentumHandle::SetDesiredMomentum(const vec3_t& _mom){ desMom = _mom;   }
+void IKMomentumHandle::GetDesiredMomentum(      vec3_t& _mom){ _mom   = desMom; }
+void IKMomentumHandle::Enable            (      bool on     ){ enable = on;     }
+
+void IKMomentumHandle::Init(){
+	for(uint i = 0; i < bodies.size(); i++){
+		IKBody* body = bodies[i].body;
+		if(!body->parBody){
+			root = body;
+		}
+		else{
+			for(IKBody* b = body; b->parBody != 0; b = b->parBody){
+				uint j;
+				for(j = 0; j < joints.size(); j++){
+					if(joints[j].joint == b->parJoint)
+						break;
+				}
+				if(j == joints.size()){
+					joints.push_back(JointInfo());
+					joints.back().joint = b->parJoint;
+				}
+				joints[j].bodies.push_back(&bodies[i]);
+			}
+		}
+	}
+
+}
+
+void IKMomentumHandle::AddVar(){
+
+}
+
+void IKMomentumHandle::AddCon(){
+	mom_con = new MomentumCon(this, name + "_pos");
+}
+
+void IKMomentumHandle::Prepare(){
+	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enable);
+}
+
+void IKMomentumHandle::Finish(){
+	
+}
+
+void IKMomentumHandle::Update(){
+	if(solver->mode == IKSolver::Mode::Vel){
+			
+	}
+}
+
+void IKMomentumHandle::Draw(GRRenderIf* render){
+
 }	
 
 }

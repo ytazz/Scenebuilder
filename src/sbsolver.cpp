@@ -162,6 +162,8 @@ void Solver::Clear(){
 	links   .clear();
 
 	status = Status();
+
+	ClearDDP();
 }
 
 void Solver::Reset(){

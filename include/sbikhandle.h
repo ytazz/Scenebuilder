@@ -217,7 +217,7 @@ public:
 	IKJointHandle(IKSolver* _solver, IKJoint* _joint, const string& _name);
 };
 
-class IKComHandle : public UTRefCount{
+class IKComHandleBase : public UTRefCount{
 public:
 	struct BodyInfo{
 		IKBody*  body;
@@ -228,6 +228,21 @@ public:
 		vector<BodyInfo*> bodies;
 	};
 
+	vector<BodyInfo>   bodies;
+	vector<JointInfo>  joints;
+	IKBody*            root;
+
+	string             name;
+	IKSolver*          solver;
+
+public:
+	void AddBody   (IKBody* _body);
+	void DeleteBody(IKBody* _body);
+
+};
+
+class IKComHandle : public IKComHandleBase{
+public:
 	class PosCon : public Constraint{
 	public:
 		IKComHandle* handle;
@@ -253,12 +268,6 @@ public:
 		AccCon(IKComHandle* h, const string& _name);
 	};
 
-	string             name;
-	IKSolver*          solver;
-	vector<BodyInfo>   bodies;
-	vector<JointInfo>  joints;
-	IKBody*            root;
-
 	PosCon*   pos_con;
 	VelCon*   vel_con;
 	AccCon*   acc_con;
@@ -282,9 +291,6 @@ public:
 	real_t    totalMass;
 	
 public:
-	void AddBody   (IKBody* _body);
-	void DeleteBody(IKBody* _body);
-
 	void SetDesiredPos(const vec3_t& pos);
 	void SetDesiredVel(const vec3_t& vel);
 	void SetDesiredAcc(const vec3_t& acc);
@@ -312,6 +318,44 @@ public:
 	void Draw(GRRenderIf* render);
 
 	IKComHandle(IKSolver* _solver, const string& _name);
+};
+
+class IKMomentumHandle : public IKComHandleBase{
+public:
+	class MomentumCon : public Constraint{
+	public:
+		IKMomentumHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		MomentumCon(IKMomentumHandle* h, const string& _name);
+	};
+	
+	MomentumCon*   mom_con;
+	
+	vec3_t    mom;
+	vec3_t    desMom;
+	
+	bool      enable;
+	
+public:
+	void SetDesiredMomentum(const vec3_t& _mom);
+	void GetDesiredMomentum(vec3_t& _mom);
+	
+	void GetCurrentMomentum(vec3_t& _mom);
+	
+	void Enable(bool on = true);
+	
+	void   Init   ();
+	void   AddVar ();
+	void   AddCon ();
+	void   Prepare();
+	void   Finish ();
+	void   Update ();
+	
+	void Draw(GRRenderIf* render);
+
+	IKMomentumHandle(IKSolver* _solver, const string& _name);
 };
 
 }
