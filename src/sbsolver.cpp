@@ -487,6 +487,7 @@ void Solver::CalcDirection(){
 #if defined USE_MKL
 			int nb = std::max(dimcon + dimvar_weighted, dimvar);
 			b2.resize(nb);
+			b2.clear ();
 			for(int i = 0; i < dimcon + dimvar_weighted; i++)
 				b2[i] = b[i];
 			
@@ -499,6 +500,11 @@ void Solver::CalcDirection(){
 				int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
 				if(info < 0){
 					Message::Error("dgels: %d-th argument illegal", -info);
+					Message::Error(" 6-th argument: %lx", &A[0][0]             );
+					Message::Error(" 7-th argument: %d", dimcon+dimvar_weighted);
+					Message::Error(" 8-th argument: %lx", &b2[0]               );
+					Message::Error(" 9-th argument: %d" , nb                   );
+					DSTR << b2 << endl;
 				}
 				if(info > 0){
 					Message::Error("dgels: matrix not full-rank");
