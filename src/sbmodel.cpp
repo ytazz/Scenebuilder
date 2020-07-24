@@ -1,5 +1,6 @@
 ﻿#include <sbmodel.h>
 #include <sbmodelstl.h>
+#include <sbmodelpcd.h>
 #include <sbmodel3ds.h>
 #include <sbmodelobj.h>
 #include <sbmodelpmx.h>
@@ -158,6 +159,8 @@ bool ModelContainer::LoadModel(int id, const string& filename, MeshProp* meshPro
 	
 	if(ext == "stl")
 		loader = new LoaderSTL(meshProp->stl_color, meshProp->stl_binary);
+	else if(ext == "pcd")
+		loader = new LoaderPCD();
 	else if(ext == "3ds")
 		loader = new Loader3DS();
 	else if(ext == "obj")

@@ -125,12 +125,13 @@ AdaptorSprGR::AttachAux::~AttachAux(){
 }
 
 AdaptorSprGR::DrawOption::DrawOption(){
-	useVao    = false;
-	drawSolid = true;
-	drawWire  = false;
-	drawAxis  = false;
-	drawCoM   = false;
-	drawBBox  = false;
+	useVao     = false;
+	drawSolid  = true;
+	drawWire   = false;
+	drawPoints = false;
+	drawAxis   = false;
+	drawCoM    = false;
+	drawBBox   = false;
 	//axisLength = 1.0f;
 	Converter::ColorFromName(string("red"  ), axisColorX);
 	Converter::ColorFromName(string("green"), axisColorY);
@@ -227,69 +228,81 @@ void AdaptorSprGR::MeshAux::CalcBound(){
 // Create
 
 void AdaptorSprGR::PrimitiveShapeAux::Create(const DrawOption& opt){
-	arraySolid.Create(&meshSolid, opt.useVao, false);
-	arrayWire .Create(&meshWire , opt.useVao, false);
+	arraySolid .Create(&meshSolid , opt.useVao, false);
+	arrayWire  .Create(&meshWire  , opt.useVao, false);
+	arrayPoints.Create(&meshPoints, opt.useVao, false);
 }
 void AdaptorSprGR::BoxAux::Create(const DrawOption& opt){
-	meshSolid.solid = true;
+	meshSolid.type = Mesh::Type::Solid;
 	meshSolid.texture_scale  = texture_scale;
 	meshSolid.texture_offset = texture_offset;
 	meshSolid.Clear();
 	meshSolid.Box(size.x, size.y, size.z);
-	meshWire .solid = false;
+
+	meshWire .type = Mesh::Type::Wireframe;
 	meshWire .Clear();
 	meshWire .Box(size.x, size.y, size.z);
+
 	PrimitiveShapeAux::Create(opt);
 }
 void AdaptorSprGR::SphereAux::Create(const DrawOption& opt){
-	meshSolid.solid = true;
+	meshSolid.type = Mesh::Type::Solid;
 	meshSolid.texture_scale  = texture_scale;
 	meshSolid.texture_offset = texture_offset;
 	meshSolid.Clear();
 	meshSolid.Sphere(radius, slice, stack);
-	meshWire .solid = false;
+
+	meshWire .type = Mesh::Type::Wireframe;
 	meshWire .Clear();
 	meshWire .Sphere(radius, slice, stack);
+
 	PrimitiveShapeAux::Create(opt);
 }
 void AdaptorSprGR::CylinderAux::Create(const DrawOption& opt){
-	meshSolid.solid = true;
+	meshSolid.type = Mesh::Type::Solid;
 	meshSolid.texture_scale  = texture_scale;
 	meshSolid.texture_offset = texture_offset;
 	meshSolid.Clear();
 	meshSolid.Cylinder(radius, height, slice);
-	meshWire .solid = false;
+
+	meshWire .type = Mesh::Type::Wireframe;
 	meshWire .Clear();
 	meshWire .Cylinder(radius, height, slice);
+
 	PrimitiveShapeAux::Create(opt);
 }
 void AdaptorSprGR::CapsuleAux::Create(const DrawOption& opt){
-	meshSolid.solid = true;
+	meshSolid.type = Mesh::Type::Solid;
 	meshSolid.texture_scale  = texture_scale;
 	meshSolid.texture_offset = texture_offset;
 	meshSolid.Clear();
 	meshSolid.Capsule(radius, height, slice, stack);
-	meshWire .solid = false;
+
+	meshWire .type = Mesh::Type::Wireframe;
 	meshWire .Clear();
 	meshWire .Capsule(radius, height, slice, stack);
+
 	PrimitiveShapeAux::Create(opt);
 }
 void AdaptorSprGR::MeshAux::Create(const DrawOption& opt){
 	if(!model)
 		return;
 
-	materials .resize(model->materials.size());
-	arraySolid.resize(model->meshSolid.size());
-	arrayWire .resize(model->meshWire .size());
+	materials  .resize(model->materials .size());
+	arraySolid .resize(model->meshSolid .size());
+	arrayWire  .resize(model->meshWire  .size());
+	arrayPoints.resize(model->meshPoints.size());
 
 	AdaptorSprGR* adaptorGR = (AdaptorSprGR*)adaptor;
 
 	for(uint i = 0; i < model->materials.size(); i++)
 		adaptorGR->ConvertMaterial(materials[i], model->materials[i], id);
-	for(uint i = 0; i < model->meshSolid.size(); i++)
-		arraySolid[i].Create(&model->meshSolid[i], opt.useVao, false);
-	for(uint i = 0; i < model->meshWire .size(); i++)
-		arrayWire [i].Create(&model->meshWire [i], opt.useVao, false);
+	for(uint i = 0; i < model->meshSolid .size(); i++)
+		arraySolid [i].Create(&model->meshSolid [i], opt.useVao, false);
+	for(uint i = 0; i < model->meshWire  .size(); i++)
+		arrayWire  [i].Create(&model->meshWire  [i], opt.useVao, false);
+	for(uint i = 0; i < model->meshPoints.size(); i++)
+		arrayPoints[i].Create(&model->meshPoints[i], opt.useVao, false);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -307,22 +320,27 @@ void AdaptorSprGR::ShapeAux::DrawBBox(GRRenderIf* render, const DrawOption& opt)
 }
 
 void AdaptorSprGR::PrimitiveShapeAux::Draw(GRRenderIf* render, const DrawOption& opt){
-	if(opt.drawSolid)
-		arraySolid.Draw(VertexArray::Primitive::Triangles);
-	if(opt.drawWire )
-		arrayWire .Draw(VertexArray::Primitive::Lines);
+	if(opt.drawSolid )
+		arraySolid .Draw(VertexArray::Primitive::Triangles);
+	if(opt.drawWire  )
+		arrayWire  .Draw(VertexArray::Primitive::Lines);
+	if(opt.drawPoints)
+		arrayPoints.Draw(VertexArray::Primitive::Points);
 }
 
 void AdaptorSprGR::MeshAux::Draw(GRRenderIf* render, const DrawOption& opt){
-	for(uint i = 0; i < arraySolid.size(); i++){
+	int narray = std::max(std::max( arraySolid.size(), arrayWire.size() ), arrayPoints.size());
+	for(uint i = 0; i < narray; i++){
 		if(i < model->materialList.size()){
 			int imat = model->materialList[i];
 			render->SetMaterial(materials[imat]);
 		}
-		if(opt.drawSolid)
-			arraySolid[i].Draw(VertexArray::Primitive::Triangles);
-		if(opt.drawWire)
-			arrayWire [i].Draw(VertexArray::Primitive::Lines);
+		if(opt.drawSolid  && i < arraySolid .size())
+			arraySolid [i].Draw(VertexArray::Primitive::Triangles);
+		if(opt.drawWire   && i < arrayWire  .size())
+			arrayWire  [i].Draw(VertexArray::Primitive::Lines);
+		if(opt.drawPoints && i < arrayPoints.size())
+			arrayPoints[i].Draw(VertexArray::Primitive::Points);
 	}
 }
 
@@ -348,7 +366,8 @@ void AdaptorSprGR::MeshAux::DrawBoned(GRRenderIf* render, const DrawOption& opt)
 
 	render->SetBlending(true);
 
-	for(uint i = 0; i < arraySolid.size(); i++){
+	int narray = std::max(std::max( arraySolid.size(), arrayWire.size() ), arrayPoints.size());
+	for(uint i = 0; i < narray; i++){
 		if(i < model->materialList.size()){
 			int imat = model->materialList[i];
 			render->SetMaterial(materials[imat]);
@@ -364,10 +383,12 @@ void AdaptorSprGR::MeshAux::DrawBoned(GRRenderIf* render, const DrawOption& opt)
 				else render->SetBlendMatrix(Affinef()   , j);
 			}
 		}
-		if(opt.drawSolid)
-			arraySolid[i].Draw(VertexArray::Primitive::Triangles);
-		if(opt.drawWire)
-			arrayWire [i].Draw(VertexArray::Primitive::Lines);
+		if(opt.drawSolid  && i < arraySolid .size())
+			arraySolid [i].Draw(VertexArray::Primitive::Triangles);
+		if(opt.drawWire   && i < arrayWire  .size())
+			arrayWire  [i].Draw(VertexArray::Primitive::Lines);
+		if(opt.drawPoints && i < arrayPoints.size())
+			arrayPoints[i].Draw(VertexArray::Primitive::Points);
 	}
 
 	render->SetBlending(false);
@@ -498,6 +519,10 @@ void AdaptorSprGR::ShowSolid(bool on){
 
 void AdaptorSprGR::ShowWireframe(bool on){
 	opt.drawWire = on;
+}
+
+void AdaptorSprGR::ShowPointcloud(bool on){
+	opt.drawPoints = on;
 }
 
 void AdaptorSprGR::ShowAxis(bool on){

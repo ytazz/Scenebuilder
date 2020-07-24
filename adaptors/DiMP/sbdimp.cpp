@@ -84,8 +84,8 @@ int AdaptorDiMP::CreateObject(int id){
 				}
 				
 				shape = new ShapeAux();
+				DiMP::Mesh* geo = new DiMP::Mesh(graph, name);
 				if(meshProp->convex){
-					DiMP::Mesh* geo = new DiMP::Mesh(graph, name);
 					for(int i = 0; i < (int)model->meshSolid.size(); i++){
 						Mesh& mesh = model->meshSolid[i];
 						int ntri = ((int)mesh.positions.size())/3;
@@ -100,16 +100,30 @@ int AdaptorDiMP::CreateObject(int id){
 					shape->geos.push_back(geo);
 				}
 				else{
-					for(int i = 0; i < (int)model->meshSolid.size(); i++){
-						Mesh& mesh = model->meshSolid[i];
-						int ntri = ((int)mesh.positions.size())/3;
-						for(int j = 0; j < ntri; j++){
-							DiMP::Triangle* geo = new DiMP::Triangle(graph, name);
-							geo->vertices[0] = mesh.positions[3*j+0];
-							geo->vertices[1] = mesh.positions[3*j+1];
-							geo->vertices[2] = mesh.positions[3*j+2];
-							geo->normal      = mesh.normals  [3*j+0];
-							shape->geos.push_back(geo);
+					if(meshProp->points){
+						for(int i = 0; i < (int)model->meshPoints.size(); i++){
+							Mesh& mesh = model->meshPoints[i];
+							int npt = ((int)mesh.positions.size())/3;
+							for(int j = 0; j < npt; j++){
+								DiMP::Point* geo = new DiMP::Point(graph, name);
+								geo->radius   = 0.01;  //< temporary
+								geo->position = mesh.positions[j];
+								shape->geos.push_back(geo);
+							}
+						}
+					}
+					else{
+						for(int i = 0; i < (int)model->meshSolid.size(); i++){
+							Mesh& mesh = model->meshSolid[i];
+							int ntri = ((int)mesh.positions.size())/3;
+							for(int j = 0; j < ntri; j++){
+								DiMP::Triangle* geo = new DiMP::Triangle(graph, name);
+								geo->vertices[0] = mesh.positions[3*j+0];
+								geo->vertices[1] = mesh.positions[3*j+1];
+								geo->vertices[2] = mesh.positions[3*j+2];
+								geo->normal      = mesh.normals  [3*j+0];
+								shape->geos.push_back(geo);
+							}
 						}
 					}
 				}
@@ -145,6 +159,11 @@ int AdaptorDiMP::CreateObject(int id){
 
 		AUTO(ShapeAux*, shapeAux, GetAux(shapeId));
 		AUTO(ConnectorAux*, conAux, GetAux(conId));
+
+		if(shapeAux->geos.empty()){
+			Message::Error("%s: geometry is empty", name.c_str());
+			return SupportState::Ignored;
+		}
 
 		conAux->con->geos.Add(&shapeAux->geos[0], shapeAux->geos.size());
 		RegAux(id, new AttachAux(shapeAux, conAux));

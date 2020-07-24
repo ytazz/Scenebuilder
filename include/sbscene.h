@@ -385,6 +385,7 @@ struct MeshProp : ShapeProp{
 	vec3_t	    prismdir;		///< 角柱化の向き
 	vec3_t      mirror;         ///< 鏡像反転の方向
 	bool        convex;         ///< 凸包として扱う
+	bool        points;         ///< 点群として扱う
 	bool        stl_color;      ///< STLファイルから色情報を取得
 	bool        stl_binary;     ///< binary STL
 
@@ -399,6 +400,7 @@ struct MeshProp : ShapeProp{
 			->AddAttr("prismdir"  , Primitive::Vec3,     1, OFFSET(MeshProp, prismdir  ), vec3_t(0,0,1))
 			->AddAttr("mirror"    , Primitive::Vec3,     1, OFFSET(MeshProp, mirror    ), vec3_t(0,0,0))
 			->AddAttr("convex"    , Primitive::Bool,     1, OFFSET(MeshProp, convex    ), true         )
+			->AddAttr("points"    , Primitive::Bool,     1, OFFSET(MeshProp, points    ), false        )
 			->AddAttr("stl_color" , Primitive::Bool,     1, OFFSET(MeshProp, stl_color ), false        )
 			->AddAttr("stl_binary", Primitive::Bool,     1, OFFSET(MeshProp, stl_binary), true         );
 	}

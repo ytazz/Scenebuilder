@@ -21,6 +21,7 @@ public:
 
 		bool			drawSolid;		///< ソリッド描画するか
 		bool			drawWire;		///< ワイヤフレーム描画するか
+		bool            drawPoints;     ///< 点群描画するか
 	
 		bool			drawAxis;		///< BodyとConnectorの座標軸を描画するか
 		Vec4f			axisColorX;		///< x軸の色
@@ -85,8 +86,10 @@ public:
 	struct PrimitiveShapeAux : ShapeAux{
 		Mesh		meshSolid;
 		Mesh		meshWire;
+		Mesh        meshPoints;
 		VertexArray	arraySolid;
 		VertexArray	arrayWire;
+		VertexArray	arrayPoints;
 
 		virtual void Create   (const DrawOption& opt);
 		virtual void Draw     (GRRenderIf* render, const DrawOption& opt);
@@ -132,6 +135,7 @@ public:
 		vector<GRMaterialDesc>	materials;		///< Materialから変換したGRMaterialDesc
 		vector<VertexArray>		arraySolid;
 		vector<VertexArray>		arrayWire;
+		vector<VertexArray>		arrayPoints;
 		
 		virtual void Create   (const DrawOption& opt);
 		virtual void CalcBound();
@@ -205,8 +209,9 @@ public:
 
 	void EnableVao    (bool on = true);
 
-	void ShowSolid    (bool on = true);
-	void ShowWireframe(bool on = true);
+	void ShowSolid     (bool on = true);
+	void ShowWireframe (bool on = true);
+	void ShowPointcloud(bool on = true);
 
 	void ShowAxis    (bool on = true);
 	void SetAxisColor(const char* x, const char* y, const char* z);

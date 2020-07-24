@@ -231,10 +231,20 @@ void Loader3DS::Convert(Model* model, const Affinef& aff){
 			model->materialList.push_back(fmat.index);
 			model->meshSolid   .push_back(Mesh());
 			model->meshWire    .push_back(Mesh());
-			Mesh* m[2] = {&model->meshSolid.back(), &model->meshWire.back()};
-			for(int k = 0; k < 2; k++){
-				m[k]->solid = (k == 0);
-				m[k]->aff   = aff;
+			model->meshPoints  .push_back(Mesh());
+			Mesh* m[3] = {
+				&model->meshSolid .back(), 
+				&model->meshWire  .back(),
+				&model->meshPoints.back()
+			};
+			int type[3] = {
+				Mesh::Type::Solid,
+				Mesh::Type::Wireframe,
+				Mesh::Type::Points
+			};
+			for(int k = 0; k < 3; k++){
+				m[k]->type = type[k];
+				m[k]->aff  = aff;
 				m[k]->Begin(Mesh::Triangles);
 				for(uint f = 0; f < fmat.faces.size(); f++){
 					Face& face = obj->faces[f];

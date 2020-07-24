@@ -426,10 +426,10 @@ void LoaderPMX::Convert(Model* model, const Affinef& aff){
 			model->meshWire .push_back(Mesh());
 			m[0] = &model->meshSolid.back();
 			m[1] = &model->meshWire .back();
-			m[0]->solid = true;
-			m[1]->solid = false;
-			m[0]->aff = aff;
-			m[1]->aff = aff;
+			m[0]->type = Mesh::Type::Solid;
+			m[1]->type = Mesh::Type::Wireframe;
+			m[0]->aff  = aff;
+			m[1]->aff  = aff;
 			imat = im;
 			ibone.Clear();
 			for(int i = 0; i < 3; i++)for(int j = 0; j < 2; j++)

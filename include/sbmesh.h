@@ -11,9 +11,18 @@ namespace Scenebuilder{;
 class Mesh{
 public:
 	enum{
+		Points,
 		Triangles,
 		TriangleStrip,
 		TriangleFan,
+	};
+
+	struct Type{
+		enum{
+			Solid,
+			Wireframe,
+			Points,
+		};
 	};
 
 	struct Vtx{
@@ -32,7 +41,7 @@ public:
 	};
 
 public:
-	uint    type;			///< current primitive type
+	uint    curPrimitive;	///< current primitive type
 	Vec3f	curNormal;		///< current normal
 	Vec2f	curTexCoord;	///< current texCoord
 	Vec4f	curColor;		///< current color
@@ -42,7 +51,7 @@ public:
 	
 	bool	front;			///< create front face
 	bool	back;			///< create back face
-	bool	solid;			///< create solid mesh or wire frame
+	int 	type;			///< create solid mesh or wireframe or pointcloud
 	bool	tile;			///< tile color mode
 	Vec2f   texture_scale;
 	Vec2f	texture_offset;
@@ -67,6 +76,7 @@ public:
 	Vec3f			bbmax;
 
 	void  CreateCircle   (vector<Vec2f>& points, uint slice);
+	void  CreatePoint    (Vtx& v);
 	void  CreateTriangle (Vtx& v0, Vtx& v1, Vtx& v2, bool _2nd);
 	void  CreatePrimitive();
 	Vec2f MapTexCoord    (const Vec3f& p, const Vec3f& n, int style);
@@ -174,7 +184,7 @@ public:
 	
 	void Delete();
 	
-	void Draw  (int type);
+	void Draw  (int prim);
 		
 	 VertexArray();
 	~VertexArray();

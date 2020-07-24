@@ -11,7 +11,7 @@ namespace Scenebuilder{;
 Mesh::Mesh(){
 	front   = true;
 	back    = false;
-	solid   = true;
+	type    = Type::Solid;
 	tile    = false;
 
 	curNormal     = Vec3f(0.0f, 0.0f, 1.0f);
@@ -36,9 +36,9 @@ void Mesh::Clear(){
 	vtx.clear();
 }
 
-void Mesh::Begin(int _type){
+void Mesh::Begin(int _prim){
 	vtx.clear();
-	type = _type;
+	curPrimitive = _prim;
 }
 
 void Mesh::End(){
@@ -46,10 +46,16 @@ void Mesh::End(){
 	vtx.clear();
 }
 
+void Mesh::CreatePoint(Mesh::Vtx& v){
+	positions.push_back(v.pos   );
+	normals  .push_back(v.normal);
+	colors   .push_back(v.color );
+}
+
 void Mesh::CreateTriangle(Mesh::Vtx& v0, Mesh::Vtx& v1, Mesh::Vtx& v2, bool _2nd){
 	Vtx* _v[3] = {&v0, &v1, &v2};
 	
-	if(solid){
+	if(type == Type::Solid){
 		// front and back faces
 		for(int i = 0; i < 2; i++){
 			if((i == 0 && front) || (i == 1 && back)){
@@ -67,7 +73,7 @@ void Mesh::CreateTriangle(Mesh::Vtx& v0, Mesh::Vtx& v1, Mesh::Vtx& v2, bool _2nd
 			swap(_v[1], _v[2]);
 		}
 	}
-	else{
+	if(type == Type::Wireframe){
 		for(int j = 0; j < 3; j++){
 			positions  .push_back(_v[j]->pos);
 			positions  .push_back(_v[(j+1)%3]->pos);
@@ -83,17 +89,21 @@ void Mesh::CreatePrimitive(){
 	static uint flip = 0;
 	flip = !flip;
 
-	if(type == Triangles){
+	if(curPrimitive == Points){
+		for(uint i = 0; i < vtx.size(); i++)
+			CreatePoint(vtx[i]);
+	}
+	if(curPrimitive == Triangles){
 		for(uint i = 0; i < vtx.size(); i+=3)
 			CreateTriangle(vtx[i+0], vtx[i+1], vtx[i+2], (tile && ((i/3)%2) == flip));
 	}
-	if(type == TriangleStrip){
+	if(curPrimitive == TriangleStrip){
 		for(uint i = 0; i+2 < vtx.size(); i+=2){
 			CreateTriangle(vtx[i+1], vtx[i+0], vtx[i+2], (tile && ((i/2)%2) == flip));
 			CreateTriangle(vtx[i+1], vtx[i+2], vtx[i+3], (tile && ((i/2)%2) == flip));
 		}
 	}
-	if(type == TriangleFan){
+	if(curPrimitive == TriangleFan){
 		for(uint i = 1; i+1 < vtx.size(); i++)
 			CreateTriangle(vtx[0], vtx[i], vtx[i+1], (tile && (i%2) == flip));
 	}
@@ -699,7 +709,7 @@ void VertexArray::UnmapBoneWeightArray(){
 	glBindBuffer (GL_ARRAY_BUFFER, 0);
 }
 
-void VertexArray::Draw(int type){
+void VertexArray::Draw(int prim){
 	if(useVao){
 		glBindVertexArray(vaoId);
 	}
@@ -736,7 +746,7 @@ void VertexArray::Draw(int type){
 	}
 
 	int t = GL_TRIANGLES;
-	switch(type){
+	switch(prim){
 	case Primitive::Points:
 		t = GL_POINTS;
 		glPointSize(pointSize);

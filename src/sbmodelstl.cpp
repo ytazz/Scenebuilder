@@ -192,18 +192,25 @@ void LoaderSTL::Convert(Model* model, const Affinef& aff){
 		}
 	}
 	
-	model->meshSolid.resize(nmat);
-	model->meshWire .resize(nmat);
+	model->meshSolid .resize(nmat);
+	model->meshWire  .resize(nmat);
+	model->meshPoints.resize(nmat);
 	for(uint i = 0; i < nmat; i++){
-		model->meshSolid[i].solid = true;
-		model->meshWire [i].solid = false;
-		model->meshSolid[i].aff   = aff;
-		model->meshWire [i].aff   = aff;
+		model->meshSolid [i].type = Mesh::Type::Solid;
+		model->meshWire  [i].type = Mesh::Type::Wireframe;
+		model->meshPoints[i].type = Mesh::Type::Points;
+		model->meshSolid [i].aff  = aff;
+		model->meshWire  [i].aff  = aff;
+		model->meshPoints[i].aff  = aff;
 	}
 
 	for(uint i = 0; i < nmat; i++){
-		Mesh* m[2] = {&model->meshSolid[i], &model->meshWire[i]};
-		for(int k = 0; k < 2; k++){
+		Mesh* m[3] = {
+			&model->meshSolid [i],
+			&model->meshWire  [i],
+			&model->meshPoints[i]
+		};
+		for(int k = 0; k < 3; k++){
 			m[k]->Begin(Mesh::Triangles);
 			for(uint j = 0; j < facets.size(); j++){
 				Facet& f = facets[j];

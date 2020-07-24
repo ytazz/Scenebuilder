@@ -63,6 +63,7 @@ set(SCENEBUILDER_HEADERS
 	include/sbmodel.h
 	include/sbmodel3ds.h
 	include/sbmodelobj.h
+	include/sbmodelpcd.h
 	include/sbmodelpmx.h
 	include/sbmodelstl.h
 	include/sbmutex.h
@@ -113,6 +114,7 @@ set(SCENEBUILDER_SOURCES
 	src/sbmodel.cpp
 	src/sbmodel3ds.cpp
 	src/sbmodelobj.cpp
+	src/sbmodelpcd.cpp
 	src/sbmodelpmx.cpp
 	src/sbmodelstl.cpp
 	src/sbmutex.cpp
@@ -142,8 +144,19 @@ set(SCENEBUILDER_SOURCES
 
 add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 
-install(TARGETS Scenebuilder DESTINATION lib)
-install(FILES ${SCENEBUILDER_HEADERS} DESTINATION include/Scenebuilder)
+set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEADERS}")
+
+install(TARGETS Scenebuilder
+  EXPORT        ScenebuilderExport
+  LIBRARY       DESTINATION lib
+  INCLUDES      DESTINATION include/Scenebuilder
+  PUBLIC_HEADER DESTINATION include/Scenebuilder
+  )
+  
+install(EXPORT ScenebuilderExport
+  FILE         ScenebuilderConfig.cmake
+  DESTINATION  cmake
+  )
 
 add_subdirectory(adaptors)
 

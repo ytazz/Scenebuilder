@@ -65,6 +65,7 @@ public:
 
 	vector<Mesh>		meshSolid;		///< メッシュ
 	vector<Mesh>		meshWire;
+	vector<Mesh>        meshPoints;
 	vector<Material>	materials;		///< マテリアル
 	vector<int>         materialList;	///< マテリアルリスト  メッシュ毎のマテリアルインデックス
 	vector<Bone>		bones;			///< ボーン
