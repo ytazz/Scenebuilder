@@ -7,13 +7,10 @@ set(SCENEBUILDER_IK_SOURCES
 	sbik.cpp
 )
 
-find_package(dimp)
-
 add_library(sbik
   ${SCENEBUILDER_IK_SOURCES}
   ${SCENEBUILDER_IK_HEADERS}
 )
-target_link_libraries(dimp)
 
 install(TARGETS sbik
 	EXPORT   sbikExport

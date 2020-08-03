@@ -7,13 +7,10 @@ set(SCENEBUILDER_SPRGRAPHICS_SOURCES
 	sbsprgraphics.cpp
 )
 
-find_package(dimp)
-
 add_library(sbsprgraphics
   ${SCENEBUILDER_SPRGRAPHICS_SOURCES}
   ${SCENEBUILDER_SPRGRAPHICS_HEADERS}
 )
-target_link_libraries(dimp)
 
 install(TARGETS sbsprgraphics
 	EXPORT   sbsprgraphicsExport
