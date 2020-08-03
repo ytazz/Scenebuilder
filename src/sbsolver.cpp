@@ -30,6 +30,7 @@ Solver::Param::Param(){
 	maxStepSize    = 10.0;
 	cutoffStepSize =  0.001;
 	hastyStepSize  = false;
+	regularization =  0.001;
 
 	numIter.resize(10, 1);
 }

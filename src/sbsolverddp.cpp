@@ -440,10 +440,10 @@ void Solver::CalcDirectionDDP(){
 		//DSTR << " Luu: " << endl; 
 		//DSTR << Luu[k] << endl;
 
-		const real_t eps = 0.000001;
+		//const real_t eps = 0.1;
 		int n = Quu[k].width();
 		for(int i = 0; i < n; i++)
-			Quu[k][i][i] += eps;
+			Quu[k][i][i] += param.regularization;
 
 		// input dimension could be zero
 		if(n > 0){

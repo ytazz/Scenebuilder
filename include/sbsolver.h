@@ -54,6 +54,7 @@ public:
 		real_t         maxStepSize;
 		real_t         cutoffStepSize;
 		bool           hastyStepSize;
+		real_t         regularization;
 		
 		Param();
 	};

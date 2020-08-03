@@ -106,7 +106,7 @@ int AdaptorDiMP::CreateObject(int id){
 							int npt = ((int)mesh.positions.size())/3;
 							for(int j = 0; j < npt; j++){
 								DiMP::Point* geo = new DiMP::Point(graph, name);
-								geo->radius   = 0.01;  //< temporary
+								geo->radius   = 0.0;  //< temporary
 								geo->position = mesh.positions[j];
 								shape->geos.push_back(geo);
 							}
@@ -234,9 +234,10 @@ void AdaptorDiMP::SyncObjectProperty(int id, bool download, int cat){
 		
 		if(cat & AttrCategory::Param){
 			if(download){
-				obj->param.mass      = bodyProp->mass;
-				obj->param.inertia   = bodyProp->inertia[0][0];
-				obj->param.dynamical = bodyProp->dynamical;
+				obj->param.mass       = bodyProp->mass;
+				obj->param.inertia    = bodyProp->inertia[0][0];
+				obj->param.dynamical  = bodyProp->dynamical;
+				obj->param.stationary = bodyProp->stationary;
 			}
 			else{
 
