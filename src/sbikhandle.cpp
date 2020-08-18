@@ -579,25 +579,82 @@ void IKComHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+IKComHandle::MomentumCon::MomentumCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+	for(uint i = 0; i < handle->joints.size(); i++){
+		IKJoint* jnt = handle->joints[i].joint;
+		for(int n = 0; n < jnt->ndof; n++){
+			AddC3Link(jnt->qd_var[n]);
+		}
+	}
+	AddM3Link(handle->root->angvel_var);
+}
+
+void IKComHandle::MomentumCon::CalcCoef(){
+	uint idx = 0;
+	for(uint i = 0; i < handle->joints.size(); i++){
+		IKComHandle::JointInfo& jntInfo = handle->joints[i];
+		IKJoint* jnt = jntInfo.joint;
+
+		for(int n = 0; n < jnt->ndof; n++){
+			vec3_t coef;
+
+			for(uint j = 0; j < jntInfo.bodies.size(); j++){
+				IKComHandle::BodyInfo* bodyInfo = jntInfo.bodies[j];
+				IKBody* body  = bodyInfo->body;
+			
+				coef += body->inertia*jnt->Jw_abs[n]
+					  + body->mass * ( (body->centerPosAbs - handle->comPosAbs) % (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs)) );
+			}
+
+			((C3Link*)links[idx++])->SetCoef(-coef);
+		}
+	}
+	
+	mat3_t Isum;
+	Isum.clear();
+	for(uint i = 0; i < handle->bodies.size(); i++){
+		IKBody* body  = handle->bodies[i].body;
+
+		mat3_t rc = mat3_t::Cross(body->centerPosAbs - handle->comPosAbs);
+		Isum += (body->inertia - body->mass * rc*rc);
+	}
+	((M3Link*)links[idx++])->SetCoef(-Isum);
+}
+
+void IKComHandle::MomentumCon::CalcDeviation(){
+	y = handle->desMom - handle->mom;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 IKComHandle::IKComHandle(IKSolver* _solver, const string& _name){
 	name   = _name;
 	solver = _solver;
 	
 	totalMass = 0.0;
+
+	enablePos = false;
+	enableVel = false;
+	enableAcc = false;
+	enableMom = false;
 }
 
-void IKComHandle::GetCurrentPos(      vec3_t& _pos){ _pos      = pos;    }
-void IKComHandle::GetCurrentVel(      vec3_t& _vel){ _vel      = vel;    }
-void IKComHandle::GetCurrentAcc(      vec3_t& _acc){ _acc      = acc;    }
-void IKComHandle::SetDesiredPos(const vec3_t& _pos){ desPos    = _pos;   }
-void IKComHandle::SetDesiredVel(const vec3_t& _vel){ desVel    = _vel;   }
-void IKComHandle::SetDesiredAcc(const vec3_t& _acc){ desAcc    = _acc;   }
-void IKComHandle::GetDesiredPos(      vec3_t& _pos){ _pos      = desPos; }
-void IKComHandle::GetDesiredVel(      vec3_t& _vel){ _vel      = desVel; }
-void IKComHandle::GetDesiredAcc(      vec3_t& _acc){ _acc      = desAcc; }	
-void IKComHandle::EnablePos    (      bool on     ){ enablePos = on;     }
-void IKComHandle::EnableVel    (      bool on     ){ enableVel = on;     }
-void IKComHandle::EnableAcc    (      bool on     ){ enableAcc = on;     }
+void IKComHandle::GetCurrentPos     (      vec3_t& _pos){ _pos      = pos;    }
+void IKComHandle::GetCurrentVel     (      vec3_t& _vel){ _vel      = vel;    }
+void IKComHandle::GetCurrentAcc     (      vec3_t& _acc){ _acc      = acc;    }
+void IKComHandle::GetCurrentMomentum(      vec3_t& _mom){ _mom      = mom;    }
+void IKComHandle::SetDesiredPos     (const vec3_t& _pos){ desPos    = _pos;   }
+void IKComHandle::SetDesiredVel     (const vec3_t& _vel){ desVel    = _vel;   }
+void IKComHandle::SetDesiredAcc     (const vec3_t& _acc){ desAcc    = _acc;   }
+void IKComHandle::SetDesiredMomentum(const vec3_t& _mom){ desMom    = _mom;   }
+void IKComHandle::GetDesiredPos     (      vec3_t& _pos){ _pos      = desPos; }
+void IKComHandle::GetDesiredVel     (      vec3_t& _vel){ _vel      = desVel; }
+void IKComHandle::GetDesiredAcc     (      vec3_t& _acc){ _acc      = desAcc; }	
+void IKComHandle::GetDesiredMomentum(      vec3_t& _mom){ _mom      = desMom; }
+void IKComHandle::EnablePos         (      bool on     ){ enablePos = on;     }
+void IKComHandle::EnableVel         (      bool on     ){ enableVel = on;     }
+void IKComHandle::EnableAcc         (      bool on     ){ enableAcc = on;     }
+void IKComHandle::EnableMomentum    (      bool on     ){ enableMom = on;     }
 
 real_t IKComHandle::GetTotalMass(){ return totalMass; }
 
@@ -643,15 +700,17 @@ void IKComHandle::AddVar(){
 }
 
 void IKComHandle::AddCon(){
-	pos_con = new PosCon(this, name + "_pos");
-	vel_con = new VelCon(this, name + "_vel");
-	acc_con = new AccCon(this, name + "_acc");
+	pos_con = new PosCon     (this, name + "_pos");
+	vel_con = new VelCon     (this, name + "_vel");
+	acc_con = new AccCon     (this, name + "_acc");
+	mom_con = new MomentumCon(this, name + "_mom");
 }
 
 void IKComHandle::Prepare(){
 	pos_con->enabled = (solver->mode == IKSolver::Mode::Pos && enablePos);
 	vel_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableVel);
 	acc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc);
+	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableMom);
 }
 
 void IKComHandle::Finish(){
@@ -663,6 +722,9 @@ void IKComHandle::Finish(){
 	}
 	if(solver->mode == IKSolver::Mode::Acc){
 		acc = comAccAbs;
+	}
+	if(solver->mode == IKSolver::Mode::Vel){
+		mom = momAbs;
 	}
 }
 
@@ -685,6 +747,13 @@ void IKComHandle::Update(){
 			comAccAbs += bodies[i].massNorm * bodies[i].body->centerAccAbs;
 		}	
 	}
+	if(solver->mode == IKSolver::Mode::Vel){
+		momAbs = vec3_t();
+		for(uint i = 0; i < bodies.size(); i++){
+			IKBody* body = bodies[i].body;
+			momAbs += body->inertia*body->angvel_var->val + (body->centerPosAbs - comPosAbs) % (body->mass*body->centerVelAbs);
+		}
+	}
 }
 
 void IKComHandle::Draw(GRRenderIf* render){
@@ -700,112 +769,6 @@ void IKComHandle::Draw(GRRenderIf* render){
 		p = desPos;
 		render->DrawPoint(p);
 	}
-}	
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-IKMomentumHandle::MomentumCon::MomentumCon(IKMomentumHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
-	for(uint i = 0; i < handle->joints.size(); i++){
-		IKJoint* jnt = handle->joints[i].joint;
-		for(int n = 0; n < jnt->ndof; n++){
-			AddC3Link(jnt->qd_var[n]);
-		}
-	}
-	AddSLink (handle->root->vel_var   );
-	AddX3Link(handle->root->angvel_var);
-}
-
-void IKMomentumHandle::MomentumCon::CalcCoef(){
-	/*
-	uint idx = 0;
-	for(uint i = 0; i < handle->joints.size(); i++){
-		IKMomentumHandle::JointInfo& jntInfo = handle->joints[i];
-		IKJoint* jnt = jntInfo.joint;
-
-		for(int n = 0; n < jnt->ndof; n++){
-			vec3_t coef;
-
-			for(uint j = 0; j < jntInfo.bodies.size(); j++){
-				IKMomentumHandle::BodyInfo* bodyInfo = jntInfo.bodies[j];
-				IKBody* body  = bodyInfo->body;
-				real_t  mnorm = bodyInfo->massNorm;
-
-				coef += -1.0 * mnorm * (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs));
-			}
-
-			((C3Link*)links[idx++])->SetCoef(coef);
-		}
-	}
-
-	((SLink* )links[idx++])->SetCoef(-1.0);
-	((X3Link*)links[idx++])->SetCoef(handle->comPosAbs - handle->root->pos_var->val);
-	*/
-}
-
-void IKMomentumHandle::MomentumCon::CalcDeviation(){
-	y = handle->desMom - handle->mom;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-IKMomentumHandle::IKMomentumHandle(IKSolver* _solver, const string& _name){
-	name   = _name;
-	solver = _solver;
-}
-
-void IKMomentumHandle::GetCurrentMomentum(      vec3_t& _mom){ _mom   = mom;    }
-void IKMomentumHandle::SetDesiredMomentum(const vec3_t& _mom){ desMom = _mom;   }
-void IKMomentumHandle::GetDesiredMomentum(      vec3_t& _mom){ _mom   = desMom; }
-void IKMomentumHandle::Enable            (      bool on     ){ enable = on;     }
-
-void IKMomentumHandle::Init(){
-	for(uint i = 0; i < bodies.size(); i++){
-		IKBody* body = bodies[i].body;
-		if(!body->parBody){
-			root = body;
-		}
-		else{
-			for(IKBody* b = body; b->parBody != 0; b = b->parBody){
-				uint j;
-				for(j = 0; j < joints.size(); j++){
-					if(joints[j].joint == b->parJoint)
-						break;
-				}
-				if(j == joints.size()){
-					joints.push_back(JointInfo());
-					joints.back().joint = b->parJoint;
-				}
-				joints[j].bodies.push_back(&bodies[i]);
-			}
-		}
-	}
-
-}
-
-void IKMomentumHandle::AddVar(){
-
-}
-
-void IKMomentumHandle::AddCon(){
-	mom_con = new MomentumCon(this, name + "_pos");
-}
-
-void IKMomentumHandle::Prepare(){
-	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enable);
-}
-
-void IKMomentumHandle::Finish(){
-	
-}
-
-void IKMomentumHandle::Update(){
-	if(solver->mode == IKSolver::Mode::Vel){
-			
-	}
-}
-
-void IKMomentumHandle::Draw(GRRenderIf* render){
-
 }	
 
 }

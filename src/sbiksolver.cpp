@@ -149,29 +149,29 @@ void IKSolver::DeleteComHandle(IKComHandle* handle){
 void IKSolver::Init(){
 	timer.CountUS();
 
-	for(auto& body        : ikBodies      ) body       ->Init();
-	for(auto& joint       : ikJoints      ) joint      ->Init();
-	for(auto& mate        : ikMates       ) mate       ->Init();
-	for(auto& limit       : ikLimits      ) limit      ->Init();
-	for(auto& handle      : ikHandles     ) handle     ->Init();
-	for(auto& jointHandle : ikJointHandles) jointHandle->Init();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->Init();
+	for(auto& body        : ikBodies         ) body       ->Init();
+	for(auto& joint       : ikJoints         ) joint      ->Init();
+	for(auto& mate        : ikMates          ) mate       ->Init();
+	for(auto& limit       : ikLimits         ) limit      ->Init();
+	for(auto& handle      : ikHandles        ) handle     ->Init();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->Init();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->Init();
 
-	for(auto& body        : ikBodies      ) body       ->AddVar();
-	for(auto& joint       : ikJoints      ) joint      ->AddVar();
-	for(auto& mate        : ikMates       ) mate       ->AddVar();
-	for(auto& limit       : ikLimits      ) limit      ->AddVar();
-	for(auto& handle      : ikHandles     ) handle     ->AddVar();
-	for(auto& jointHandle : ikJointHandles) jointHandle->AddVar();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->AddVar();
+	for(auto& body        : ikBodies         ) body       ->AddVar();
+	for(auto& joint       : ikJoints         ) joint      ->AddVar();
+	for(auto& mate        : ikMates          ) mate       ->AddVar();
+	for(auto& limit       : ikLimits         ) limit      ->AddVar();
+	for(auto& handle      : ikHandles        ) handle     ->AddVar();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->AddVar();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->AddVar();
 
-	for(auto& body        : ikBodies      ) body       ->AddCon();
-	for(auto& joint       : ikJoints      ) joint      ->AddCon();
-	for(auto& mate        : ikMates       ) mate       ->AddCon();
-	for(auto& limit       : ikLimits      ) limit      ->AddCon();
-	for(auto& handle      : ikHandles     ) handle     ->AddCon();
-	for(auto& jointHandle : ikJointHandles) jointHandle->AddCon();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->AddCon();
+	for(auto& body        : ikBodies         ) body       ->AddCon();
+	for(auto& joint       : ikJoints         ) joint      ->AddCon();
+	for(auto& mate        : ikMates          ) mate       ->AddCon();
+	for(auto& limit       : ikLimits         ) limit      ->AddCon();
+	for(auto& handle      : ikHandles        ) handle     ->AddCon();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->AddCon();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->AddCon();
 
 	Solver::Init();
 	Solver::SetCorrection(ID(), 1.0);
@@ -197,13 +197,13 @@ void IKSolver::Reset(){
 void IKSolver::Prepare(){
 	timer.CountUS();
 
-	for(auto& body        : ikBodies      ) body       ->Prepare();
-	for(auto& joint       : ikJoints      ) joint      ->Prepare();
-	for(auto& mate        : ikMates       ) mate       ->Prepare();
-	for(auto& limit       : ikLimits      ) limit      ->Prepare();
-	for(auto& handle      : ikHandles     ) handle     ->Prepare();
-	for(auto& jointHandle : ikJointHandles) jointHandle->Prepare();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->Prepare();
+	for(auto& body        : ikBodies         ) body       ->Prepare();
+	for(auto& joint       : ikJoints         ) joint      ->Prepare();
+	for(auto& mate        : ikMates          ) mate       ->Prepare();
+	for(auto& limit       : ikLimits         ) limit      ->Prepare();
+	for(auto& handle      : ikHandles        ) handle     ->Prepare();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->Prepare();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->Prepare();
 
 	timePrepare = timer.CountUS();
 }
@@ -211,14 +211,14 @@ void IKSolver::Prepare(){
 void IKSolver::Finish(){
 	timer.CountUS();
 
-	for(auto& body        : ikBodies      ) body       ->Finish();
-	for(auto& joint       : ikJoints      ) joint      ->Finish();
-	for(auto& mate        : ikMates       ) mate       ->Finish();
-	for(auto& limit       : ikLimits      ) limit      ->Finish();
-	for(auto& handle      : ikHandles     ) handle     ->Finish();
-	for(auto& jointHandle : ikJointHandles) jointHandle->Finish();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->Finish();
-
+	for(auto& body        : ikBodies         ) body       ->Finish();
+	for(auto& joint       : ikJoints         ) joint      ->Finish();
+	for(auto& mate        : ikMates          ) mate       ->Finish();
+	for(auto& limit       : ikLimits         ) limit      ->Finish();
+	for(auto& handle      : ikHandles        ) handle     ->Finish();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->Finish();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->Finish();
+	
 	timeFinish = timer.CountUS();
 }
 
@@ -232,13 +232,13 @@ void IKSolver::Update(){
 			body->Update();
 	}
 	
-	for(auto& joint       : ikJoints      ) joint      ->Update();
-	for(auto& mate        : ikMates       ) mate       ->Update();
-	for(auto& limit       : ikLimits      ) limit      ->Update();
-	for(auto& handle      : ikHandles     ) handle     ->Update();
-	for(auto& jointHandle : ikJointHandles) jointHandle->Update();
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->Update();
-
+	for(auto& joint       : ikJoints         ) joint      ->Update();
+	for(auto& mate        : ikMates          ) mate       ->Update();
+	for(auto& limit       : ikLimits         ) limit      ->Update();
+	for(auto& handle      : ikHandles        ) handle     ->Update();
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->Update();
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->Update();
+	
 	timeUpdate += timer.CountUS();
 }
 
@@ -326,12 +326,13 @@ void IKSolver::CalcDirection(){
 }
 	
 void IKSolver::Draw(GRRenderIf* render){
-	for(auto& body        : ikBodies      ) body       ->Draw(render);
-	for(auto& joint       : ikJoints      ) joint      ->Draw(render);
-	for(auto& mate        : ikMates       ) mate       ->Draw(render);
-	for(auto& handle      : ikHandles     ) handle     ->Draw(render);
-	for(auto& jointHandle : ikJointHandles) jointHandle->Draw(render);
-	for(auto& comHandle   : ikComHandles  ) comHandle  ->Draw(render);
+	for(auto& body        : ikBodies         ) body       ->Draw(render);
+	for(auto& joint       : ikJoints         ) joint      ->Draw(render);
+	for(auto& mate        : ikMates          ) mate       ->Draw(render);
+	for(auto& handle      : ikHandles        ) handle     ->Draw(render);
+	for(auto& jointHandle : ikJointHandles   ) jointHandle->Draw(render);
+	for(auto& comHandle   : ikComHandles     ) comHandle  ->Draw(render);
+
 }
 
 }

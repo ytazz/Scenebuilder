@@ -42,7 +42,6 @@ int ContactGroupProp    ::id;
 int IKProp              ::id;
 int IKJointProp         ::id;
 int IKComProp           ::id;
-int IKMomentumProp      ::id;
 int MotorProp           ::id;
 int SensorProp          ::id;
 int JointSensorProp     ::id;
@@ -137,7 +136,6 @@ void SceneBase::Register(TypeDB* db){
 	IKProp              ::Register(db);
 	IKJointProp         ::Register(db);
 	IKComProp           ::Register(db);
-	IKMomentumProp      ::Register(db);
 	MotorProp           ::Register(db);
 	LightProp           ::Register(db);
 	SensorProp          ::Register(db);
