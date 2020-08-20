@@ -196,6 +196,8 @@ public:
 	bool    enableVel[6];
 	bool    enableAcc[6];
 
+	real_t  weight;
+
 public:
 	void SetDesiredPos(int i, real_t pos);
 	void SetDesiredVel(int i, real_t vel);
@@ -204,6 +206,8 @@ public:
 	void EnablePos(int i, bool on = true);
 	void EnableVel(int i, bool on = true);
 	void EnableAcc(int i, bool on = true);
+
+	void SetWeight(int i, real_t weight);
 
 	void Init   ();
 	void AddVar ();

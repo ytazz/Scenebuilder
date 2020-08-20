@@ -397,6 +397,10 @@ void IKJointHandle::EnablePos(int i, bool on){ enablePos[i] = on; }
 void IKJointHandle::EnableVel(int i, bool on){ enableVel[i] = on; }
 void IKJointHandle::EnableAcc(int i, bool on){ enableAcc[i] = on; }
 
+void IKJointHandle::SetWeight(int i, real_t _weight){
+	weight = _weight;
+}
+
 void IKJointHandle::Init(){
 }
 
@@ -416,6 +420,10 @@ void IKJointHandle::Prepare(){
 		pos_con[i]->enabled = (solver->mode == IKSolver::Mode::Pos && enablePos[i] && i < joint->ndof);
 		vel_con[i]->enabled = (solver->mode == IKSolver::Mode::Vel && enableVel[i] && i < joint->ndof);
 		acc_con[i]->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc[i] && i < joint->ndof);
+
+		pos_con[i]->weight = weight;
+		vel_con[i]->weight = weight;
+		acc_con[i]->weight = weight;
 	}
 }
 
