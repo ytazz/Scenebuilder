@@ -52,7 +52,7 @@ typedef Matrix3f		mat3_t;
 typedef VMatrixf        vmat_t;
 typedef Curve3f			curve3_t;
 #else
-/// use doulbe-precision
+/// use double-precision
 typedef	double			real_t;
 typedef Vec2d			vec2_t;
 typedef Vec3d			vec3_t;

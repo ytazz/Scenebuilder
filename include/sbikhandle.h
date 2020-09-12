@@ -196,6 +196,8 @@ public:
 	bool    enableVel[6];
 	bool    enableAcc[6];
 
+	real_t  weight;
+
 public:
 	void SetDesiredPos(int i, real_t pos);
 	void SetDesiredVel(int i, real_t vel);
@@ -204,6 +206,8 @@ public:
 	void EnablePos(int i, bool on = true);
 	void EnableVel(int i, bool on = true);
 	void EnableAcc(int i, bool on = true);
+
+	void SetWeight(int i, real_t weight);
 
 	void Init   ();
 	void AddVar ();
@@ -267,46 +271,64 @@ public:
 		virtual void CalcDeviation();
 		AccCon(IKComHandle* h, const string& _name);
 	};
+	class MomentumCon : public Constraint{
+	public:
+		IKComHandle* handle;
+	public:
+		virtual void CalcCoef();
+		virtual void CalcDeviation();
+		MomentumCon(IKComHandle* h, const string& _name);
+	};
 
-	PosCon*   pos_con;
-	VelCon*   vel_con;
-	AccCon*   acc_con;
-
+	PosCon*        pos_con;
+	VelCon*        vel_con;
+	AccCon*        acc_con;
+	MomentumCon*   mom_con;
+	
 	vec3_t    pos;
 	vec3_t    vel;
 	vec3_t    acc;
+	vec3_t    mom;
 
 	vec3_t    comPosAbs;
 	vec3_t    comVelAbs;
 	vec3_t    comAccAbs;
+	vec3_t    momAbs;
 
 	vec3_t    desPos;
 	vec3_t    desVel;
 	vec3_t    desAcc;
+	vec3_t    desMom;
 
 	bool      enablePos;
 	bool      enableVel;
 	bool      enableAcc;
+	bool      enableMom;
 
 	real_t    totalMass;
 	
 public:
-	void SetDesiredPos(const vec3_t& pos);
-	void SetDesiredVel(const vec3_t& vel);
-	void SetDesiredAcc(const vec3_t& acc);
-	void GetDesiredPos(vec3_t& pos);
-	void GetDesiredVel(vec3_t& vel);
-	void GetDesiredAcc(vec3_t& acc);
+	void SetDesiredPos     (const vec3_t& pos);
+	void SetDesiredVel     (const vec3_t& vel);
+	void SetDesiredAcc     (const vec3_t& acc);
+	void SetDesiredMomentum(const vec3_t& mom);
+
+	void GetDesiredPos     (vec3_t& pos);
+	void GetDesiredVel     (vec3_t& vel);
+	void GetDesiredAcc     (vec3_t& acc);
+	void GetDesiredMomentum(vec3_t& mom);
 	
-	void GetCurrentPos(vec3_t& pos);
-	void GetCurrentVel(vec3_t& vel);
-	void GetCurrentAcc(vec3_t& acc);
+	void GetCurrentPos     (vec3_t& pos);
+	void GetCurrentVel     (vec3_t& vel);
+	void GetCurrentAcc     (vec3_t& acc);
+	void GetCurrentMomentum(vec3_t& mom);
 
 	real_t GetTotalMass();
 	
-	void EnablePos(bool on = true);
-	void EnableVel(bool on = true);
-	void EnableAcc(bool on = true);
+	void EnablePos     (bool on = true);
+	void EnableVel     (bool on = true);
+	void EnableAcc     (bool on = true);
+	void EnableMomentum(bool on = true);
 
 	void   Init   ();
 	void   AddVar ();
@@ -318,44 +340,6 @@ public:
 	void Draw(GRRenderIf* render);
 
 	IKComHandle(IKSolver* _solver, const string& _name);
-};
-
-class IKMomentumHandle : public IKComHandleBase{
-public:
-	class MomentumCon : public Constraint{
-	public:
-		IKMomentumHandle* handle;
-	public:
-		virtual void CalcCoef();
-		virtual void CalcDeviation();
-		MomentumCon(IKMomentumHandle* h, const string& _name);
-	};
-	
-	MomentumCon*   mom_con;
-	
-	vec3_t    mom;
-	vec3_t    desMom;
-	
-	bool      enable;
-	
-public:
-	void SetDesiredMomentum(const vec3_t& _mom);
-	void GetDesiredMomentum(vec3_t& _mom);
-	
-	void GetCurrentMomentum(vec3_t& _mom);
-	
-	void Enable(bool on = true);
-	
-	void   Init   ();
-	void   AddVar ();
-	void   AddCon ();
-	void   Prepare();
-	void   Finish ();
-	void   Update ();
-	
-	void Draw(GRRenderIf* render);
-
-	IKMomentumHandle(IKSolver* _solver, const string& _name);
 };
 
 }

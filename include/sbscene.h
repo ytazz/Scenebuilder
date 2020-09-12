@@ -824,21 +824,6 @@ struct IKComProp : SceneObjectProp{
 	}
 };
 
-struct IKMomentumProp : SceneObjectProp{
-	static int id;
-	vec3_t  momentum;
-	bool    enable;
-
-	static string GetName(){ return "ikmomentum"; }
-	static void Construct(Property* p){ new(p) IKMomentumProp; }
-	static void Register(TypeDB* db){
-		id = db->AddType(GetName(), sizeof(IKMomentumProp), &Construct, SceneObjectProp::id);
-		db->GetType(id)
-			->AddAttr("momentum", Primitive::Vec3, 1, OFFSET(IKMomentumProp, momentum), vec3_t(), AttrCategory::State, Dimension::R)  //< physical dimension of angular momentum is not defined, so R is used instead.
-			->AddAttr("enable"  , Primitive::Bool, 1, OFFSET(IKMomentumProp, enable  ), true    , AttrCategory::Param);
-	}
-};
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Motor
