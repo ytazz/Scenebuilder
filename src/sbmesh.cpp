@@ -17,6 +17,7 @@ Mesh::Mesh(){
 	curNormal     = Vec3f(0.0f, 0.0f, 1.0f);
 	curColor      = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 	curColor2     = Vec4f(0.5f, 0.5f, 0.5f, 0.5f);
+	colorSet      = false;
 	curTexCoord   = Vec2f(0.0f, 0.0f);
 	curBoneIndex  = Vec2i(-1, -1);
 	curBoneWeight = 1.0f;
@@ -144,6 +145,7 @@ void Mesh::Color(float r, float g, float b, float a){
 }
 void Mesh::Color(const Vec4f& c){
 	curColor = c;
+	colorSet = true;
 }
 
 void Mesh::Color2(float r, float g, float b, float a){
@@ -151,6 +153,7 @@ void Mesh::Color2(float r, float g, float b, float a){
 }
 void Mesh::Color2(const Vec4f& c){
 	curColor2 = c;
+	colorSet  = true;
 }
 
 void Mesh::BoneIndex(int i0, int i1){
@@ -566,7 +569,7 @@ void VertexArray::Create(Mesh* _mesh, bool vao, bool dynamic){
 	Create(count,
 		mesh->positions  .size() == count,
 		mesh->normals    .size() == count,
-		mesh->colors     .size() == count,
+		mesh->colors     .size() == count && mesh->colorSet,
 		mesh->texcoords  .size() == count,
 		mesh->boneIndices.size() == count && mesh->boneIndices.size() == count && useVao,
 		useVao,

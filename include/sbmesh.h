@@ -45,7 +45,8 @@ public:
 	Vec3f	curNormal;		///< current normal
 	Vec2f	curTexCoord;	///< current texCoord
 	Vec4f	curColor;		///< current color
-	Vec4f   curColor2;
+	Vec4f   curColor2;      ///< current 2nd color
+	bool    colorSet;       ///< is color set
 	Vec2i	curBoneIndex;
 	float	curBoneWeight;
 	

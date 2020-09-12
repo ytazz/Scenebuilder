@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8.12) # Default version on Ubuntu 14.04
 if(BUILD_DIMP_ADAPTOR)
 	#set(DIMP_INCLUDE_DIR "" CACHE PATH "include directory of DiMP")
 	#include_directories(${DIMP_INCLUDE_DIR})
-
+	
 	set(SCENEBUILDER_DIMP_HEADERS
 		sbdimp.h
 	)
