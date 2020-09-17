@@ -110,6 +110,10 @@ public:
 	IKJointHandleRefs      ikJointHandles;
 	IKComHandleRefs        ikComHandles;
 
+	real_t  corrRate;
+	real_t  dt;
+	real_t  damping;
+
 public:
 	
 	void Init   ();
@@ -149,6 +153,15 @@ public:
 	IKComHandle*  AddComHandle   (const string& name = "");
 	void          DeleteComHandle(IKComHandle* handle);
 
+	/// position error correction rate of velocity IK
+	void          SetCorrectionRate(real_t rate);
+
+	/// time step used for integration and velocity IK error correction
+	void          SetTimeStep(real_t dt);
+
+	/// damping coefficient for variables
+	void          SetDamping(real_t d);
+
 	/** compute inverse kinematics
 	 **/
 	void	CompPosIK  ();
@@ -163,6 +176,9 @@ public:
 
 	// 慣性行列を計算
 	void    CompInertia(const vec3_t& origin, mat3_t& I);
+
+	/// update position by integrating velocity
+	void    Integrate();
 
 	/// 描画
 	void Draw(GRRenderIf* render);

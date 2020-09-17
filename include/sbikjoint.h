@@ -184,6 +184,7 @@ public:
 public:
 	void CalcJacobian    ();
 	void CalcRelativePose();
+	void Integrate       (real_t dt);
 	
 public:
 	/// 関節変数を取得

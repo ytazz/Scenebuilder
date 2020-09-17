@@ -154,6 +154,13 @@ void IKBody::Prepare(){
 	acc_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 	angacc_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 
+	pos_var   ->weight = solver->damping;
+	ori_var   ->weight = solver->damping;
+	vel_var   ->weight = solver->damping;
+	angvel_var->weight = solver->damping;
+	acc_var   ->weight = solver->damping;
+	angacc_var->weight = solver->damping;
+
 	if(solver->mode == IKSolver::Mode::Force){
 		force_con ->enabled = (parBody != 0);
 		moment_con->enabled = (parBody != 0);
@@ -214,6 +221,10 @@ void IKBody::Update(){
 				parJoint->Jw_abs[i] = parJoint->sockOriAbs * parJoint->Jw[i];
 			}
 		}
+
+		mat3_t R;
+		ori_var->val.ToMatrix(R);
+		inertiaAbs = R*inertia*R.trans();
 	}
 
 	if(solver->mode == IKSolver::Mode::Vel){
@@ -282,6 +293,13 @@ void IKBody::Update(){
 
 	for(uint i = 0; i < children.size(); i++)
 		children[i]->Update();
+}
+
+void IKBody::Integrate(real_t dt){
+	pos_var->val += vel_var->val * dt;
+
+	ori_var->val = quat_t::Rot(angvel_var->val * dt) * ori_var->val;
+	ori_var->val.unitize();
 }
 
 void IKBody::Draw(GRRenderIf* render){

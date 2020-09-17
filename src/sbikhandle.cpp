@@ -7,7 +7,7 @@
 
 namespace Scenebuilder{;
 
-static const real_t pi = M_PI;
+static const real_t pi  = M_PI;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +113,10 @@ void IKHandle::VelCon::CalcCoef(){
 	}
 }
 void IKHandle::VelCon::CalcDeviation(){
-	y = handle->desVel - handle->sockVelAbs;
+	vec3_t ep = handle->desPos - handle->sockPosAbs;
+	real_t w  = handle->solver->corrRate;
+	real_t dt = handle->solver->dt;
+	y = (w*(ep/dt) + (1.0-w)*handle->desVel) - handle->sockVelAbs;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,7 +148,17 @@ void IKHandle::AngvelCon::CalcCoef(){
 	}
 }
 void IKHandle::AngvelCon::CalcDeviation(){
-	y = handle->desAngvel - handle->sockAngvelAbs;
+	quat_t qerror = handle->sockOriAbs.Conjugated() * handle->desOri;
+	vec3_t axis   = qerror.Axis ();
+	real_t theta  = qerror.Theta();
+	if(theta > pi)
+		theta -= 2*pi;
+
+	vec3_t eq = handle->sockOriAbs * (theta * axis);
+	real_t w  = handle->solver->corrRate;
+	real_t dt = handle->solver->dt;
+	
+	y = (w*(eq/dt) + (1.0-w)*handle->desAngvel) - handle->sockAngvelAbs;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,6 +240,13 @@ IKHandle::IKHandle(IKSolver* _solver, IKBody* _body, const string& _name){
 	enableAngvel = false;
 	enableAcc    = false;
 	enableAngacc = false;
+
+	posWeight    = 1.0;
+	oriWeight    = 1.0;
+	velWeight    = 1.0;
+	angvelWeight = 1.0;
+	accWeight    = 1.0;
+	angaccWeight = 1.0;
 }
 
 void IKHandle::SetSocketPose   (const pose_t& p){ sockPos = p.Pos(); sockOri = p.Ori(); }
@@ -259,6 +279,13 @@ void IKHandle::EnableAngvel(bool on){ enableAngvel = on; }
 void IKHandle::EnableAcc   (bool on){ enableAcc    = on; }
 void IKHandle::EnableAngacc(bool on){ enableAngacc = on; }
 
+void IKHandle::SetPosWeight   (real_t weight){ posWeight    = weight; }
+void IKHandle::SetOriWeight   (real_t weight){ oriWeight    = weight; }
+void IKHandle::SetVelWeight   (real_t weight){ velWeight    = weight; }
+void IKHandle::SetAngvelWeight(real_t weight){ angvelWeight = weight; }
+void IKHandle::SetAccWeight   (real_t weight){ accWeight    = weight; }
+void IKHandle::SetAngaccWeight(real_t weight){ angaccWeight = weight; }
+
 void IKHandle::SetForce (const vec3_t& _force ){ force  = _force ; }
 void IKHandle::SetMoment(const vec3_t& _moment){ moment = _moment; }
 
@@ -285,6 +312,13 @@ void IKHandle::Prepare(){
 	angvel_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableAngvel);
 	acc_con   ->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc   );
 	angacc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAngacc);
+
+	pos_con   ->weight = posWeight   ;
+	ori_con   ->weight = oriWeight   ;
+	vel_con   ->weight = velWeight   ;
+	angvel_con->weight = angvelWeight;
+	acc_con   ->weight = accWeight   ;
+	angacc_con->weight = angaccWeight;
 }
 
 void IKHandle::Finish(){
@@ -360,7 +394,10 @@ void IKJointHandle::VelCon::CalcCoef(){
 	((SLink*)links[0])->SetCoef(-1.0);
 }
 void IKJointHandle::VelCon::CalcDeviation(){
-	y[0] = handle->desVel[idx] - handle->joint->qd_var[idx]->val;
+	real_t ep = handle->desPos[idx] - handle->joint->q_var[idx]->val;
+	real_t w  = handle->solver->corrRate;
+	real_t dt = handle->solver->dt;
+	y[0] = (w*(ep/dt) + (1.0-w)*handle->desVel[idx]) - handle->joint->qd_var[idx]->val;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -387,6 +424,10 @@ IKJointHandle::IKJointHandle(IKSolver* _solver, IKJoint* _joint, const string& _
 		enableVel[i] = false;
 		enableAcc[i] = false;
 	}
+
+	posWeight = 1.0;
+	velWeight = 1.0;
+	accWeight = 1.0;
 }
 
 void IKJointHandle::SetDesiredPos(int i, real_t _pos){ desPos[i] = _pos; }
@@ -397,8 +438,16 @@ void IKJointHandle::EnablePos(int i, bool on){ enablePos[i] = on; }
 void IKJointHandle::EnableVel(int i, bool on){ enableVel[i] = on; }
 void IKJointHandle::EnableAcc(int i, bool on){ enableAcc[i] = on; }
 
-void IKJointHandle::SetWeight(int i, real_t _weight){
-	weight = _weight;
+void IKJointHandle::SetPosWeight(int i, real_t _weight){
+	posWeight = _weight;
+}
+
+void IKJointHandle::SetVelWeight(int i, real_t _weight){
+	velWeight = _weight;
+}
+
+void IKJointHandle::SetAccWeight(int i, real_t _weight){
+	accWeight = _weight;
 }
 
 void IKJointHandle::Init(){
@@ -421,9 +470,9 @@ void IKJointHandle::Prepare(){
 		vel_con[i]->enabled = (solver->mode == IKSolver::Mode::Vel && enableVel[i] && i < joint->ndof);
 		acc_con[i]->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc[i] && i < joint->ndof);
 
-		pos_con[i]->weight = weight;
-		vel_con[i]->weight = weight;
-		acc_con[i]->weight = weight;
+		pos_con[i]->weight = posWeight;
+		vel_con[i]->weight = velWeight;
+		acc_con[i]->weight = accWeight;
 	}
 }
 
@@ -540,7 +589,10 @@ void IKComHandle::VelCon::CalcCoef(){
 }
 
 void IKComHandle::VelCon::CalcDeviation(){
-	y = handle->desVel - handle->comVelAbs;
+	vec3_t ep = handle->desPos - handle->comPosAbs;
+	real_t w  = handle->solver->corrRate;
+	real_t dt = handle->solver->dt;
+	y = (w*(ep/dt) + (1.0-w)*handle->desVel) - handle->comVelAbs;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -610,27 +662,27 @@ void IKComHandle::MomentumCon::CalcCoef(){
 				IKComHandle::BodyInfo* bodyInfo = jntInfo.bodies[j];
 				IKBody* body  = bodyInfo->body;
 			
-				coef += body->inertia*jnt->Jw_abs[n]
+				coef += body->inertiaAbs*jnt->Jw_abs[n]
 					  + body->mass * ( (body->centerPosAbs - handle->comPosAbs) % (jnt->Jv_abs[n] + jnt->Jw_abs[n] % (body->centerPosAbs - jnt->sockPosAbs)) );
 			}
 
 			((C3Link*)links[idx++])->SetCoef(-coef);
 		}
 	}
-	
+
 	mat3_t Isum;
 	Isum.clear();
 	for(uint i = 0; i < handle->bodies.size(); i++){
 		IKBody* body  = handle->bodies[i].body;
 
 		mat3_t rc = mat3_t::Cross(body->centerPosAbs - handle->comPosAbs);
-		Isum += (body->inertia - body->mass * rc*rc);
+		Isum += (body->inertiaAbs - body->mass * rc*rc);
 	}
 	((M3Link*)links[idx++])->SetCoef(-Isum);
 }
 
 void IKComHandle::MomentumCon::CalcDeviation(){
-	y = handle->desMom - handle->mom;
+	y = handle->desMom - handle->momAbs;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -645,24 +697,37 @@ IKComHandle::IKComHandle(IKSolver* _solver, const string& _name){
 	enableVel = false;
 	enableAcc = false;
 	enableMom = false;
+
+	posWeight = 1.0;
+	velWeight = 1.0;
+	accWeight = 1.0;
+	momWeight = 1.0;
 }
 
 void IKComHandle::GetCurrentPos     (      vec3_t& _pos){ _pos      = pos;    }
 void IKComHandle::GetCurrentVel     (      vec3_t& _vel){ _vel      = vel;    }
 void IKComHandle::GetCurrentAcc     (      vec3_t& _acc){ _acc      = acc;    }
 void IKComHandle::GetCurrentMomentum(      vec3_t& _mom){ _mom      = mom;    }
+
 void IKComHandle::SetDesiredPos     (const vec3_t& _pos){ desPos    = _pos;   }
 void IKComHandle::SetDesiredVel     (const vec3_t& _vel){ desVel    = _vel;   }
 void IKComHandle::SetDesiredAcc     (const vec3_t& _acc){ desAcc    = _acc;   }
 void IKComHandle::SetDesiredMomentum(const vec3_t& _mom){ desMom    = _mom;   }
+
 void IKComHandle::GetDesiredPos     (      vec3_t& _pos){ _pos      = desPos; }
 void IKComHandle::GetDesiredVel     (      vec3_t& _vel){ _vel      = desVel; }
 void IKComHandle::GetDesiredAcc     (      vec3_t& _acc){ _acc      = desAcc; }	
 void IKComHandle::GetDesiredMomentum(      vec3_t& _mom){ _mom      = desMom; }
+
 void IKComHandle::EnablePos         (      bool on     ){ enablePos = on;     }
 void IKComHandle::EnableVel         (      bool on     ){ enableVel = on;     }
 void IKComHandle::EnableAcc         (      bool on     ){ enableAcc = on;     }
 void IKComHandle::EnableMomentum    (      bool on     ){ enableMom = on;     }
+
+void IKComHandle::SetPosWeight      (real_t weight     ){ posWeight = weight; }
+void IKComHandle::SetVelWeight      (real_t weight     ){ velWeight = weight; }
+void IKComHandle::SetAccWeight      (real_t weight     ){ accWeight = weight; }
+void IKComHandle::SetMomentumWeight (real_t weight     ){ momWeight = weight; }
 
 real_t IKComHandle::GetTotalMass(){ return totalMass; }
 
@@ -719,6 +784,11 @@ void IKComHandle::Prepare(){
 	vel_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableVel);
 	acc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc);
 	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableMom);
+
+	pos_con->weight = posWeight;
+	vel_con->weight = velWeight;
+	acc_con->weight = accWeight;
+	mom_con->weight = momWeight;
 }
 
 void IKComHandle::Finish(){
@@ -759,7 +829,7 @@ void IKComHandle::Update(){
 		momAbs = vec3_t();
 		for(uint i = 0; i < bodies.size(); i++){
 			IKBody* body = bodies[i].body;
-			momAbs += body->inertia*body->angvel_var->val + (body->centerPosAbs - comPosAbs) % (body->mass*body->centerVelAbs);
+			momAbs += body->inertiaAbs*body->angvel_var->val + (body->centerPosAbs - comPosAbs) % (body->mass*body->centerVelAbs);
 		}
 	}
 }

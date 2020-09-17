@@ -100,6 +100,13 @@ public:
 	bool    enableAcc;
 	bool    enableAngacc;
 
+	real_t  posWeight;
+	real_t  oriWeight;
+	real_t  velWeight;
+	real_t  angvelWeight;
+	real_t  accWeight;
+	real_t  angaccWeight;
+
 public:
 	void SetSocketPose(const pose_t& p);
 	void GetSocketPose(pose_t& p);
@@ -131,6 +138,13 @@ public:
 	void EnableAngvel(bool on = true);
 	void EnableAcc   (bool on = true);
 	void EnableAngacc(bool on = true);
+
+	void SetPosWeight   (real_t weight);
+	void SetOriWeight   (real_t weight);
+	void SetVelWeight   (real_t weight);
+	void SetAngvelWeight(real_t weight);
+	void SetAccWeight   (real_t weight);
+	void SetAngaccWeight(real_t weight);
 
 	void SetForce (const vec3_t& _force );
 	void SetMoment(const vec3_t& _moment);
@@ -196,7 +210,9 @@ public:
 	bool    enableVel[6];
 	bool    enableAcc[6];
 
-	real_t  weight;
+	real_t  posWeight;
+	real_t  velWeight;
+	real_t  accWeight;
 
 public:
 	void SetDesiredPos(int i, real_t pos);
@@ -207,7 +223,9 @@ public:
 	void EnableVel(int i, bool on = true);
 	void EnableAcc(int i, bool on = true);
 
-	void SetWeight(int i, real_t weight);
+	void SetPosWeight(int i, real_t weight);
+	void SetVelWeight(int i, real_t weight);
+	void SetAccWeight(int i, real_t weight);
 
 	void Init   ();
 	void AddVar ();
@@ -305,6 +323,11 @@ public:
 	bool      enableAcc;
 	bool      enableMom;
 
+	real_t    posWeight;
+	real_t    velWeight;
+	real_t    accWeight;
+	real_t    momWeight;
+
 	real_t    totalMass;
 	
 public:
@@ -329,6 +352,11 @@ public:
 	void EnableVel     (bool on = true);
 	void EnableAcc     (bool on = true);
 	void EnableMomentum(bool on = true);
+
+	void SetPosWeight     (real_t weight);
+	void SetVelWeight     (real_t weight);
+	void SetAccWeight     (real_t weight);
+	void SetMomentumWeight(real_t weight);
 
 	void   Init   ();
 	void   AddVar ();

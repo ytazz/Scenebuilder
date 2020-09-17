@@ -48,6 +48,7 @@ public:
 	real_t  mass;
 	vec3_t  center;
 	mat3_t  inertia;
+	mat3_t  inertiaAbs;
 
 	vec3_t  centerPosAbs;
 	vec3_t  centerVelAbs;
@@ -79,13 +80,14 @@ public:
 	vec3_t  cw;
 
 public:
-	void     Init   ();
-	void     AddVar ();
-	void     AddCon ();
-	void     Reset  ();
-	void	 Prepare();
-	void     Finish ();
-	void     Update ();
+	void     Init     ();
+	void     AddVar   ();
+	void     AddCon   ();
+	void     Reset    ();
+	void	 Prepare  ();
+	void     Finish   ();
+	void     Update   ();
+	void     Integrate(real_t dt);
 
 public:
 	IKBody*	 GetParent();

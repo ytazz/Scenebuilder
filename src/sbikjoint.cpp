@@ -9,6 +9,7 @@
 namespace Scenebuilder{;
 
 const real_t pi  = (real_t)M_PI;
+const real_t eps = 0.0001;
 const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -283,6 +284,9 @@ void IKJointBase::Prepare(){
 
 		force_var [i]->locked = true;
 		moment_var[i]->locked = true;
+
+		force_var [i]->weight = solver->damping;
+		moment_var[i]->weight = solver->damping;
 	}
 }
 
@@ -531,6 +535,10 @@ void IKJoint::Prepare(){
 		q_var  [i]->locked = (q_lock  [i] || !(solver->mode == IKSolver::Mode::Pos));
 		qd_var [i]->locked = (qd_lock [i] || !(solver->mode == IKSolver::Mode::Vel));
 		qdd_var[i]->locked = (qdd_lock[i] || !(solver->mode == IKSolver::Mode::Acc));
+
+		q_var  [i]->weight = solver->damping;
+		qd_var [i]->weight = solver->damping;
+		qdd_var[i]->weight = solver->damping;
 	}
 
 	if(solver->mode == IKSolver::Mode::Force){
@@ -685,6 +693,12 @@ void IKJoint::CalcRelativePose(){
 		relPos[1] = q_var[1]->val;
 		relPos[2] = q_var[2]->val;
 		relOri = FromRollPitchYaw(vec3_t(q_var[3]->val, q_var[4]->val, q_var[5]->val));
+	}
+}
+
+void IKJoint::Integrate(real_t dt){
+	for(int i = 0; i < ndof; i++){
+		q_var[i]->val += qd_var[i]->val * dt;
 	}
 }
 

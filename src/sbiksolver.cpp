@@ -50,6 +50,10 @@ IKSolver::IKSolver(){
 	showMoment = false;
 	showTorque = false;
 
+	dt       = 0.001;
+	corrRate = 0.0;
+	damping  = 0.0001;
+
 	ready = false;
 }
 
@@ -240,6 +244,27 @@ void IKSolver::Update(){
 	for(auto& comHandle   : ikComHandles     ) comHandle  ->Update();
 	
 	timeUpdate += timer.CountUS();
+}
+
+void IKSolver::Integrate(){
+	for(auto& joint : ikJoints) joint->Integrate(dt);
+
+	for(auto& body : ikBodies){
+		if(!body->parBody)
+			body->Integrate(dt);
+	}
+}
+
+void IKSolver::SetCorrectionRate(real_t rate){
+	corrRate = rate;
+}
+
+void IKSolver::SetTimeStep(real_t _dt){
+	dt = _dt;
+}
+
+void IKSolver::SetDamping(real_t d){
+	damping = d;
 }
 
 void IKSolver::CompPosIK(){
