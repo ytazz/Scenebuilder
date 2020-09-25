@@ -812,6 +812,13 @@ void IKComHandle::Update(){
 		for(uint i = 0; i < bodies.size(); i++){
 			comPosAbs += bodies[i].massNorm * bodies[i].body->centerPosAbs;
 		}
+
+		// calculate whole-body inertia around com using parallel axis formula
+		comInertiaAbs.clear();
+		for(uint i = 0; i < bodies.size(); i++){
+			mat3_t rc = mat3_t::Cross(bodies[i].body->centerPosAbs - comPosAbs);
+			comInertiaAbs += bodies[i].body->inertiaAbs - bodies[i].body->mass * rc*rc;
+		}
 	}
 	if(solver->mode == IKSolver::Mode::Vel){
 		comVelAbs = vec3_t();		

@@ -565,6 +565,12 @@ void IKJoint::Limit(){
 	if(solver->mode == IKSolver::Mode::Vel){
 		for(int i = 0; i < ndof; i++){
 			qd_var[i]->val = std::min(std::max(qd_limit[0][i], qd_var [i]->val), qd_limit[1][i]);
+
+			// limit velocity so that position limit will be satisfied dt later
+			if(solver->dt != 0.0){
+				qd_var[i]->val = std::max(qd_var[i]->val, std::min(0.0, (q_limit[0][i] - q_var[i]->val))/solver->dt);
+				qd_var[i]->val = std::min(qd_var[i]->val, std::max(0.0, (q_limit[1][i] - q_var[i]->val))/solver->dt);
+			}
 		}
 	}
 }

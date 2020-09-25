@@ -312,6 +312,7 @@ public:
 	vec3_t    comVelAbs;
 	vec3_t    comAccAbs;
 	vec3_t    momAbs;
+	mat3_t    comInertiaAbs;
 
 	vec3_t    desPos;
 	vec3_t    desVel;
