@@ -17,7 +17,8 @@ if(BUILD_DIMP_ADAPTOR)
 	  ${SCENEBUILDER_DIMP_SOURCES}
 	  ${SCENEBUILDER_DIMP_HEADERS}
 	)
-	target_link_libraries(dimp)
+	target_link_libraries(sbdimp dimp)
+	target_link_libraries(sbdimp Springhead::Springhead)
 
 	install(TARGETS sbdimp
 	  EXPORT   sbdimpExport

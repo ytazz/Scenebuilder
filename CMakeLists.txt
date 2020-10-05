@@ -8,7 +8,7 @@ if(NOT CMAKE_DEBUG_POSTFIX)
   set(CMAKE_DEBUG_POSTFIX d)
 endif()
 
-set(SPRINGHEAD_DIR   "" CACHE PATH "root directory of Springhead")
+set(SPRINGHEAD_DIR   "" CACHE PATH "path to Springhead cmake config file")
 set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
 
 if(UNIX)
@@ -23,11 +23,12 @@ find_package(Boost REQUIRED COMPONENTS thread)
 find_package(GLEW)
 find_package(PNG)
 find_package(EXPAT)
+find_package(Springhead)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/adaptors)
-include_directories(${SPRINGHEAD_DIR}/core/include)
-include_directories(${SPRINGHEAD_DIR}/core/src)
+#include_directories(${SPRINGHEAD_DIR}/core/include)
+#include_directories(${SPRINGHEAD_DIR}/core/src)
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${GLEW_INCLUDE_DIR})
 include_directories(${PNG_PNG_INCLUDE_DIR})
@@ -144,6 +145,8 @@ set(SCENEBUILDER_SOURCES
 add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 
 set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEADERS}")
+
+target_link_libraries(Scenebuilder Springhead::Springhead)
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport

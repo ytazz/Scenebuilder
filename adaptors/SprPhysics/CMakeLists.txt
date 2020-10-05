@@ -12,6 +12,8 @@ add_library(sbsprphysics
   ${SCENEBUILDER_SPRPHYSICS_HEADERS}
 )
 
+target_link_libraries(sbsprphysics Springhead::Springhead)
+
 install(TARGETS sbsprphysics
 	EXPORT   sbsprphysicsExport
 	LIBRARY  DESTINATION lib

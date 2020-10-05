@@ -12,6 +12,8 @@ add_library(sbsprgraphics
   ${SCENEBUILDER_SPRGRAPHICS_HEADERS}
 )
 
+target_link_libraries(sbsprgraphics Springhead::Springhead)
+
 install(TARGETS sbsprgraphics
 	EXPORT   sbsprgraphicsExport
 	LIBRARY  DESTINATION lib

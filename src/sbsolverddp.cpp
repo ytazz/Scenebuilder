@@ -11,9 +11,9 @@
 # endif
 #endif
 
-#include <Foundation/UTQPTimer.h>
-static UTQPTimer timer;
-static UTQPTimer timer2;
+//#include <Foundation/UTQPTimer.h>
+//static UTQPTimer timer;
+//static UTQPTimer timer2;
 
 namespace Scenebuilder{;
 
