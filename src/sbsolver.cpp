@@ -11,12 +11,12 @@
 # endif
 #endif
 
-#include <Foundation/UTQPTimer.h>
-static UTQPTimer timer;
-static UTQPTimer timer2;
+#include <sbtimer.h>
 
 namespace Scenebuilder{;
 
+static Timer timer;
+static Timer timer2;
 static const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
