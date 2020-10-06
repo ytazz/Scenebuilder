@@ -3,6 +3,7 @@
 #include <sbtypes.h>
 
 #include <map>
+#include <chrono>
 
 #pragma comment(lib, "winmm.lib")
 
@@ -23,6 +24,8 @@ public:
 	uint			id;			///< timer ID
 	uint			res;		///< timer resolution
 	TimerCallback*	callback;	///< timer callback function
+
+	std::chrono::high_resolution_clock::time_point  last;
 	
 public:
 	void SetCallback  (TimerCallback* _callback);
@@ -38,6 +41,9 @@ public:
 
 	/// get system time in [ms]
 	static uint	GetTime();
+
+	/// count time in [us]
+	int CountUS();
 
 	 Timer();
 	~Timer();

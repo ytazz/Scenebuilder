@@ -1,6 +1,7 @@
 ﻿#include <sbthread.h>
 #include <sbmessage.h>
 
+// want to migrate to std, but join with timeout is supported by boost::thread only
 #include <boost/thread.hpp>
 
 namespace Scenebuilder{;
@@ -44,6 +45,10 @@ void Thread::Run(){
 
 bool Thread::Join(int timeout){
 	return impl->Join(timeout);
+}
+
+void Thread::SleepUS(int us){
+	boost::this_thread::sleep_for(boost::chrono::microseconds(us));
 }
 
 }

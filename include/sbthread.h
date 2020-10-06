@@ -22,6 +22,8 @@ public:
 	void operator()();
 	
 	virtual void Func() = 0;
+
+	static void SleepUS(int us);
 	
 	Thread();
 	virtual ~Thread();
