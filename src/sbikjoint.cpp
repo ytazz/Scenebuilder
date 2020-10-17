@@ -457,6 +457,7 @@ IKJoint::IKJoint(IKSolver* _solver, int _type, const string& _name):IKJointBase(
 		q_lock  [i] = false;
 		qd_lock [i] = false;
 		qdd_lock[i] = false;
+		tau_lock[i] = false;
 	}
 }
 
@@ -542,6 +543,13 @@ void IKJoint::Prepare(){
 	}
 
 	if(solver->mode == IKSolver::Mode::Force){
+		force_var [0]->locked = false;
+		force_var [1]->locked = false;
+		force_var [2]->locked = false;
+		moment_var[0]->locked = false;
+		moment_var[1]->locked = false;
+		moment_var[2]->locked = false;
+	
 		if(type == Type::Hinge){
 			moment_var[2]->locked = tau_lock[0];
 		}
