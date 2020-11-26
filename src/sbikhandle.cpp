@@ -8,6 +8,7 @@
 namespace Scenebuilder{;
 
 static const real_t pi  = M_PI;
+static const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -438,17 +439,9 @@ void IKJointHandle::EnablePos(int i, bool on){ enablePos[i] = on; }
 void IKJointHandle::EnableVel(int i, bool on){ enableVel[i] = on; }
 void IKJointHandle::EnableAcc(int i, bool on){ enableAcc[i] = on; }
 
-void IKJointHandle::SetPosWeight(int i, real_t _weight){
-	posWeight = _weight;
-}
-
-void IKJointHandle::SetVelWeight(int i, real_t _weight){
-	velWeight = _weight;
-}
-
-void IKJointHandle::SetAccWeight(int i, real_t _weight){
-	accWeight = _weight;
-}
+void IKJointHandle::SetPosWeight(int i, real_t _weight){ posWeight = _weight; }
+void IKJointHandle::SetVelWeight(int i, real_t _weight){ velWeight = _weight; }
+void IKJointHandle::SetAccWeight(int i, real_t _weight){ accWeight = _weight; }
 
 void IKJointHandle::Init(){
 }

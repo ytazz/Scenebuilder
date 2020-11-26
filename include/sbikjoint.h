@@ -169,8 +169,9 @@ public:
 	vec3_t  qdd_ini;
 	vec3_t  tau_ini;
 
-	vec6_t  q_limit[2];
-	vec6_t  qd_limit[2];
+	vec6_t  q_limit  [2];
+	vec6_t  qd_limit [2];
+	vec6_t  qdd_limit[2];
 
 	bool    q_lock  [6];
 	bool    qd_lock [6];
@@ -181,6 +182,14 @@ public:
 	SVar*   qd_var [6];
 	SVar*   qdd_var[6];
 	
+	RangeConS*  pos_limit_con[6];
+	RangeConS*  vel_limit_con[6];
+	RangeConS*  acc_limit_con[6];
+
+	real_t  posLimitWeight;
+	real_t  velLimitWeight;
+	real_t  accLimitWeight;
+
 public:
 	void CalcJacobian    ();
 	void CalcRelativePose();
@@ -208,6 +217,11 @@ public:
 	/// 関節角度の範囲拘束を設定
 	void SetPosLimit(uint i, real_t lower, real_t upper);
 	void SetVelLimit(uint i, real_t lower, real_t upper);
+	void SetAccLimit(uint i, real_t lower, real_t upper);
+
+	void SetPosLimitWeight(uint i, real_t weight);
+	void SetVelLimitWeight(uint i, real_t weight);
+	void SetAccLimitWeight(uint i, real_t weight);
 
 	virtual void Init   ();
 	virtual void AddVar ();

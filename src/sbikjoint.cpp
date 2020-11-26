@@ -449,16 +449,22 @@ IKJoint::IKJoint(IKSolver* _solver, int _type, const string& _name):IKJointBase(
 		qd_ini [i] = 0.0;
 		qdd_ini[i] = 0.0;
 
-		q_limit [0][i] = -inf;
-		q_limit [1][i] =  inf;
-		qd_limit[0][i] = -inf;
-		qd_limit[1][i] =  inf;
-
+		q_limit  [0][i] = -inf;
+		q_limit  [1][i] =  inf;
+		qd_limit [0][i] = -inf;
+		qd_limit [1][i] =  inf;
+		qdd_limit[0][i] = -inf;
+		qdd_limit[1][i] =  inf;
+				
 		q_lock  [i] = false;
 		qd_lock [i] = false;
 		qdd_lock[i] = false;
 		tau_lock[i] = false;
 	}
+
+	posLimitWeight = 1.0;
+	velLimitWeight = 1.0;
+	accLimitWeight = 1.0;
 }
 
 real_t IKJoint::GetPos   (uint i){ return q  [i]; }
@@ -476,14 +482,13 @@ void IKJoint::SetInitialVel   (uint i, real_t _qd ){ qd_ini [i] = _qd ; }
 void IKJoint::SetInitialAcc   (uint i, real_t _qdd){ qdd_ini[i] = _qdd; }
 void IKJoint::SetInitialTorque(uint i, real_t _tau){ tau_ini[i] = _tau; }
 
-void IKJoint::SetPosLimit(uint i, real_t lower, real_t upper){
-	q_limit[0][i] = lower;
-	q_limit[1][i] = upper;
-}
-void IKJoint::SetVelLimit(uint i, real_t lower, real_t upper){
-	qd_limit[0][i] = lower;
-	qd_limit[1][i] = upper;
-}
+void IKJoint::SetPosLimit(uint i, real_t lower, real_t upper){ q_limit  [0][i] = lower; q_limit  [1][i] = upper; }
+void IKJoint::SetVelLimit(uint i, real_t lower, real_t upper){ qd_limit [0][i] = lower; qd_limit [1][i] = upper; }
+void IKJoint::SetAccLimit(uint i, real_t lower, real_t upper){ qdd_limit[0][i] = lower; qdd_limit[1][i] = upper; }
+
+void IKJoint::SetPosLimitWeight(uint i, real_t _weight){ posLimitWeight = _weight; }
+void IKJoint::SetVelLimitWeight(uint i, real_t _weight){ velLimitWeight = _weight; }
+void IKJoint::SetAccLimitWeight(uint i, real_t _weight){ accLimitWeight = _weight; }
 
 void IKJoint::Init(){
 	IKJointBase::Init();
@@ -505,6 +510,12 @@ void IKJoint::AddVar(){
 
 void IKJoint::AddCon(){
 	IKJointBase::AddCon();
+
+	for(int i = 0; i < ndof; i++){
+		pos_limit_con[i] = new RangeConS(solver, ID(0, 0, 0, name + "_pos_limit"), q_var  [i], 1.0);
+		vel_limit_con[i] = new RangeConS(solver, ID(0, 0, 0, name + "_vel_limit"), qd_var [i], 1.0);
+		acc_limit_con[i] = new RangeConS(solver, ID(0, 0, 0, name + "_acc_limit"), qdd_var[i], 1.0);
+	}
 }
 
 void IKJoint::Reset(){
@@ -540,6 +551,21 @@ void IKJoint::Prepare(){
 		q_var  [i]->weight = solver->damping;
 		qd_var [i]->weight = solver->damping;
 		qdd_var[i]->weight = solver->damping;
+
+		pos_limit_con[i]->enabled = (solver->mode == IKSolver::Mode::Pos);
+		vel_limit_con[i]->enabled = (solver->mode == IKSolver::Mode::Vel);
+		acc_limit_con[i]->enabled = (solver->mode == IKSolver::Mode::Acc);
+
+		pos_limit_con[i]->_min = q_limit  [0][i]; 
+		pos_limit_con[i]->_max = q_limit  [1][i]; 
+		vel_limit_con[i]->_min = qd_limit [0][i]; 
+		vel_limit_con[i]->_max = qd_limit [1][i]; 
+		acc_limit_con[i]->_min = qdd_limit[0][i]; 
+		acc_limit_con[i]->_max = qdd_limit[1][i]; 
+
+		pos_limit_con[i]->weight = posLimitWeight;
+		vel_limit_con[i]->weight = velLimitWeight;
+		acc_limit_con[i]->weight = accLimitWeight;
 	}
 
 	if(solver->mode == IKSolver::Mode::Force){

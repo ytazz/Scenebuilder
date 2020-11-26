@@ -218,7 +218,7 @@ public:
 	void SetDesiredPos(int i, real_t pos);
 	void SetDesiredVel(int i, real_t vel);
 	void SetDesiredAcc(int i, real_t acc);
-			
+
 	void EnablePos(int i, bool on = true);
 	void EnableVel(int i, bool on = true);
 	void EnableAcc(int i, bool on = true);
