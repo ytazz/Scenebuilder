@@ -126,6 +126,10 @@ void Solver::SetCorrection(ID mask, real_t rate, real_t lim){
 }
 
 void Solver::SetConstraintWeight(ID mask, real_t weight){
+	SetConstraintWeight(mask, vec3_t(weight, weight, weight));
+}
+
+void Solver::SetConstraintWeight(ID mask, vec3_t weight){
 	Request req;
 	req.type   = Request::Type::SetConstraintWeight;
 	req.mask   = mask;
@@ -135,6 +139,10 @@ void Solver::SetConstraintWeight(ID mask, real_t weight){
 }
 
 void Solver::SetVariableWeight(ID mask, real_t weight){
+	SetVariableWeight(mask, vec3_t(weight, weight, weight));
+}
+
+void Solver::SetVariableWeight(ID mask, vec3_t weight){
 	Request req;
 	req.type   = Request::Type::SetVariableWeight;
 	req.mask   = mask;
@@ -426,7 +434,12 @@ void Solver::CalcEquation(){
 	for(auto& var : vars_unlocked){
 		var->index = dimvar;
 		dimvar += var->nelem;
-		if(var->weight != 0.0){
+		
+		bool weighted = false;
+		for(int j = 0; j < var->nelem; j++)
+			weighted |= (var->weight[j] != 0.0);
+		
+		if(weighted){
 			var->index_weighted = dimvar_weighted;
 			dimvar_weighted += var->nelem;
 		}
@@ -458,9 +471,9 @@ void Solver::CalcEquation(){
 		con->RegisterDeviation (yvec);
 	}
 	for(auto& var : vars_unlocked){
-		if(var->weight != 0.0){
+		if(var->index_weighted != -1){
 			for(int j = 0; j < var->nelem; j++)
-				A[dimcon + var->index_weighted + j][var->index + j] = var->weight;
+				A[dimcon + var->index_weighted + j][var->index + j] = var->weight[j];
 		}
 	}
 }

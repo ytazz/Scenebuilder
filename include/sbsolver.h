@@ -105,7 +105,7 @@ public:
 		int    level;
 		real_t rate;
 		real_t lim;
-		real_t weight;
+		vec3_t weight;
 	};
 
 	struct SubState : UTRefCount{
@@ -269,6 +269,7 @@ public:
 		This function sets the weight of constraints specified by mask.
 	 */
 	void SetConstraintWeight(ID mask, real_t weight);
+	void SetConstraintWeight(ID mask, vec3_t weight);
 	
 	/** @brief	set variable weight
 	    @param  mask    variable id mask
@@ -278,6 +279,7 @@ public:
 		This function sets the weight of variables specified by mask.
      */
 	void SetVariableWeight  (ID mask, real_t weight);
+	void SetVariableWeight  (ID mask, vec3_t weight);
 	
 	/** @brief calculate constraint error
 		@param mask			constraint id mask

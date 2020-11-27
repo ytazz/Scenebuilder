@@ -154,12 +154,13 @@ void IKBody::Prepare(){
 	acc_var   ->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 	angacc_var->locked = !(!parBody && solver->mode == IKSolver::Mode::Acc);
 
-	pos_var   ->weight = solver->damping;
-	ori_var   ->weight = solver->damping;
-	vel_var   ->weight = solver->damping;
-	angvel_var->weight = solver->damping;
-	acc_var   ->weight = solver->damping;
-	angacc_var->weight = solver->damping;
+	vec3_t one(1.0, 1.0, 1.0);
+	pos_var   ->weight = solver->damping*one;
+	ori_var   ->weight = solver->damping*one;
+	vel_var   ->weight = solver->damping*one;
+	angvel_var->weight = solver->damping*one;
+	acc_var   ->weight = solver->damping*one;
+	angacc_var->weight = solver->damping*one;
 
 	if(solver->mode == IKSolver::Mode::Force){
 		force_con ->enabled = (parBody != 0);

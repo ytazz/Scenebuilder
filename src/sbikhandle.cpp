@@ -314,12 +314,13 @@ void IKHandle::Prepare(){
 	acc_con   ->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc   );
 	angacc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAngacc);
 
-	pos_con   ->weight = posWeight   ;
-	ori_con   ->weight = oriWeight   ;
-	vel_con   ->weight = velWeight   ;
-	angvel_con->weight = angvelWeight;
-	acc_con   ->weight = accWeight   ;
-	angacc_con->weight = angaccWeight;
+	vec3_t one(1.0, 1.0, 1.0);
+	pos_con   ->weight = posWeight   *one;
+	ori_con   ->weight = oriWeight   *one;
+	vel_con   ->weight = velWeight   *one;
+	angvel_con->weight = angvelWeight*one;
+	acc_con   ->weight = accWeight   *one;
+	angacc_con->weight = angaccWeight*one;
 }
 
 void IKHandle::Finish(){
@@ -463,9 +464,9 @@ void IKJointHandle::Prepare(){
 		vel_con[i]->enabled = (solver->mode == IKSolver::Mode::Vel && enableVel[i] && i < joint->ndof);
 		acc_con[i]->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc[i] && i < joint->ndof);
 
-		pos_con[i]->weight = posWeight;
-		vel_con[i]->weight = velWeight;
-		acc_con[i]->weight = accWeight;
+		pos_con[i]->weight[0] = posWeight;
+		vel_con[i]->weight[0] = velWeight;
+		acc_con[i]->weight[0] = accWeight;
 	}
 }
 
@@ -778,10 +779,11 @@ void IKComHandle::Prepare(){
 	acc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc);
 	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableMom);
 
-	pos_con->weight = posWeight;
-	vel_con->weight = velWeight;
-	acc_con->weight = accWeight;
-	mom_con->weight = momWeight;
+	vec3_t one(1.0, 1.0, 1.0);
+	pos_con->weight = posWeight*one;
+	vel_con->weight = velWeight*one;
+	acc_con->weight = accWeight*one;
+	mom_con->weight = momWeight*one;
 }
 
 void IKComHandle::Finish(){

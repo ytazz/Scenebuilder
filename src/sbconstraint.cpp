@@ -11,7 +11,7 @@ Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
 	index      = 0;
 	enabled    = true;
 	active     = true;
-	weight     = 1.0;
+	weight     = vec3_t(1.0, 1.0, 1.0);
 	scale      = _scale;
 	scale2     = scale * scale;
 	scale_inv  = 1.0 / scale;
@@ -101,13 +101,13 @@ void Constraint::CalcDeviation(){
 }
 
 void Constraint::RegisterCorrection(vvec_t& dydvec){
-	for(int n = 0; n < nelem; n++)
-		dydvec[index+n] = weight * dyd[n];
+	for(int i = 0; i < nelem; i++)
+		dydvec[index+i] = weight[i] * dyd[i];
 }
 
 void Constraint::RegisterDeviation(vvec_t& yvec){
-	for(int n = 0; n < nelem; n++)
-		yvec[index+n] = weight * y[n];
+	for(int i = 0; i < nelem; i++)
+		yvec[index+i] = weight[i] * y[i];
 }
 
 void Constraint::ResetState(){

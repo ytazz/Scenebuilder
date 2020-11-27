@@ -285,8 +285,9 @@ void IKJointBase::Prepare(){
 		force_var [i]->locked = true;
 		moment_var[i]->locked = true;
 
-		force_var [i]->weight = solver->damping;
-		moment_var[i]->weight = solver->damping;
+		const vec3_t one(1.0, 1.0, 1.0);
+		force_var [i]->weight = solver->damping*one;
+		moment_var[i]->weight = solver->damping*one;
 	}
 }
 
@@ -548,9 +549,9 @@ void IKJoint::Prepare(){
 		qd_var [i]->locked = (qd_lock [i] || !(solver->mode == IKSolver::Mode::Vel));
 		qdd_var[i]->locked = (qdd_lock[i] || !(solver->mode == IKSolver::Mode::Acc));
 
-		q_var  [i]->weight = solver->damping;
-		qd_var [i]->weight = solver->damping;
-		qdd_var[i]->weight = solver->damping;
+		q_var  [i]->weight[0] = solver->damping;
+		qd_var [i]->weight[0] = solver->damping;
+		qdd_var[i]->weight[0] = solver->damping;
 
 		pos_limit_con[i]->enabled = (solver->mode == IKSolver::Mode::Pos);
 		vel_limit_con[i]->enabled = (solver->mode == IKSolver::Mode::Vel);
@@ -563,9 +564,9 @@ void IKJoint::Prepare(){
 		acc_limit_con[i]->_min = qdd_limit[0][i]; 
 		acc_limit_con[i]->_max = qdd_limit[1][i]; 
 
-		pos_limit_con[i]->weight = posLimitWeight;
-		vel_limit_con[i]->weight = velLimitWeight;
-		acc_limit_con[i]->weight = accLimitWeight;
+		pos_limit_con[i]->weight[0] = posLimitWeight;
+		vel_limit_con[i]->weight[0] = velLimitWeight;
+		acc_limit_con[i]->weight[0] = accLimitWeight;
 	}
 
 	if(solver->mode == IKSolver::Mode::Force){

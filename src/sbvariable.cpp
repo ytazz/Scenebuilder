@@ -16,10 +16,11 @@ Variable::Variable(uint _type, Solver* solver, ID _id, real_t _scale):ID(_id){
 	default:		nelem = 3; break;
 	}
 
-	index  = 0;
-	dmax   = 1.0;
-	weight = 0.0;
-	locked = false;
+	index          = 0;
+	dmax           = 1.0;
+	weight         = vec3_t(0.0, 0.0, 0.0);
+	index_weighted = -1;
+	locked         = false;
 }
 
 void Variable::Lock(bool on){
@@ -79,7 +80,7 @@ void Variable::UpdateVar2(uint k, real_t ddx){
 		return;
 
 	// note that scaling ratio is multiplied twice
-	dx[k] += (1.0/weight) * ddx;
+	dx[k] += (1.0/weight[k]) * ddx;
 }
 
 void Variable::UpdateVar3(uint k){
