@@ -242,12 +242,13 @@ IKHandle::IKHandle(IKSolver* _solver, IKBody* _body, const string& _name){
 	enableAcc    = false;
 	enableAngacc = false;
 
-	posWeight    = 1.0;
-	oriWeight    = 1.0;
-	velWeight    = 1.0;
-	angvelWeight = 1.0;
-	accWeight    = 1.0;
-	angaccWeight = 1.0;
+	vec3_t one(1.0, 1.0, 1.0);
+	posWeight    = one;
+	oriWeight    = one;
+	velWeight    = one;
+	angvelWeight = one;
+	accWeight    = one;
+	angaccWeight = one;
 }
 
 void IKHandle::SetSocketPose   (const pose_t& p){ sockPos = p.Pos(); sockOri = p.Ori(); }
@@ -280,12 +281,12 @@ void IKHandle::EnableAngvel(bool on){ enableAngvel = on; }
 void IKHandle::EnableAcc   (bool on){ enableAcc    = on; }
 void IKHandle::EnableAngacc(bool on){ enableAngacc = on; }
 
-void IKHandle::SetPosWeight   (real_t weight){ posWeight    = weight; }
-void IKHandle::SetOriWeight   (real_t weight){ oriWeight    = weight; }
-void IKHandle::SetVelWeight   (real_t weight){ velWeight    = weight; }
-void IKHandle::SetAngvelWeight(real_t weight){ angvelWeight = weight; }
-void IKHandle::SetAccWeight   (real_t weight){ accWeight    = weight; }
-void IKHandle::SetAngaccWeight(real_t weight){ angaccWeight = weight; }
+void IKHandle::SetPosWeight   (vec3_t weight){ posWeight    = weight; }
+void IKHandle::SetOriWeight   (vec3_t weight){ oriWeight    = weight; }
+void IKHandle::SetVelWeight   (vec3_t weight){ velWeight    = weight; }
+void IKHandle::SetAngvelWeight(vec3_t weight){ angvelWeight = weight; }
+void IKHandle::SetAccWeight   (vec3_t weight){ accWeight    = weight; }
+void IKHandle::SetAngaccWeight(vec3_t weight){ angaccWeight = weight; }
 
 void IKHandle::SetForce (const vec3_t& _force ){ force  = _force ; }
 void IKHandle::SetMoment(const vec3_t& _moment){ moment = _moment; }
@@ -314,13 +315,12 @@ void IKHandle::Prepare(){
 	acc_con   ->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc   );
 	angacc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAngacc);
 
-	vec3_t one(1.0, 1.0, 1.0);
-	pos_con   ->weight = posWeight   *one;
-	ori_con   ->weight = oriWeight   *one;
-	vel_con   ->weight = velWeight   *one;
-	angvel_con->weight = angvelWeight*one;
-	acc_con   ->weight = accWeight   *one;
-	angacc_con->weight = angaccWeight*one;
+	pos_con   ->weight = posWeight   ;
+	ori_con   ->weight = oriWeight   ;
+	vel_con   ->weight = velWeight   ;
+	angvel_con->weight = angvelWeight;
+	acc_con   ->weight = accWeight   ;
+	angacc_con->weight = angaccWeight;
 }
 
 void IKHandle::Finish(){
@@ -692,10 +692,11 @@ IKComHandle::IKComHandle(IKSolver* _solver, const string& _name){
 	enableAcc = false;
 	enableMom = false;
 
-	posWeight = 1.0;
-	velWeight = 1.0;
-	accWeight = 1.0;
-	momWeight = 1.0;
+	vec3_t one(1.0, 1.0, 1.0);
+	posWeight = one;
+	velWeight = one;
+	accWeight = one;
+	momWeight = one;
 }
 
 void IKComHandle::GetCurrentPos     (      vec3_t& _pos){ _pos      = pos;    }
@@ -718,10 +719,10 @@ void IKComHandle::EnableVel         (      bool on     ){ enableVel = on;     }
 void IKComHandle::EnableAcc         (      bool on     ){ enableAcc = on;     }
 void IKComHandle::EnableMomentum    (      bool on     ){ enableMom = on;     }
 
-void IKComHandle::SetPosWeight      (real_t weight     ){ posWeight = weight; }
-void IKComHandle::SetVelWeight      (real_t weight     ){ velWeight = weight; }
-void IKComHandle::SetAccWeight      (real_t weight     ){ accWeight = weight; }
-void IKComHandle::SetMomentumWeight (real_t weight     ){ momWeight = weight; }
+void IKComHandle::SetPosWeight      (vec3_t weight     ){ posWeight = weight; }
+void IKComHandle::SetVelWeight      (vec3_t weight     ){ velWeight = weight; }
+void IKComHandle::SetAccWeight      (vec3_t weight     ){ accWeight = weight; }
+void IKComHandle::SetMomentumWeight (vec3_t weight     ){ momWeight = weight; }
 
 real_t IKComHandle::GetTotalMass(){ return totalMass; }
 
@@ -779,11 +780,10 @@ void IKComHandle::Prepare(){
 	acc_con->enabled = (solver->mode == IKSolver::Mode::Acc && enableAcc);
 	mom_con->enabled = (solver->mode == IKSolver::Mode::Vel && enableMom);
 
-	vec3_t one(1.0, 1.0, 1.0);
-	pos_con->weight = posWeight*one;
-	vel_con->weight = velWeight*one;
-	acc_con->weight = accWeight*one;
-	mom_con->weight = momWeight*one;
+	pos_con->weight = posWeight;
+	vel_con->weight = velWeight;
+	acc_con->weight = accWeight;
+	mom_con->weight = momWeight;
 }
 
 void IKComHandle::Finish(){

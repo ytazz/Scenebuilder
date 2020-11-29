@@ -100,12 +100,12 @@ public:
 	bool    enableAcc;
 	bool    enableAngacc;
 
-	real_t  posWeight;
-	real_t  oriWeight;
-	real_t  velWeight;
-	real_t  angvelWeight;
-	real_t  accWeight;
-	real_t  angaccWeight;
+	vec3_t  posWeight;
+	vec3_t  oriWeight;
+	vec3_t  velWeight;
+	vec3_t  angvelWeight;
+	vec3_t  accWeight;
+	vec3_t  angaccWeight;
 
 public:
 	void SetSocketPose(const pose_t& p);
@@ -139,12 +139,12 @@ public:
 	void EnableAcc   (bool on = true);
 	void EnableAngacc(bool on = true);
 
-	void SetPosWeight   (real_t weight);
-	void SetOriWeight   (real_t weight);
-	void SetVelWeight   (real_t weight);
-	void SetAngvelWeight(real_t weight);
-	void SetAccWeight   (real_t weight);
-	void SetAngaccWeight(real_t weight);
+	void SetPosWeight   (vec3_t weight);
+	void SetOriWeight   (vec3_t weight);
+	void SetVelWeight   (vec3_t weight);
+	void SetAngvelWeight(vec3_t weight);
+	void SetAccWeight   (vec3_t weight);
+	void SetAngaccWeight(vec3_t weight);
 
 	void SetForce (const vec3_t& _force );
 	void SetMoment(const vec3_t& _moment);
@@ -324,10 +324,10 @@ public:
 	bool      enableAcc;
 	bool      enableMom;
 
-	real_t    posWeight;
-	real_t    velWeight;
-	real_t    accWeight;
-	real_t    momWeight;
+	vec3_t    posWeight;
+	vec3_t    velWeight;
+	vec3_t    accWeight;
+	vec3_t    momWeight;
 
 	real_t    totalMass;
 	
@@ -354,10 +354,10 @@ public:
 	void EnableAcc     (bool on = true);
 	void EnableMomentum(bool on = true);
 
-	void SetPosWeight     (real_t weight);
-	void SetVelWeight     (real_t weight);
-	void SetAccWeight     (real_t weight);
-	void SetMomentumWeight(real_t weight);
+	void SetPosWeight     (vec3_t weight);
+	void SetVelWeight     (vec3_t weight);
+	void SetAccWeight     (vec3_t weight);
+	void SetMomentumWeight(vec3_t weight);
 
 	void   Init   ();
 	void   AddVar ();
