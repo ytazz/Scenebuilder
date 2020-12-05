@@ -809,6 +809,19 @@ struct IKJointProp : SceneObjectProp{
 	}
 };
 
+struct IKSyncProp : SceneObjectProp{
+	static int id;
+	
+	static string GetName(){ return "iksync"; }
+	static void Construct(Property* p){ new(p) IKSyncProp; }
+	static void Register(TypeDB* db){
+		id = db->AddType(GetName(), sizeof(IKSyncProp), &Construct, SceneObjectProp::id);
+		db->GetType(id)
+			->AddAttr("path0", Primitive::Path, 1, 0)
+			->AddAttr("path1", Primitive::Path, 1, 0);
+	}
+};
+
 struct IKComProp : SceneObjectProp{
 	static int id;
 	vec3_t	pos;

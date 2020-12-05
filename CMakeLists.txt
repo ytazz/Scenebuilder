@@ -46,8 +46,11 @@ set(SCENEBUILDER_HEADERS
 	include/sbcsv.h
 	include/sbevent.h
 	include/sbikbody.h
-	include/sbikhandle.h
 	include/sbikjoint.h
+	include/sbikbodyhandle.h
+	include/sbikjointhandle.h
+	include/sbikjointsync.h
+	include/sbikcomhandle.h
 	include/sbiksolver.h
 	include/sbimage.h
 	include/sbimagebmp.h
@@ -97,7 +100,10 @@ set(SCENEBUILDER_SOURCES
 	src/sbcriticalsection.cpp
 	src/sbevent.cpp
 	src/sbikbody.cpp
-	src/sbikhandle.cpp
+	src/sbikbodyhandle.cpp
+	src/sbikjointhandle.cpp
+	src/sbikjointsync.cpp
+	src/sbikcomhandle.cpp
 	src/sbikjoint.cpp
 	src/sbiksolver.cpp
 	src/sbimage.cpp

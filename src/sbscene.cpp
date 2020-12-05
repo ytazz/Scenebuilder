@@ -41,6 +41,7 @@ int GravityProp         ::id;
 int ContactGroupProp    ::id;
 int IKProp              ::id;
 int IKJointProp         ::id;
+int IKSyncProp          ::id;
 int IKComProp           ::id;
 int MotorProp           ::id;
 int SensorProp          ::id;
@@ -135,6 +136,7 @@ void SceneBase::Register(TypeDB* db){
 	ContactGroupProp    ::Register(db);
 	IKProp              ::Register(db);
 	IKJointProp         ::Register(db);
+	IKSyncProp          ::Register(db);
 	IKComProp           ::Register(db);
 	MotorProp           ::Register(db);
 	LightProp           ::Register(db);
