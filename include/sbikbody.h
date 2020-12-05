@@ -42,7 +42,7 @@ public:
 	IKJoint*                parJoint;
 	vector< IKBody* >       children;
 	vector< IKJointBase* >  joints;
-	vector< IKHandle* >     handles;
+	vector< IKBodyHandle*>  handles;
 	bool                    ready;
 	
 	real_t  mass;

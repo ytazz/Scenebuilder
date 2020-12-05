@@ -12,15 +12,17 @@ class IKBody;
 class IKJoint;
 class IKMate;
 class IKLimit;
-class IKHandle;
+class IKBodyHandle;
 class IKJointHandle;
+class IKJointSync;
 class IKComHandle;
 typedef vector< UTRef<IKBody          > > IKBodyRefs;
 typedef vector< UTRef<IKJoint         > > IKJointRefs;
 typedef vector< UTRef<IKMate          > > IKMateRefs;
 typedef vector< UTRef<IKLimit         > > IKLimitRefs;
-typedef vector< UTRef<IKHandle        > > IKHandleRefs;
+typedef vector< UTRef<IKBodyHandle    > > IKBodyHandleRefs;
 typedef vector< UTRef<IKJointHandle   > > IKJointHandleRefs;
+typedef vector< UTRef<IKJointSync     > > IKJointSyncRefs;
 typedef vector< UTRef<IKComHandle     > > IKComHandleRefs;
 
 /** 逆運動学（inverse kinematics, IK）計算クラス
@@ -106,8 +108,9 @@ public:
 	IKJointRefs            ikJoints;
 	IKMateRefs             ikMates;
 	IKLimitRefs            ikLimits;
-	IKHandleRefs           ikHandles;
+	IKBodyHandleRefs       ikBodyHandles;
 	IKJointHandleRefs      ikJointHandles;
+	IKJointSyncRefs        ikJointSyncs;
 	IKComHandleRefs        ikComHandles;
 
 	real_t  corrRate;
@@ -143,11 +146,14 @@ public:
 	void        DeleteLimit(IKLimit* limit);
 
 	/// 拘束を追加
-	IKHandle*   AddHandle   (IKBody* sockBody, const string& name = "");
-	void        DeleteHandle(IKHandle* handle);
+	IKBodyHandle*   AddBodyHandle   (IKBody* sockBody, const string& name = "");
+	void            DeleteBodyHandle(IKBodyHandle* handle);
 
 	IKJointHandle*   AddJointHandle   (IKJoint* joint, const string& name = "");
 	void             DeleteJointHandle(IKJointHandle* handle);
+
+	IKJointSync*     AddJointSync   (IKJoint* joint0, IKJoint* joint1, const string& name = "");
+	void             DeleteJointSync(IKJointSync* sync);
 
 	///
 	IKComHandle*  AddComHandle   (const string& name = "");

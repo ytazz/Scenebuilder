@@ -4,7 +4,10 @@
 #include <sbiksolver.h>
 #include <sbikbody.h>
 #include <sbikjoint.h>
-#include <sbikhandle.h>
+#include <sbikbodyhandle.h>
+#include <sbikjointhandle.h>
+#include <sbikjointsync.h>
+#include <sbikcomhandle.h>
 
 namespace Scenebuilder{;
 
@@ -16,7 +19,7 @@ public:
 	struct ConnectorAux;
 	struct AttachAux;
 	struct JointAux;
-	struct HandleAux;
+	struct BodyHandleAux;
 
 	struct BodyAux : Aux{
 		IKBody*                ikBody;
@@ -28,8 +31,8 @@ public:
 	struct ConnectorAux : Aux{
 		BodyAux*	body;
 		Posed		pose;             ///< Bodyとの相対的な位置と向き．Connectorの直上の親がBodyではない場合も考慮
-		vector<JointAux *>  joints;   ///< back reference to JointAux
-		vector<HandleAux*>  handles;  ///< back reference to HandleAux
+		vector<JointAux *>      joints;   ///< back reference to JointAux
+		vector<BodyHandleAux*>  handles;  ///< back reference to HandleAux
 	
 		ConnectorAux(BodyAux* b);
 		virtual ~ConnectorAux();
@@ -43,19 +46,25 @@ public:
 		JointAux(ConnectorAux* _sock, ConnectorAux* _plug, IKJointBase* _joint);
 		virtual ~JointAux();
 	};
-	struct HandleAux : Aux{
-		IKHandle*      ikHandle;
+	struct BodyHandleAux : Aux{
+		IKBodyHandle*  ikBodyHandle;
 		ConnectorAux*  sock;
 		
 		void OnChange(Aux* caller);
-		HandleAux(IKHandle* _handle, ConnectorAux* _sock);
-		virtual ~HandleAux();
+		BodyHandleAux(IKBodyHandle* _handle, ConnectorAux* _sock);
+		virtual ~BodyHandleAux();
 	};
 	struct JointHandleAux : Aux{
 		IKJointHandle*      ikJointHandle;
 		
 		JointHandleAux(IKJointHandle* _handle);
 		virtual ~JointHandleAux();
+	};
+	struct JointSyncAux : Aux{
+		IKJointSync*      ikJointSync;
+		
+		JointSyncAux(IKJointSync* _sync);
+		virtual ~JointSyncAux();
 	};
 	struct ComHandleAux : Aux{
 		IKComHandle*      ikComHandle;
@@ -69,8 +78,9 @@ public:
 public:
 	vector<BodyAux       *>	bodies      ;
 	vector<JointAux      *>	joints      ;
-	vector<HandleAux     *>	handles     ;
+	vector<BodyHandleAux *>	bodyHandles ;
 	vector<JointHandleAux*>	jointHandles;
+	vector<JointSyncAux  *>	jointSyncs  ;
 	vector<ComHandleAux  *> comHandles  ;
 
 	IKSolver            ikSolver;
@@ -82,10 +92,12 @@ public:
 	IKBody       *  GetBody       (string name);
 	IKJointBase  *  GetJoint      (int    id  );
 	IKJointBase  *  GetJoint      (string name);
-	IKHandle     *  GetHandle     (int    id  );
-	IKHandle     *  GetHandle     (string name);
+	IKBodyHandle *  GetBodyHandle (int    id  );
+	IKBodyHandle *  GetBodyHandle (string name);
 	IKJointHandle*  GetJointHandle(int    id  );
 	IKJointHandle*  GetJointHandle(string name);
+	IKJointSync  *  GetJointSync  (int    id  );
+	IKJointSync  *  GetJointSync  (string name);
 	IKComHandle  *  GetComHandle  (int    id  );
 	IKComHandle  *  GetComHandle  (string name);
 	

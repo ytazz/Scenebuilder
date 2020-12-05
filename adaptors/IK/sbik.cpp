@@ -33,7 +33,7 @@ AdaptorIK::ConnectorAux::~ConnectorAux(){
 		jnt->OnChange(this);
 	}
 	for(uint i = 0; i < handles.size(); i++){
-		HandleAux* handle = handles[i];
+		BodyHandleAux* handle = handles[i];
 		if(handle->sock == this)
 			handle->sock = 0;
 		handle->OnChange(this);
@@ -56,13 +56,13 @@ AdaptorIK::JointAux::~JointAux(){
 		RemoveFromArray(plug->joints, this);
 }
 
-AdaptorIK::HandleAux::HandleAux(IKHandle* _handle, AdaptorIK::ConnectorAux* _sock){
-	ikHandle = _handle;
+AdaptorIK::BodyHandleAux::BodyHandleAux(IKBodyHandle* _handle, AdaptorIK::ConnectorAux* _sock){
+	ikBodyHandle = _handle;
 	sock     = _sock;
 	sock->handles.push_back(this);
 }
 
-AdaptorIK::HandleAux::~HandleAux(){
+AdaptorIK::BodyHandleAux::~BodyHandleAux(){
 	if(sock)
 		RemoveFromArray(sock->handles, this);
 }
@@ -72,6 +72,13 @@ AdaptorIK::JointHandleAux::JointHandleAux(IKJointHandle* _handle){
 }
 
 AdaptorIK::JointHandleAux::~JointHandleAux(){
+}
+
+AdaptorIK::JointSyncAux::JointSyncAux(IKJointSync* _sync){
+	ikJointSync = _sync;
+}
+
+AdaptorIK::JointSyncAux::~JointSyncAux(){
 }
 
 AdaptorIK::ComHandleAux::ComHandleAux(IKComHandle* _handle){
@@ -91,9 +98,9 @@ void AdaptorIK::JointAux::OnChange(Aux* caller){
 		ikJoint->SetPlugPose(plug->pose);
 }
 
-void AdaptorIK::HandleAux::OnChange(Aux* caller){
+void AdaptorIK::BodyHandleAux::OnChange(Aux* caller){
 	if(caller == sock)
-		ikHandle->SetSocketPose(sock->pose);
+		ikBodyHandle->SetSocketPose(sock->pose);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,14 +128,14 @@ IKJointBase* AdaptorIK::GetJoint(string name){
 	return jntAux->ikJoint;
 }
 
-IKHandle*	AdaptorIK::GetHandle(int id){
-	AUTO(HandleAux*, handleAux, HandleByID(id, IKProp::id));
-	return handleAux->ikHandle;
+IKBodyHandle*	AdaptorIK::GetBodyHandle(int id){
+	AUTO(BodyHandleAux*, handleAux, HandleByID(id, IKProp::id));
+	return handleAux->ikBodyHandle;
 }
 
-IKHandle*	AdaptorIK::GetHandle(string name){
-	AUTO(HandleAux*, handleAux, HandleByName(name, IKProp::id));
-	return handleAux->ikHandle;
+IKBodyHandle*	AdaptorIK::GetBodyHandle(string name){
+	AUTO(BodyHandleAux*, handleAux, HandleByName(name, IKProp::id));
+	return handleAux->ikBodyHandle;
 }
 
 IKJointHandle*	AdaptorIK::GetJointHandle(int id){
@@ -139,6 +146,16 @@ IKJointHandle*	AdaptorIK::GetJointHandle(int id){
 IKJointHandle*	AdaptorIK::GetJointHandle(string name){
 	AUTO(JointHandleAux*, handleAux, HandleByName(name, IKJointProp::id));
 	return handleAux->ikJointHandle;
+}
+
+IKJointSync*	AdaptorIK::GetJointSync(int id){
+	AUTO(JointSyncAux*, handleAux, HandleByID(id, IKSyncProp::id));
+	return handleAux->ikJointSync;
+}
+
+IKJointSync*	AdaptorIK::GetJointSync(string name){
+	AUTO(JointSyncAux*, handleAux, HandleByName(name, IKSyncProp::id));
+	return handleAux->ikJointSync;
 }
 
 IKComHandle* AdaptorIK::GetComHandle(int id){
@@ -293,9 +310,9 @@ int AdaptorIK::CreateObject(int id){
 		
 		IKBody* sockBody = sockAux->body->ikBody;
 		
-		HandleAux* handleAux = new HandleAux(ikSolver.AddHandle(sockBody, name), sockAux);
-		RegAux(id, handleAux);
-		handles.push_back(handleAux);
+		BodyHandleAux* bodyHandleAux = new BodyHandleAux(ikSolver.AddBodyHandle(sockBody, name), sockAux);
+		RegAux(id, bodyHandleAux);
+		bodyHandles.push_back(bodyHandleAux);
 
 		return SupportState::Supported;
 	}
@@ -319,6 +336,33 @@ int AdaptorIK::CreateObject(int id){
 		JointHandleAux* handleAux = new JointHandleAux(ikSolver.AddJointHandle((IKJoint*)jntAux->ikJoint, name));
 		RegAux(id, handleAux);
 		jointHandles.push_back(handleAux);
+
+		return SupportState::Supported;
+	}
+	else if(type == IKSyncProp::id){
+		int jntId0 = scene->GetLink(id, "path0");
+		int jntId1 = scene->GetLink(id, "path1");
+		
+		if( !IsValidID(jntId0) || IsIgnored(jntId0) ||
+			!IsValidID(jntId1) || IsIgnored(jntId1) ){
+			Message::Error("%s: invalid link to joint", name.c_str());
+			return SupportState::Ignored;
+		}
+		if( !typedb->KindOf(scene->GetObjectType(jntId0), JointProp::id) ||
+			!typedb->KindOf(scene->GetObjectType(jntId1), JointProp::id) ){
+			Message::Error("%s: joint must link to Joint", name.c_str());
+			return SupportState::Ignored;
+		}
+		if( IsUndefined(jntId0) ||
+			IsUndefined(jntId1) )
+			return SupportState::Undefined;
+
+		AUTO(JointAux*, jntAux0, GetAux(jntId0));
+		AUTO(JointAux*, jntAux1, GetAux(jntId1));
+		
+		JointSyncAux* syncAux = new JointSyncAux(ikSolver.AddJointSync((IKJoint*)jntAux0->ikJoint, (IKJoint*)jntAux1->ikJoint, name));
+		RegAux(id, syncAux);
+		jointSyncs.push_back(syncAux);
 
 		return SupportState::Supported;
 	}
@@ -371,14 +415,19 @@ void AdaptorIK::DeleteObject(int id){
 		RemoveFromArray(joints, jointAux);
 	}
 	else if(type == IKProp::id){
-		AUTO(HandleAux*, handleAux, aux);
-		ikSolver.DeleteHandle(handleAux->ikHandle);
-		RemoveFromArray(handles, handleAux);
+		AUTO(BodyHandleAux*, bodyHandleAux, aux);
+		ikSolver.DeleteBodyHandle(bodyHandleAux->ikBodyHandle);
+		RemoveFromArray(bodyHandles, bodyHandleAux);
 	}
 	else if(type == IKJointProp::id){
 		AUTO(JointHandleAux*, jntHandleAux, aux);
 		ikSolver.DeleteJointHandle(jntHandleAux->ikJointHandle);
 		RemoveFromArray(jointHandles, jntHandleAux);
+	}
+	else if(type == IKSyncProp::id){
+		AUTO(JointSyncAux*, jntSyncAux, aux);
+		ikSolver.DeleteJointSync(jntSyncAux->ikJointSync);
+		RemoveFromArray(jointSyncs, jntSyncAux);
 	}
 	else if(type == IKComProp::id){
 		AUTO(ComHandleAux*, comHandleAux, aux);
@@ -558,17 +607,17 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 	}
 	else if(type == IKProp::id){
 		AUTO(IKProp*, ikProp, prop);
-		AUTO(HandleAux*, handleAux, GetAux(id));
+		AUTO(BodyHandleAux*, bodyHandleAux, GetAux(id));
 		if(cat & AttrCategory::Param){
 			if(download){
-				handleAux->ikHandle->EnablePos(ikProp->enable_trn);
-				handleAux->ikHandle->EnableOri(ikProp->enable_rot);
+				bodyHandleAux->ikBodyHandle->EnablePos(ikProp->enable_trn);
+				bodyHandleAux->ikBodyHandle->EnableOri(ikProp->enable_rot);
 			}
 		}
 		if(cat & AttrCategory::State){
 			if(download){
-				handleAux->ikHandle->SetDesiredPos(ikProp->trn);
-				handleAux->ikHandle->SetDesiredOri(ikProp->rot);
+				bodyHandleAux->ikBodyHandle->SetDesiredPos(ikProp->trn);
+				bodyHandleAux->ikBodyHandle->SetDesiredOri(ikProp->rot);
 			}
 			else{
 			}

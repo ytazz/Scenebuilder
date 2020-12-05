@@ -1,7 +1,7 @@
 ﻿#include <sbiksolver.h>
 #include <sbikbody.h>
 #include <sbikjoint.h>
-#include <sbikhandle.h>
+#include <sbikbodyhandle.h>
 
 #include <GL/glew.h>
 
@@ -31,7 +31,7 @@ void IKBody::ForceCon::CalcDeviation(){
 		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1] * jnt->force_var[1]->val;
 		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2] * jnt->force_var[2]->val;
 	}
-	for(IKHandle* handle : body->handles){
+	for(IKBodyHandle* handle : body->handles){
 		y += -1.0 * handle->force;
 	}
 }
@@ -73,7 +73,7 @@ void IKBody::MomentCon::CalcDeviation(){
 		y += sign * jnt->axis[1] * jnt->moment_var[1]->val;
 		y += sign * jnt->axis[2] * jnt->moment_var[2]->val;
 	}
-	for(IKHandle* handle : body->handles){
+	for(IKBodyHandle* handle : body->handles){
 		y += -1.0 * ((handle->sockPosAbs - body->centerPosAbs) % handle->force + handle->moment);
 	}
 }
