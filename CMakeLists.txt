@@ -27,7 +27,6 @@ find_package(Springhead)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/adaptors)
 include_directories(${Boost_INCLUDE_DIR})
-#include_directories(${GLEW_INCLUDE_DIR})
 include_directories(${PNG_PNG_INCLUDE_DIR})
 include_directories(${EXPAT_INCLUDE_DIR})
 include_directories(${MKL_INCLUDE_DIR})
@@ -150,7 +149,7 @@ add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEADERS}")
 
 target_link_libraries(Scenebuilder Springhead::Springhead)
-target_link_libraries(Scenebuilder GLEW::glew)
+target_link_libraries(Scenebuilder GLEW::GLEW)
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport
