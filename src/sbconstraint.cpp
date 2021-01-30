@@ -323,77 +323,77 @@ void RangeConS::Project(real_t& l, uint k){
 }
 
 //-------------------------------------------------------------------------------------------------
-/*
-RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, _scale){
-	AddSLink(var, 1.0);
+
+RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, const vec2_t& _dir, real_t _scale):Constraint(solver, 1, id, _scale){
+	dir = _dir;
+
+	AddR2Link(var);
+	((R2Link*)links[0])->SetCoef(dir);
+
 	real_t inf = numeric_limits<real_t>::max();
-	for(int i = 0; i < 2; i++){
-		_min    [i] = -inf;
-		_max    [i] =  inf;
-		on_lower[i] = false;
-		on_upper[i] = false;
-	}
+	_min     = -inf;
+	_max     =  inf;
+	on_lower = false;
+	on_upper = false;
 }
 
 void RangeConV2::CalcDeviation(){
 	active = false;
-	for(int i = 0; i < 2; i++){
-		real_t s = ((V2Var*)links[0]->var)->val[i];
-		on_lower[i] = (s < _min[i]);
-		on_upper[i] = (s > _max[i]);
-		active |= on_lower[i] | on_upper[i];
-		if(on_lower[i])
-			y[i] = s - _min[i];
-		if(on_upper[i])
-			y[i] = s - _max[i];
-	}
+	real_t s = dir*((V2Var*)links[0]->var)->val;
+	on_lower = (s < _min);
+	on_upper = (s > _max);
+	active |= on_lower | on_upper;
+	if(on_lower)
+		y[0] = s - _min;
+	if(on_upper)
+		y[0] = s - _max;
 }
 
 void RangeConV2::Project(real_t& l, uint k){
-	if(on_upper[k] && l > 0.0)
+	if(on_upper && l > 0.0)
 		l = 0.0;
-	if(on_lower[k] && l < 0.0)
+	if(on_lower && l < 0.0)
 		l = 0.0;
-	if(!on_upper[k] && !on_lower[k])
+	if(!on_upper && !on_lower)
 		l = 0.0;
 }
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConV3::RangeConV3(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 3, id, _scale){
-	AddSLink(var, 1.0);
+RangeConV3::RangeConV3(Solver* solver, ID id, V3Var* var, const vec3_t& _dir, real_t _scale):Constraint(solver, 1, id, _scale){
+	dir = _dir;
+
+	AddR3Link(var);
+	((R3Link*)links[0])->SetCoef(dir);
+
 	real_t inf = numeric_limits<real_t>::max();
-	for(int i = 0; i < 3; i++){
-		_min    [i] = -inf;
-		_max    [i] =  inf;
-		on_lower[i] = false;
-		on_upper[i] = false;
-	}
+	_min     = -inf;
+	_max     =  inf;
+	on_lower = false;
+	on_upper = false;
 }
 
 void RangeConV3::CalcDeviation(){
 	active = false;
-	for(int i = 0; i < 3; i++){
-		real_t s = ((V3Var*)links[0]->var)->val[i];
-		on_lower[i] = (s < _min[i]);
-		on_upper[i] = (s > _max[i]);
-		active |= on_lower[i] | on_upper[i];
-		if(on_lower[i])
-			y[i] = s - _min[i];
-		if(on_upper[i])
-			y[i] = s - _max[i];
-	}
+	real_t s = dir*((V3Var*)links[0]->var)->val;
+	on_lower = (s < _min);
+	on_upper = (s > _max);
+	active |= on_lower | on_upper;
+	if(on_lower)
+		y[0] = s - _min;
+	if(on_upper)
+		y[0] = s - _max;
 }
 
 void RangeConV3::Project(real_t& l, uint k){
-	if(on_upper[k] && l > 0.0)
+	if(on_upper && l > 0.0)
 		l = 0.0;
-	if(on_lower[k] && l < 0.0)
+	if(on_lower && l < 0.0)
 		l = 0.0;
-	if(!on_upper[k] && !on_lower[k])
+	if(!on_upper && !on_lower)
 		l = 0.0;
 }
-*/
+
 //-------------------------------------------------------------------------------------------------
 
 DiffConS::DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){

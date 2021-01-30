@@ -811,6 +811,7 @@ struct IKJointProp : SceneObjectProp{
 
 struct IKSyncProp : SceneObjectProp{
 	static int id;
+	real_t	ratio;
 	
 	static string GetName(){ return "iksync"; }
 	static void Construct(Property* p){ new(p) IKSyncProp; }
@@ -818,7 +819,8 @@ struct IKSyncProp : SceneObjectProp{
 		id = db->AddType(GetName(), sizeof(IKSyncProp), &Construct, SceneObjectProp::id);
 		db->GetType(id)
 			->AddAttr("path0", Primitive::Path, 1, 0)
-			->AddAttr("path1", Primitive::Path, 1, 0);
+			->AddAttr("path1", Primitive::Path, 1, 0)
+			->AddAttr("ratio", Primitive::Real, 1, OFFSET(IKSyncProp, ratio), 1.0, AttrCategory::Param, Dimension::L);
 	}
 };
 

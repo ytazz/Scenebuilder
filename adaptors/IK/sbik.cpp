@@ -623,6 +623,15 @@ void AdaptorIK::SyncObjectProperty(int id, bool download, int cat){
 			}
 		}
 	}
+	else if(type == IKSyncProp::id){
+		AUTO(IKSyncProp*, ikSyncProp, prop);
+		AUTO(JointSyncAux*, jointSyncAux, GetAux(id));
+		if(cat & AttrCategory::Param){
+			if(download){
+				jointSyncAux->ikJointSync->SetRatio(0, ikSyncProp->ratio);
+			}
+		}
+	}
 	else if(type == IKComProp::id){
 		AUTO(IKComProp*, ikComProp, prop);
 		AUTO(ComHandleAux*, comHandleAux, GetAux(id));

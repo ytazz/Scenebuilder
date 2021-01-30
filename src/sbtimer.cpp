@@ -3,6 +3,8 @@
 
 #ifdef _WIN32
 # include <windows.h>
+#else
+# include <sys/time.h>
 #endif
 
 namespace Scenebuilder{;
@@ -57,8 +59,12 @@ void Timer::Stop(){
 uint Timer::GetTime(){
 #ifdef _WIN32
 	return timeGetTime();
+#else
+	timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	return ts.tv_nsec/1000000;
 #endif
-	return 0;
+	//return 0;
 }
 
 int Timer::CountUS(){

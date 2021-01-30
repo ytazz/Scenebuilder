@@ -97,10 +97,10 @@ public:
 
 public:
 	/// virtual functions to be overridden by derived classes ///
-	virtual void CalcCoef     (){}
-	virtual void CalcDeviation();
-	virtual void CalcLhs      (){}
-
+	virtual void CalcCoef         (){}
+	virtual void CalcDeviation    ();
+	virtual void CalcLhs          (){}
+	
 public:
 	/// G-S related virtual functions
 	
@@ -164,28 +164,30 @@ struct RangeConS : Constraint{
 };
 
 // 2d/3d range constraint deprecated: activeness cannot be shared by multiple axes
-/*
 class RangeConV2 : public Constraint{
 public:
-	vec2_t	_min, _max;
-	bool	on_lower[2], on_upper[2];
+	real_t	_min, _max;
+	bool	on_lower, on_upper;
+	vec2_t  dir;
 
 	virtual void CalcDeviation();
 	virtual void Project(real_t& l, uint k);
 
-	RangeConV2(Solver* solver, ID id, V2Var* var, real_t _scale);
+	RangeConV2(Solver* solver, ID id, V2Var* var, const vec2_t& _dir, real_t _scale);
 };
+
 class RangeConV3 : public Constraint{
 public:
-	vec3_t	_min, _max;
-	bool	on_lower[3], on_upper[3];
+	real_t	_min, _max;
+	bool	on_lower, on_upper;
+	vec3_t  dir;
 
 	virtual void CalcDeviation();
 	virtual void Project(real_t& l, uint k);
 
-	RangeConV3(Solver* solver, ID id, V3Var* var, real_t _scale);
+	RangeConV3(Solver* solver, ID id, V3Var* var, const vec3_t& _dir, real_t _scale);
 };
-*/
+
 /**	range constraint for difference of scalar variables
     _min <= var1 - var0 <= _max
  */
