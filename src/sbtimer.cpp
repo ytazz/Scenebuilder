@@ -5,6 +5,7 @@
 # include <windows.h>
 #else
 # include <sys/time.h>
+# include <unistd.h>
 #endif
 
 namespace Scenebuilder{;
@@ -65,6 +66,14 @@ uint Timer::GetTime(){
 	return ts.tv_nsec/1000000;
 #endif
 	//return 0;
+}
+
+void Timer::Sleep(int ms){
+#ifdef _WIN32
+	::Sleep(ms);
+#else
+	usleep(ms*1000);
+#endif
 }
 
 int Timer::CountUS(){

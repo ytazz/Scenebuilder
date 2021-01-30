@@ -39,13 +39,16 @@ public:
 	/// stop the timer
 	void	Stop();
 
-	/// get system time in [ms]
-	static uint	GetTime();
-
 	/// count time in [us]
 	int CountUS();
 
-	 Timer();
+	/// get system time in [ms]
+	static uint	GetTime();
+
+	/// sleep [ms]
+	static void Sleep(int ms);
+
+	Timer();
 	~Timer();
 };
 
