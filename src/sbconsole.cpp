@@ -1,7 +1,14 @@
 ﻿#include <sbconsole.h>
 
+#ifdef USE_CURSES
+extern "C"{
+# include <curses.h>
+}
+#endif
+
 #ifdef _WIN32
 # include <windows.h>
+# undef min
 #endif
 
 namespace Scenebuilder{;
@@ -9,6 +16,11 @@ namespace Scenebuilder{;
 int    Console::numRows;
 int    Console::numColumns;
 string Console::buffer;
+
+#ifdef USE_CURSES
+static WINDOW* winOut = 0;
+static WINDOW* winIn  = 0;
+#endif
 
 void Console::SetFontSize(int sz){
 #ifdef _WIN32
@@ -56,10 +68,21 @@ void Console::SetDisplaySize(int nrow, int ncol){
 	sr.Bottom = nrow;
 	SetConsoleWindowInfo(hStdout, FALSE, &sr);
 #endif
+
+#ifdef USE_CURSES
+	initscr();
+	resize_term(nrow, ncol);
+	nrow = std::min(nrow, LINES);
+	ncol = std::min(ncol, COLS );
+	winOut = newwin(nrow-1, ncol, 0     , 0);
+	winIn  = newwin(1     , ncol, nrow-1, 0);
+	WINDOW* wtmp = newwin(10, 10, 0, 0);
+#endif
 }
 
 void Console::SetWindowPosition(int x, int y){
-#ifdef _WIN32
+#ifdef USE_CURSES
+#else
 	HWND hconsole = GetConsoleWindow();
 	RECT rc;
 	GetWindowRect(hconsole, &rc);
@@ -68,7 +91,9 @@ void Console::SetWindowPosition(int x, int y){
 }
 
 void Console::SetCursorPosition(int x, int y){
-#ifdef _WIN32
+#ifdef USE_CURSES
+	wmove(winIn, 0, x);
+#else
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	
 	COORD cd;
@@ -94,13 +119,52 @@ void Console::Fill(int x, int y, int w, int h, char c){
 }
 
 void Console::Refresh(int y, int nrow){
-#ifdef _WIN32
+#ifdef USE_CURSES
+	WINDOW* win;
+	int ywin;
+	int ybuf;
+	if(y == numRows-1){
+		win = winIn;
+		ywin = 0;
+		ybuf = numRows-1;
+	}
+	else{
+		win  = winOut;
+		ywin = y;
+		ybuf = y;
+	}
+	
+	wmove(win, ywin, 0);
+	for(int i = 0; i < nrow; i++)
+		wdeleteln(win);
+	for(int i = 0; i < nrow; i++)
+		waddnstr(win, &buffer[numColumns*(ybuf+i)], numColumns);
+	wrefresh(win);
+#else
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD c;
 	c.X = 0;
 	c.Y = y;
 	DWORD len;
 	WriteConsoleOutputCharacter(hStdout, &buffer[numColumns*y], numColumns*nrow, c, &len);		
+#endif
+}
+
+void Console::Input(string& str){
+#if defined _WIN32 && !defined USE_CURSES
+	// input with timeout
+	fflush(stdin);
+	HANDLE hstdin  = GetStdHandle(STD_INPUT_HANDLE);
+	int ret = WaitForSingleObject(hstdin, 100);
+	if(ret == WAIT_OBJECT_0){
+		getline(cin, str);
+	}
+#endif
+
+#ifdef USE_CURSES
+	char line[1024];
+	wgetstr(winIn, line);
+	str = line;
 #endif
 }
 

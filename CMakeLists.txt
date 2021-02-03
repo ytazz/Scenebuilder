@@ -9,6 +9,7 @@ if(NOT CMAKE_DEBUG_POSTFIX)
 endif()
 
 set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
+set(USE_CURSES false CACHE BOOL "use curses or not")
 
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
@@ -23,6 +24,16 @@ find_package(GLEW)
 find_package(PNG)
 find_package(EXPAT)
 find_package(Springhead)
+
+if(UNIX)
+	find_package(Curses)
+	add_compile_definitions(USE_CURSES)
+endif()
+if(WIN32 AND USE_CURSES)
+	set(CURSES_INCLUDE_DIR  "" CACHE PATH "include directory of curses")
+	include_directories(${CURSES_INCLUDE_DIR})
+	add_compile_definitions(USE_CURSES)
+endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/adaptors)
@@ -150,6 +161,9 @@ set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEAD
 
 target_link_libraries(Scenebuilder Springhead::Springhead)
 target_link_libraries(Scenebuilder GLEW::GLEW)
+if(UNIX)
+	target_link_libraries(Scenebuilder Curses)
+endif()
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport

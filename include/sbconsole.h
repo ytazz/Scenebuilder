@@ -25,6 +25,7 @@ public:
 	static void Write            (int x, int y, const string& str);
 	static void Fill             (int x, int y, int w, int h, char c);
 	static void Refresh          (int y, int nrow);
+	static void Input            (string& str);
 };
 
 }
