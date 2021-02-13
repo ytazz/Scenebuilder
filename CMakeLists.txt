@@ -4,8 +4,10 @@ project(Scenebuilder)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-if(NOT CMAKE_DEBUG_POSTFIX)
-  set(CMAKE_DEBUG_POSTFIX d)
+if(WIN32)
+  if(NOT CMAKE_DEBUG_POSTFIX)
+    set(CMAKE_DEBUG_POSTFIX d)
+  endif()
 endif()
 
 set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
@@ -27,11 +29,12 @@ find_package(Springhead)
 
 if(UNIX)
 	find_package(Curses)
+	include_directories(${CURSES_INCLUDE_DIRS})
 	add_compile_definitions(USE_CURSES)
 endif()
 if(WIN32 AND USE_CURSES)
-	set(CURSES_INCLUDE_DIR  "" CACHE PATH "include directory of curses")
-	include_directories(${CURSES_INCLUDE_DIR})
+	set(CURSES_INCLUDE_DIRS "" CACHE PATH "include directory of curses")
+	include_directories(${CURSES_INCLUDE_DIRS})
 	add_compile_definitions(USE_CURSES)
 endif()
 
@@ -161,9 +164,6 @@ set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEAD
 
 target_link_libraries(Scenebuilder Springhead::Springhead)
 target_link_libraries(Scenebuilder GLEW::GLEW)
-if(UNIX)
-	target_link_libraries(Scenebuilder Curses)
-endif()
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport

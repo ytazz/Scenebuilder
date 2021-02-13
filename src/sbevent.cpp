@@ -125,11 +125,11 @@ bool Event::Wait(uint timeout){
 		//cout << "mutex unlocking..." << endl;
 		pthread_mutex_unlock(&h->mutex);
 		if(ret == ETIMEDOUT){
-			cout << "cond wait timed out" << endl;
+			//cout << "cond wait timed out" << endl;
 			return false;
 		}
 		if(ret == EINTR){
-			cout << "cond wait interrupted" << endl;
+			//cout << "cond wait interrupted" << endl;
 			return false;
 		}
 	}
@@ -137,7 +137,7 @@ bool Event::Wait(uint timeout){
 	if(!h->manual)
 		h->value = false;
 	
-	cout << "cond wait succeeded" << endl;	
+	//cout << "cond wait succeeded" << endl;	
 	return true;
 #endif
 	return false;

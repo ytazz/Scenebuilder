@@ -22,6 +22,18 @@ static WINDOW* winOut = 0;
 static WINDOW* winIn  = 0;
 #endif
 
+void Console::Init(){
+#ifdef USE_CURSES
+	initscr();
+#endif
+}
+
+void Console::Cleanup(){
+#ifdef USE_CURSES
+	noraw();
+#endif
+}
+
 void Console::SetFontSize(int sz){
 #ifdef _WIN32
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -70,7 +82,6 @@ void Console::SetDisplaySize(int nrow, int ncol){
 #endif
 
 #ifdef USE_CURSES
-	initscr();
 	resize_term(nrow, ncol);
 	nrow = std::min(nrow, LINES);
 	ncol = std::min(ncol, COLS );

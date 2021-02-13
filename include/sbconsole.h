@@ -4,6 +4,7 @@
 	コンソール操作
 	- WinAPIのオーバヘッドが大きいので自前のバッファにテキストを保持し，
 	  Refreshで一括して更新する
+	- Curses library (PDCurses for windows and NCurses for linux) is used when USE_CURSES option is defined
  */
 
 #include <sbtypes.h>
@@ -17,6 +18,8 @@ public:
 	static string buffer;
 
 public:
+	static void Init             ();
+	static void Cleanup          ();
 	static void SetFontSize      (int sz);
 	static void SetBufferSize    (int nrow, int ncol);
 	static void SetDisplaySize   (int nrow, int ncol);
