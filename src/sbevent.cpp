@@ -2,8 +2,10 @@
 
 #if defined _WIN32
 # include <windows.h>
+# define USE_WFMO 1
 #elif defined __unix__
 # include <pthread.h>
+# define USE_WFMO 0
 #endif
 
 namespace Scenebuilder{;
@@ -141,6 +143,7 @@ bool Event::Wait(uint timeout){
 	return false;
 }
 
+/*
 int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 #ifdef _WIN32
 	vector<HANDLE>	handles;
@@ -170,6 +173,7 @@ int Event::Wait(Event** ev, uint num, uint timeout, bool wait_all){
 #endif
 	return -1;
 }
+*/
 
 void Event::Set(){
 	//cout << "setting event" << endl;
@@ -187,9 +191,13 @@ void Event::Set(){
 	pthread_mutex_unlock(&h->mutex);
 #endif
 
+#if USE_WFMO != 1
 	//cout << "setting groups " << groups.size() << endl;
-	for(EventGroup* gr : groups)
+	for(EventGroup* gr : groups){
+		CriticalSection _cs(&gr->cs);
 		gr->Set();
+	}
+#endif
 }
 
 bool Event::IsSet(){
@@ -222,12 +230,60 @@ void Event::Reset(){
 #endif
 }
 
+EventGroup::EventGroup(){
+
+}
+
+EventGroup::~EventGroup(){
+//	while(!empty())
+//		Remove(at(0));
+}
+
+void EventGroup::Remove(Event* ev){
+	CriticalSection _cs(&cs);
+	CriticalSection _csEv(&ev->cs);
+
+	vector<EventGroup*>::iterator it = std::find(ev->groups.begin(), ev->groups.end(), this);
+	if(it != ev->groups.end())
+		ev->groups.erase(it);
+
+	erase(find(begin(), end(), ev));
+}
+
 void EventGroup::Add(Event* ev){
+	CriticalSection _cs(&cs);
+	CriticalSection _csEv(&ev->cs);
+
 	push_back(ev);
 	ev->groups.push_back(this);
 }
 
 int EventGroup::Wait(uint timeout){
+#if USE_WFMO == 1
+	// implement using WaitForMultipleObjects
+	vector<HANDLE>	handles;
+	for(uint i = 0; i < size(); i++){
+		EventHandle* h = GetEventHandle(at(i));
+		if(!h){
+			at(i)->Create();
+			h = GetEventHandle(at(i));
+		}
+		handles.push_back(h->handle);
+	}
+
+	uint res = WaitForMultipleObjects(size(), &handles[0], false, timeout);
+
+	// event detected
+	if(WAIT_OBJECT_0 <= res && res < WAIT_OBJECT_0 + size()){
+		return res - WAIT_OBJECT_0;
+	}
+	// timed out
+	if(res == WAIT_TIMEOUT)
+		return -1;
+	// error
+	if(res == WAIT_FAILED)
+		return -1;
+#else
 	if(!Event::Wait(timeout))
 		return -1;
 
@@ -235,6 +291,7 @@ int EventGroup::Wait(uint timeout){
 		if(at(i)->IsSet())
 			return i;
 	}
+#endif
 
 	return -1;
 }

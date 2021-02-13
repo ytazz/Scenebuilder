@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <sbtypes.h>
+#include <sbcriticalsection.h>
 
 #include <map>
 
@@ -13,7 +14,8 @@ class EventGroup;
  */
 class Event{
 public:
-	string	     name;
+	string	             name;
+	CriticalSection      cs;
 	vector<EventGroup*>  groups;
 
 public:
@@ -33,7 +35,7 @@ public:
 		@param  wait_all	trueなら全てのイベントが発行するまで待つ．falseならいずれかのイベントが発行するまで待つ
 		@return				タイムアウトしたら-1，wait_allがtrueで全てのイベントが発行したら0，wait_allがfalseなら発行したイベントのインデックス
 	 */
-	static int Wait(Event** evBegin, uint num, uint timeout, bool wait_all);
+	//static int Wait(Event** evBegin, uint num, uint timeout, bool wait_all);
 
 	/** イベントをセット
 	 */
@@ -58,10 +60,13 @@ public:
  */
 class EventGroup : public Event, public vector<Event*>{
 public:
-	void Add(Event* ev);
+	void Add   (Event* ev);
+	void Remove(Event* ev);
 
 	int Wait(uint timeout);
 
+	 EventGroup();
+	~EventGroup();
 };
 
 }
