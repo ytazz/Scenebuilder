@@ -281,13 +281,15 @@ void Solver::PrepareDDP(){
 				continue;
 			if(!subtr->con->active)
 				continue;
+            if(subtr->x1->var->locked)
+                continue;
 			// evaluate f
 			//subtr->con->CalcLhs();
 
 			int i0 = subtr->con->index;
 			int n  = subtr->con->nelem;			
-
-			// set fx
+            
+            // set fx
 			for(SubState* x0 : subtr->x0){
 				if(x0->var->locked)
 					continue;
@@ -297,8 +299,8 @@ void Solver::PrepareDDP(){
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
 					fx[k][subtr->x1->index+i][x0->index+j] = -A[i0+i][j0+j];
 			}
-
-			// set fu
+            
+            // set fu
 			for(SubInput* u : subtr->u){
 				if(u->var->locked)
 					continue;
@@ -308,8 +310,8 @@ void Solver::PrepareDDP(){
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
 					fu[k][subtr->x1->index+i][u->index+j] = -A[i0+i][j0+j];
 			}
-
-			// set correction term
+            
+            // set correction term
 			for(int i = 0; i < n; i++)
 				f_cor[k][subtr->x1->index+i] = b[i0+i];
 
@@ -460,32 +462,25 @@ void Solver::PrepareDDP(){
 }
 
 void Solver::CalcDirectionDDP(){
-	PrepareDDP();
+    PrepareDDP();
 
  	V  [N] = L  [N];
 	Vx [N] = Lx [N];
 	Vxx[N] = Lxx[N];
 
 	for(int k = N-1; k >= 0; k--){
-		Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
-		Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
-		Qu [k] = Lu [k] + fu[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
-		Qxx[k] = Lxx[k] + fx[k].trans()*Vxx[k+1]*fx[k];
-		Quu[k] = Luu[k] + fu[k].trans()*Vxx[k+1]*fu[k];
-		Qux[k] = Lux[k] + fu[k].trans()*Vxx[k+1]*fx[k];
-
-		//DSTR << "k: " << k << endl;
-		//DSTR << " Quu: " << endl; 
-		//DSTR << Quu[k] << endl;
-		//DSTR << " Luu: " << endl; 
-		//DSTR << Luu[k] << endl;
-
-		//const real_t eps = 0.1;
+        Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
+    	Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
+    	Qu [k] = Lu [k] + fu[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
+    	Qxx[k] = Lxx[k] + fx[k].trans()*Vxx[k+1]*fx[k];
+    	Quu[k] = Luu[k] + fu[k].trans()*Vxx[k+1]*fu[k];
+    	Qux[k] = Lux[k] + fu[k].trans()*Vxx[k+1]*fx[k];
+    	//const real_t eps = 0.1;
 		int n = Quu[k].width();
 		for(int i = 0; i < n; i++)
 			Quu[k][i][i] += param.regularization;
-
-		// input dimension could be zero
+    	
+        // input dimension could be zero
 		if(n > 0){
 #ifdef USE_MKL
 			Quuinv[k] = Quu[k];
@@ -496,7 +491,6 @@ void Solver::CalcDirectionDDP(){
 #else
 			Quuinv[k] = inv(Quu[k]);
 #endif
-
 			vmat_t test = Quuinv[k]*Quu[k];
 
 			Quuinv_Qu[k] = Quuinv[k]*Qu[k];
@@ -511,26 +505,15 @@ void Solver::CalcDirectionDDP(){
 			Vxx[k] = Qxx[k];
 		}
 		
-		// enforce symmetry of Vxx
+    	// enforce symmetry of Vxx
 		int nx = Vxx[k].width();
 		for(int i = 1; i < nx; i++) for(int j = 0; j < i; j++)
 			Vxx[k][i][j] = Vxx[k][j][i];
 
-		//DSTR << "test" << endl;
-		//DSTR << Luu[k] << endl;
-		//DSTR << Lxx[k] << endl;
-		//DSTR << fx[k] << endl;
-		//DSTR << fu[k] << endl;
-		//DSTR << Lux[k] << endl;
-		//DSTR << Qxx[k] << endl;
-		//DSTR << Vxx[k] << endl;
-		//DSTR << Quu[k] << endl;
-		//DSTR << Quuinv[k] << endl;
-		//DSTR << test << endl;
         DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
 	}
 
-	// if the dimension of x0 is not zero, dx0 is also optimized
+    // if the dimension of x0 is not zero, dx0 is also optimized
 	if(state[0]->dim == 0){
  		dx[0].clear();
 	}
@@ -545,7 +528,7 @@ void Solver::CalcDirectionDDP(){
 		//DSTR << "k: " << k << " du: " << du[k] << " dx: " << dx[k] << endl;
 		//DSTR << "k: " << k << " f_cor: " << f_cor[k] << endl;
 	}
-
+    
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){
 			if(subst->var->locked)
@@ -581,6 +564,7 @@ void Solver::ForwardDynamics(){
 }
 
 real_t Solver::CalcObjectiveDDP(){
+    return 0.0;
 	//ForwardDynamics();
 
 	PrepareDDP();
