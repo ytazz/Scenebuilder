@@ -133,30 +133,45 @@ void Solver::AddCostCon (Constraint* con, int k){
 void Solver::InitDDP(){
 	N = (int)state.size()-1;
 
-	for(State* st : state){
+	for(int k = 0; k < state.size(); k++){
+        State* st = state[k];
 		st->dim = 0;
+        DSTR << "x" << k << endl;
 		for(SubState* subst : st->substate){
 			if(subst->var->locked)
 				continue;
 
 			subst->index = st->dim;
 			st->dim += subst->var->nelem;
+
+            DSTR << " " << subst->index << " " << subst->var->name << endl;
 		}
 	}
 
-	for(Input* in : input){
+	for(int k = 0; k < input.size(); k++){
+        Input* in = input[k];
 		in->dim = 0;
+        DSTR << "u" << k << endl;
 		for(SubInput* subin : in->subinput){
 			if(subin->var->locked)
 				continue;
 
 			subin->index = in->dim;
 			in->dim += subin->var->nelem;
+
+            DSTR << " " << subin->index << " " << subin->var->name << endl;
 		}
 	}
 
-	for(Transition* tr : transition){
-		
+	for(int k = 0; k < transition.size(); k++){
+		Transition* tr = transition[k];
+        DSTR << "f" << k << endl;
+        for(SubTransition* subtr : tr->subtran){
+            if(!subtr->con->enabled)
+                continue;
+
+            DSTR << " " << subtr->con->name << " " << subtr->x1->index << endl;
+        }
 	}
 
 	dx       .resize(N+1);
@@ -413,8 +428,33 @@ void Solver::PrepareDDP(){
 					}
 				}
 			}
-
 		}
+
+        // weights
+		for(SubState* subst : state[k]->substate){
+            if(subst->var->locked)
+                continue;
+
+            int j0 = subst->index;
+            int m  = subst->var->nelem;
+            for(int j = 0; j < m; j++){
+                real_t wj = subst->var->weight[j];
+                Lxx[k][j0+j][j0+j] += wj*wj;
+            }
+        }
+        if(k < N){
+            for(SubInput* subin : input[k]->subinput){
+                if(subin->var->locked)
+                    continue;
+
+                int j0 = subin->index;
+                int m  = subin->var->nelem;
+                for(int j = 0; j < m; j++){
+                    real_t wj = subin->var->weight[j];
+                    Luu[k][j0+j][j0+j] += wj*wj;
+                }
+            }
+        }
 	}
 
 }
@@ -427,7 +467,7 @@ void Solver::CalcDirectionDDP(){
 	Vxx[N] = Lxx[N];
 
 	for(int k = N-1; k >= 0; k--){
-		Q  [k] = L  [k] + V[k+1];
+		Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
 		Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
 		Qu [k] = Lu [k] + fu[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
 		Qxx[k] = Lxx[k] + fx[k].trans()*Vxx[k+1]*fx[k];
@@ -487,6 +527,7 @@ void Solver::CalcDirectionDDP(){
 		//DSTR << Quu[k] << endl;
 		//DSTR << Quuinv[k] << endl;
 		//DSTR << test << endl;
+        DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
 	}
 
 	// if the dimension of x0 is not zero, dx0 is also optimized
