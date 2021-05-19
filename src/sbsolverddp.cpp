@@ -23,6 +23,22 @@ inline real_t square(real_t x){
 	return x*x;
 }
 
+void syminv(const vmat_t& m, vmat_t& minv){
+#ifdef USE_MKL
+    int n = m.height();
+	minv = m;
+	LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', n, &minv[0][0], n);
+	LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', n, &minv[0][0], n);
+	for(int i = 1; i < n; i++) for(int j = 0; j < i; j++)
+		minv[i][j] = minv[j][i];
+#else
+    minv = inv(m);
+#endif
+
+	vmat_t test = minv*m;
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 Solver::SubInput* Solver::Input::Find(Variable* var){
@@ -130,6 +146,30 @@ void Solver::AddCostCon (Constraint* con, int k){
 	cost[k]->subcost.push_back(subcost);
 }
 
+void Solver::AddInputConstraint(Constraint* con, int k){
+	if(inputcon.size() <= k)
+		inputcon.resize(k+1);
+
+	if(!inputcon[k])
+		inputcon[k] = new InputConstraint();
+
+	Input* in_u = input[k];
+
+	SubInputConstraint* subcon = new SubInputConstraint();
+	subcon->con = con;
+
+	for(Link* l : con->links){
+		SubInput* subin;
+
+		subin = in_u->Find(l->var);
+		if(subin){
+			subcon->u.push_back(subin);
+		}
+	}
+
+	inputcon[k]->subcon.push_back(subcon);
+}
+
 void Solver::InitDDP(){
 	N = (int)state.size()-1;
 
@@ -174,28 +214,49 @@ void Solver::InitDDP(){
         }
 	}
 
-	dx       .resize(N+1);
-	du       .resize(N);
-	fx       .resize(N);
-	fu       .resize(N);
-	f_cor    .resize(N);
-	L        .resize(N+1);
-	Lx       .resize(N+1);
-	Lxx      .resize(N+1);
-	Lu       .resize(N);
-	Luu      .resize(N);
-	Lux      .resize(N);
-	Q        .resize(N);
-	Qx       .resize(N);
-	Qu       .resize(N);
-	Qxx      .resize(N);
-	Quu      .resize(N);
-	Quuinv   .resize(N);
-	Quuinv_Qu.resize(N);
-	Qux      .resize(N);
-	V        .resize(N+1);
-	Vx       .resize(N+1);
-	Vxx      .resize(N+1);
+    for(int k = 0; k < inputcon.size(); k++){
+        InputConstraint* incon = inputcon[k];
+        incon->dim = 0;
+
+        for(SubInputConstraint* subcon : incon->subcon){
+            if(!subcon->con->enabled)
+                continue;
+
+            subcon->index = incon->dim;
+            incon->dim += subcon->con->nelem;
+        }
+    }
+
+	dx                .resize(N+1);
+	du                .resize(N);
+	fx                .resize(N);
+	fu                .resize(N);
+	f_cor             .resize(N);
+    gu                .resize(N);
+    g_cor             .resize(N);
+	L                 .resize(N+1);
+	Lx                .resize(N+1);
+	Lxx               .resize(N+1);
+	Lu                .resize(N);
+	Luu               .resize(N);
+	Lux               .resize(N);
+	Q                 .resize(N);
+	Qx                .resize(N);
+	Qu                .resize(N);
+	Qxx               .resize(N);
+	Quu               .resize(N);
+	Quuinv            .resize(N);
+	Quuinv_Qu         .resize(N);
+	Qux               .resize(N);
+    gu_Quuinv         .resize(N);
+    gu_Quuinv_gutr    .resize(N);
+    gu_Quuinv_gutr_inv.resize(N);
+    Quuhat            .resize(N);
+    Quuhat_Qu         .resize(N);
+    g_cor_hat         .resize(N);
+	V                 .resize(N+1);
+	Vx                .resize(N+1);
+	Vxx               .resize(N+1);
 
 	for(int k = 0; k <= N; k++){
 		int nx  = state[k]->dim;
@@ -209,21 +270,30 @@ void Solver::InitDDP(){
 		if(k < N){
 			int nu  = input[k]->dim;
 			int nx1 = state[k+1]->dim;
+            int nuc = (inputcon.size() <= k ? 0 : inputcon[k]->dim);
 
-			du       [k].resize(nu);
-			fx       [k].resize(nx1, nx);
-			fu       [k].resize(nx1, nu);
-			f_cor    [k].resize(nx1);
-			Lu       [k].resize(nu);
-			Luu      [k].resize(nu, nu);
-			Lux      [k].resize(nu, nx);
-			Qx       [k].resize(nx);
-			Qu       [k].resize(nu);
-			Qxx      [k].resize(nx, nx);
-			Quu      [k].resize(nu, nu);
-			Quuinv   [k].resize(nu, nu);
-			Quuinv_Qu[k].resize(nu);
-			Qux      [k].resize(nu, nx);
+			du                [k].resize(nu      );
+			fx                [k].resize(nx1, nx );
+			fu                [k].resize(nx1, nu );
+			f_cor             [k].resize(nx1     );
+            gu                [k].resize(nuc, nu );
+            g_cor             [k].resize(nuc     );
+			Lu                [k].resize(nu      );
+			Luu               [k].resize(nu , nu );
+			Lux               [k].resize(nu , nx );
+			Qx                [k].resize(nx      );
+			Qu                [k].resize(nu      );
+			Qxx               [k].resize(nx , nx );
+			Quu               [k].resize(nu , nu );
+			Quuinv            [k].resize(nu , nu );
+			Quuinv_Qu         [k].resize(nu      );
+			Qux               [k].resize(nu , nx );
+            gu_Quuinv         [k].resize(nuc, nu );
+            gu_Quuinv_gutr    [k].resize(nuc, nuc);
+            gu_Quuinv_gutr_inv[k].resize(nuc, nuc);
+            Quuhat            [k].resize(nu , nu );
+            Quuhat_Qu         [k].resize(nu      );
+            g_cor_hat         [k].resize(nuc     );
 
 			DSTR << "k: " << k << " nx: " << nx << " nu: " << nu << " cost: " << cost[k]->subcost.size() << endl;
 		}
@@ -241,28 +311,36 @@ void Solver::ClearDDP(){
 	cost      .clear();
 	
 	N = 0;
-	dx       .clear();
-	du       .clear();
-	fx       .clear();
-	fu       .clear();
-	f_cor    .clear();
-	L        .clear();
-	Lx       .clear();
-	Lxx      .clear();
-	Lu       .clear();
-	Luu      .clear();
-	Lux      .clear();
-	Q        .clear();
-	Qx       .clear();
-	Qu       .clear();
-	Qxx      .clear();
-	Quu      .clear();
-	Qux      .clear();
-	Quuinv   .clear();
-	Quuinv_Qu.clear();
-	V        .clear();
-	Vx       .clear();
-	Vxx      .clear();
+	dx                .clear();
+	du                .clear();
+	fx                .clear();
+	fu                .clear();
+	f_cor             .clear();
+    gu                .clear();
+    g_cor             .clear();
+	L                 .clear();
+	Lx                .clear();
+	Lxx               .clear();
+	Lu                .clear();
+	Luu               .clear();
+	Lux               .clear();
+	Q                 .clear();
+	Qx                .clear();
+	Qu                .clear();
+	Qxx               .clear();
+	Quu               .clear();
+	Qux               .clear();
+	Quuinv            .clear();
+	Quuinv_Qu         .clear();
+    gu_Quuinv         .clear();
+    gu_Quuinv_gutr    .clear();
+    gu_Quuinv_gutr_inv.clear();
+    Quuhat            .clear();
+    Quuhat_Qu         .clear();
+    g_cor_hat         .clear();
+	V                 .clear();
+	Vx                .clear();
+	Vxx               .clear();
 
 }
 
@@ -273,8 +351,9 @@ void Solver::PrepareDDP(){
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
 
-		fx[k].clear();
-		fu[k].clear();
+		fx   [k].clear();
+		fu   [k].clear();
+        f_cor[k].clear();
 
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
@@ -317,6 +396,39 @@ void Solver::PrepareDDP(){
 
 		}
 	}
+
+    for(int k = 0; k < inputcon.size(); k++){
+        InputConstraint* incon = inputcon[k];
+
+        gu   [k].clear();
+        g_cor[k].clear();
+
+        for(SubInputConstraint* subcon : incon->subcon){
+			if(!subcon->con->enabled)
+				continue;
+			if(!subcon->con->active)
+				continue;
+            
+            int i0 = subcon->con->index;
+	        int n  = subcon->con->nelem;    
+
+            // set gu
+			for(SubInput* u : subcon->u){
+				if(u->var->locked)
+					continue;
+
+				int j0 = u->var->index; 
+				int m  = u->var->nelem;
+				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					gu[k][subcon->index+i][u->index+j] = A[i0+i][j0+j];
+			}
+            
+            // set correction term
+			for(int i = 0; i < n; i++)
+				g_cor[k][subcon->index+i] = b[i0+i];
+
+        }
+    }
 
 	for(int k = 0; k <= N; k++){
 		L  [k] = 0.0;
@@ -476,28 +588,38 @@ void Solver::CalcDirectionDDP(){
     	Quu[k] = Luu[k] + fu[k].trans()*Vxx[k+1]*fu[k];
     	Qux[k] = Lux[k] + fu[k].trans()*Vxx[k+1]*fx[k];
     	//const real_t eps = 0.1;
-		int n = Quu[k].width();
+		int n = Quu[k].height();
 		for(int i = 0; i < n; i++)
 			Quu[k][i][i] += param.regularization;
     	
         // input dimension could be zero
 		if(n > 0){
-#ifdef USE_MKL
-			Quuinv[k] = Quu[k];
-			LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
-			LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', n, &Quuinv[k][0][0], n);
-			for(int i = 1; i < n; i++) for(int j = 0; j < i; j++)
-				Quuinv[k][i][j] = Quuinv[k][j][i];
-#else
-			Quuinv[k] = inv(Quu[k]);
-#endif
-			vmat_t test = Quuinv[k]*Quu[k];
+            syminv(Quu[k], Quuinv[k]);
 
-			Quuinv_Qu[k] = Quuinv[k]*Qu[k];
+            int nuc = gu[k].height();
+            // if input constraint is present
+            if(nuc > 0){
+                gu_Quuinv[k]      = gu[k]*Quuinv[k];
+                gu_Quuinv_gutr[k] = gu_Quuinv[k]*gu[k].trans();
 
-			V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
-			Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
-			Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
+                syminv(gu_Quuinv_gutr[k], gu_Quuinv_gutr_inv[k]);
+
+                Quuhat[k]    = Quuinv[k] - gu_Quuinv[k].trans()*gu_Quuinv_gutr_inv[k]*gu_Quuinv[k];
+                Quuhat_Qu[k] = Quuhat[k]*Qu[k];
+
+                g_cor_hat[k] = gu_Quuinv[k].trans()*gu_Quuinv_gutr_inv[k]*g_cor[k];
+
+			    V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuhat_Qu[k]) + Qu[k]*g_cor_hat[k] + (1.0/2.0)*(g_cor_hat[k]*(Quu[k]*g_cor_hat[k]));
+			    Vx [k] = Qx [k] - Qux[k].trans()*(Quuhat_Qu [k] - g_cor_hat[k]);
+			    Vxx[k] = Qxx[k] - Qux[k].trans()*Quuhat[k]*Qux[k];
+            }
+            else{
+			    Quuinv_Qu[k] = Quuinv[k]*Qu[k];
+
+			    V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
+			    Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
+			    Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
+            }
 		}
 		else{
 			V  [k] = Q  [k];
@@ -522,7 +644,12 @@ void Solver::CalcDirectionDDP(){
 	}
 
 	for(int k = 0; k < N; k++){
-		du[k]   = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
+        if(gu[k].height() > 0){
+            du[k] = -Quuhat[k]*(Qu[k] + Qux[k]*dx[k]) + g_cor_hat[k];
+        }
+        else{
+		    du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
+        }
 		dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
 
 		//DSTR << "k: " << k << " du: " << du[k] << " dx: " << dx[k] << endl;

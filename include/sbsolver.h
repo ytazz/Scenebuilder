@@ -123,18 +123,23 @@ public:
 		vector<SubInput*>   u;
 	};
 	struct SubCost : UTRefCount{
-		Constraint*  con;
+		Constraint*         con;
 		vector<SubState*>   x;
 		vector<SubInput*>   u;
 	};
+    struct SubInputConstraint : UTRefCount{
+        Constraint*         con;
+        int                 index;
+        vector<SubInput*>   u;
+    };
 	struct State : UTRefCount{
-		int        dim;
+		int  dim;
 		vector< UTRef<SubState> > substate;
 
 		SubState*  Find(Variable* var);
 	};
 	struct Input : UTRefCount{
-		int        dim;
+		int  dim;
 		vector< UTRef<SubInput> > subinput;
 
 		SubInput*  Find(Variable* var);
@@ -145,6 +150,10 @@ public:
 	struct Cost : UTRefCount{
 		vector< UTRef<SubCost> >  subcost;
 	};
+    struct InputConstraint : UTRefCount{
+        int  dim;
+        vector< UTRef<SubInputConstraint> > subcon;
+    };
 	
 	Param            param;
 	Status           status;
@@ -174,10 +183,11 @@ public:
 
 	bool  ready;
 
-	vector< UTRef<State> >        state;
-	vector< UTRef<Input> >        input;
-	vector< UTRef<Transition> >   transition;
-	vector< UTRef<Cost> >         cost;
+	vector< UTRef<State> >            state;
+	vector< UTRef<Input> >            input;
+	vector< UTRef<Transition> >       transition;
+	vector< UTRef<Cost> >             cost;
+    vector< UTRef<InputConstraint> >  inputcon;
 	
 	int               N;
 	vector<vvec_t>    dx;
@@ -185,6 +195,8 @@ public:
 	vector<vmat_t>    fx;
 	vector<vmat_t>    fu;
 	vector<vvec_t>    f_cor;
+    vector<vmat_t>    gu;
+    vector<vvec_t>    g_cor;
 	vector<real_t>    L;
 	vector<vvec_t>    Lx;
 	vector<vmat_t>    Lxx;
@@ -199,6 +211,12 @@ public:
 	vector<vmat_t>    Qux;
 	vector<vmat_t>    Quuinv;
 	vector<vvec_t>    Quuinv_Qu;
+    vector<vmat_t>    gu_Quuinv;
+    vector<vmat_t>    gu_Quuinv_gutr;
+    vector<vmat_t>    gu_Quuinv_gutr_inv;
+    vector<vmat_t>    Quuhat;
+    vector<vvec_t>    Quuhat_Qu;
+    vector<vvec_t>    g_cor_hat;
 	vector<real_t>    V;
 	vector<vvec_t>    Vx;
 	vector<vmat_t>    Vxx;
@@ -221,10 +239,11 @@ public:
 	void DeleteCon(Constraint* con);    ///< delte variable
 
 	/// methods for DDP
-	void AddStateVar     (Variable* var, int k);   ///< register var as a sub-state at k
-	void AddInputVar     (Variable* var, int k);   ///< register var as a sub-input at k
-	void AddTransitionCon(Constraint* con, int k);  ///< register con as a transition at k
-	void AddCostCon      (Constraint* con, int k);  ///< register con as a cost at k
+	void AddStateVar       (Variable*   var, int k);  ///< register var as a sub-state at k
+	void AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
+	void AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
+	void AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
+    void AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
 
 public:
 	/// virtual function that are to be overridden by derived classes
