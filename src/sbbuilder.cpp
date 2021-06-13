@@ -177,6 +177,15 @@ void Builder::Create(int typeId, string n){
 	// set property values
 	FillProperty(type, scene->GetProperty(curObjId));
 
+    // create mesh of primitive shape for convenience
+    if(typeId == BoxProp::id){
+        BoxProp* boxProp = (BoxProp*)scene->GetProperty(curObjId);
+        models->CreateModel(curObjId, boxProp);
+    }
+    if(typeId == SphereProp::id){
+        SphereProp* sphereProp = (SphereProp*)scene->GetProperty(curObjId);
+        models->CreateModel(curObjId, sphereProp);
+    }
 	// 3Dモデル，画像のロード処理
 	if(typeId == MeshProp::id){
 		MeshProp* meshProp = (MeshProp*)scene->GetProperty(curObjId);

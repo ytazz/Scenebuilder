@@ -151,6 +151,22 @@ Model* ModelContainer::GetModel(int id){
 	return 0;
 }
 
+void ModelContainer::CreateModel(int id, BoxProp*    prop){
+    Model* model = new Model();
+    model->id = id;
+    model->meshSolid.resize(1);
+    model->meshSolid[0].Box(prop->size.x, prop->size.y, prop->size.z);
+	models.push_back(model);
+}
+
+void ModelContainer::CreateModel(int id, SphereProp* prop){
+    Model* model = new Model();
+    model->id = id;
+    model->meshSolid.resize(1);
+    model->meshSolid[0].Sphere(prop->radius, prop->slice, prop->stack);
+	models.push_back(model);
+}
+
 bool ModelContainer::LoadModel(int id, const string& filename, MeshProp* meshProp){
 	Path   path = Path(scene->GetLocation(id)) + Path(filename);
 	string ext  = path.Ext();

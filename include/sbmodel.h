@@ -164,6 +164,8 @@ public:
 public:
 	void   Set              (SceneBase* s);
 	Model* GetModel         (int id);
+    void   CreateModel      (int id, BoxProp*    prop);
+	void   CreateModel      (int id, SphereProp* prop);
 	bool   LoadModel        (int id, const string& filename, MeshProp* meshProp);
 	void   UnloadModel      (int id);
 	void   UnloadModelRecurs(int id);
