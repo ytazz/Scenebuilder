@@ -58,6 +58,7 @@ set(SCENEBUILDER_HEADERS
 	include/sbcriticalsection.h
 	include/sbcsv.h
 	include/sbevent.h
+    include/sbfilter.h
 	include/sbikbody.h
 	include/sbikjoint.h
 	include/sbikbodyhandle.h
@@ -112,6 +113,7 @@ set(SCENEBUILDER_SOURCES
 	src/sbconverter.cpp
 	src/sbcriticalsection.cpp
 	src/sbevent.cpp
+    src/sbfilter.cpp
 	src/sbikbody.cpp
 	src/sbikbodyhandle.cpp
 	src/sbikjointhandle.cpp

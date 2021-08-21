@@ -30,7 +30,8 @@ void Console::Init(){
 
 void Console::Cleanup(){
 #ifdef USE_CURSES
-	noraw();
+	endwin();
+	//noraw();
 #endif
 }
 

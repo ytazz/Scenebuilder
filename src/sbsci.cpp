@@ -80,8 +80,11 @@ void Sci::Init(const string& port, int baud, int byteSize, int stopBits, int par
 	dcb.fInX		= false;
 	dcb.fOutX		= false;
 	
-	if(!SetCommState(handle, &dcb))
-		throw Exception();
+    // some virtual com drivers does not support changing configurations, and returns error
+    SetCommState(handle, &dcb);
+	
+    //if(!SetCommState(handle, &dcb))
+	//	throw Exception();
 	
 	COMMTIMEOUTS timeouts;
 	timeouts.ReadIntervalTimeout         = 	 rxTimeoutPerByte   ;

@@ -12,7 +12,7 @@ class CriticalSectionImpl;
 
 class CriticalSection{
 private:
-	CriticalSection(const CriticalSection& ){}	///< 誤って呼ばれないように
+	CriticalSection(const CriticalSection& ):impl(0), target(0), spinCount(0){}	///< 誤って呼ばれないように
 
 protected:
 	CriticalSectionImpl* impl;
