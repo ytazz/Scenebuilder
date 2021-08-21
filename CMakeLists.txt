@@ -16,7 +16,7 @@ set(USE_CURSES false CACHE BOOL "use curses or not")
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-offsetof -Wno-sign-compare -Wno-delete-non-virtual-dtor -Wno-reorder")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -fPIC")
 	set(CMAKE_CXX_FLAGS_DEBUG "-g")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
@@ -164,6 +164,8 @@ set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEAD
 
 target_link_libraries(Scenebuilder Springhead::Springhead)
 target_link_libraries(Scenebuilder GLEW::GLEW)
+target_link_libraries(Scenebuilder ${EXPAT_LIBRARIES})
+target_link_libraries(Scenebuilder ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport
