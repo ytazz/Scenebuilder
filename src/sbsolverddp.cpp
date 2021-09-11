@@ -176,7 +176,7 @@ void Solver::InitDDP(){
 	for(int k = 0; k < state.size(); k++){
         State* st = state[k];
 		st->dim = 0;
-        DSTR << "x" << k << endl;
+        //DSTR << "x" << k << endl;
 		for(SubState* subst : st->substate){
 			if(subst->var->locked)
 				continue;
@@ -184,14 +184,14 @@ void Solver::InitDDP(){
 			subst->index = st->dim;
 			st->dim += subst->var->nelem;
 
-            DSTR << " " << subst->index << " " << subst->var->name << endl;
+            //DSTR << " " << subst->index << " " << subst->var->name << endl;
 		}
 	}
 
 	for(int k = 0; k < input.size(); k++){
         Input* in = input[k];
 		in->dim = 0;
-        DSTR << "u" << k << endl;
+        //DSTR << "u" << k << endl;
 		for(SubInput* subin : in->subinput){
 			if(subin->var->locked)
 				continue;
@@ -199,18 +199,18 @@ void Solver::InitDDP(){
 			subin->index = in->dim;
 			in->dim += subin->var->nelem;
 
-            DSTR << " " << subin->index << " " << subin->var->name << endl;
+            //DSTR << " " << subin->index << " " << subin->var->name << endl;
 		}
 	}
 
 	for(int k = 0; k < transition.size(); k++){
 		Transition* tr = transition[k];
-        DSTR << "f" << k << endl;
+        //DSTR << "f" << k << endl;
         for(SubTransition* subtr : tr->subtran){
             if(!subtr->con->enabled)
                 continue;
 
-            DSTR << " " << subtr->con->name << " " << subtr->x1->index << endl;
+            //DSTR << " " << subtr->con->name << " " << subtr->x1->index << endl;
         }
 	}
 
@@ -295,10 +295,10 @@ void Solver::InitDDP(){
             Quuhat_Qu         [k].resize(nu      );
             g_cor_hat         [k].resize(nuc     );
 
-			DSTR << "k: " << k << " nx: " << nx << " nu: " << nu << " cost: " << cost[k]->subcost.size() << endl;
+			//DSTR << "k: " << k << " nx: " << nx << " nu: " << nu << " cost: " << cost[k]->subcost.size() << endl;
 		}
 		else{
-			DSTR << "k: " << k << " nx: " << nx << " cost: " << cost[k]->subcost.size() << endl;
+			//DSTR << "k: " << k << " nx: " << nx << " cost: " << cost[k]->subcost.size() << endl;
 		}
 	}
 
@@ -632,7 +632,7 @@ void Solver::CalcDirectionDDP(){
 		for(int i = 1; i < nx; i++) for(int j = 0; j < i; j++)
 			Vxx[k][i][j] = Vxx[k][j][i];
 
-        DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
+        //DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
 	}
 
     // if the dimension of x0 is not zero, dx0 is also optimized

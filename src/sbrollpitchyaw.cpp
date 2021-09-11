@@ -27,6 +27,12 @@ quat_t FromRollPitchYaw(const vec3_t& angles){
 	return quat_t::Rot(angles[2], 'z') * quat_t::Rot(angles[1], 'y') * quat_t::Rot(angles[0], 'x');
 }
 
+vec3_t VelocityFromRollPitchYaw(const vec3_t& angle, const vec3_t& angled){
+    return vec3_t( cos(angle[2])*cos(angle[1]), sin(angle[2])*cos(angle[1]), -sin(angle[1]))*angled[0]
+         + vec3_t(-sin(angle[2])              , cos(angle[2])              ,  0.0          )*angled[1]
+         + vec3_t( 0.0                        , 0.0                        ,  1.0          )*angled[2];
+}
+
 vec3_t ToAxisAngle(const quat_t& q){
 	real_t w = q.W();
 	vec3_t v = q.V();
