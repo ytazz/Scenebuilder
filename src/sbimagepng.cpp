@@ -1,7 +1,9 @@
 ﻿#include <sbimagepng.h>
 #include <sbmessage.h>
 
-#include <png.h>
+#ifdef USE_LIBPNG
+# include <png.h>
+#endif
 
 namespace Scenebuilder{;
 
@@ -12,6 +14,7 @@ ImagePNG::ImagePNG(){
 }
 
 bool ImagePNG::Load(string filename){
+#ifdef USE_LIBPNG
 	Message::Extra("pnglib version %lu", (unsigned long)png_access_version_number());
 
 	FILE* file = fopen(filename.c_str(), "rb");
@@ -54,6 +57,9 @@ bool ImagePNG::Load(string filename){
 	fclose(file);
 
 	return true;
+#else
+    return false;
+#endif
 }
 
 }

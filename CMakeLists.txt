@@ -12,6 +12,7 @@ endif()
 
 set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
 set(USE_CURSES false CACHE BOOL "use curses or not")
+set(USE_LIBPNG false CACHE BOOL "use libpng or not")
 
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
@@ -23,11 +24,16 @@ endif()
 
 find_package(Boost REQUIRED COMPONENTS thread)
 find_package(GLEW)
-find_package(PNG)
 find_package(EXPAT)
 find_package(Springhead)
 
-if(UNIX)
+if(USE_LIBPNG)
+    find_package(PNG)
+	add_compile_definitions(USE_LIBPNG)
+endif()
+
+
+if(UNIX AND USE_CURSES)
 	find_package(Curses)
 	include_directories(${CURSES_INCLUDE_DIRS})
 	add_compile_definitions(USE_CURSES)

@@ -94,7 +94,7 @@ void Console::SetDisplaySize(int nrow, int ncol){
 
 void Console::SetWindowPosition(int x, int y){
 #ifdef USE_CURSES
-#else
+#elif defined _WIN32
 	HWND hconsole = GetConsoleWindow();
 	RECT rc;
 	GetWindowRect(hconsole, &rc);
@@ -105,7 +105,7 @@ void Console::SetWindowPosition(int x, int y){
 void Console::SetCursorPosition(int x, int y){
 #ifdef USE_CURSES
 	wmove(winIn, 0, x);
-#else
+#elif defined _WIN32
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	
 	COORD cd;
@@ -152,7 +152,7 @@ void Console::Refresh(int y, int nrow){
 	for(int i = 0; i < nrow; i++)
 		waddnstr(win, &buffer[numColumns*(ybuf+i)], numColumns);
 	wrefresh(win);
-#else
+#elif defined _WIN32
 	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD c;
 	c.X = 0;
