@@ -17,6 +17,9 @@ typedef vector< Constraint* >			Constraints;
 typedef vector< UTRef<Constraint> >		ConstraintRefs;
 typedef vector< UTRef<Link> >			LinkRefs;
 
+void mat_inv_gen(const vmat_t& m, vmat_t& minv);
+void mat_inv_sym(const vmat_t& m, vmat_t& minv);
+
 class Solver : public UTRefCount{
 public:
 	struct Method{
@@ -26,6 +29,7 @@ public:
 				GaussNewton,   ///< Gauss Newton method
 				Prioritized,
 				DDP,           ///< Differential Dynamic Programming
+                Num
 			};
 		};
 		struct Minor{
@@ -33,6 +37,7 @@ public:
 				Direct,        ///< direct method
 				Jacobi,        ///< Jacobi iterative method
 				GaussSeidel,   ///< Gauss-Seidel iterative method
+                Num
 			};
 		};
 		/// routine for solving linear equation (when Minor = Direct)
@@ -229,9 +234,11 @@ public:
 	void    InitDDP             ();
 	void    ClearDDP            ();
 	void    PrepareDDP          ();
+	void    BackwardDDP         ();
+	void    ForwardDDP          ();
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();
-	void    ForwardDynamics     ();
+	//void    ForwardDynamics     ();
 	
 	void AddVar   (Variable* var);      ///< add variable
 	void DeleteVar(Variable* var);	    ///< delete variable

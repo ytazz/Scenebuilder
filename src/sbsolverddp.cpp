@@ -23,7 +23,19 @@ inline real_t square(real_t x){
 	return x*x;
 }
 
-void syminv(const vmat_t& m, vmat_t& minv){
+void mat_inv_gen(const vmat_t& m, vmat_t& minv){
+#ifdef USE_MKL
+    int n = m.height();
+	minv = m;
+	vector<int> pivot; pivot.resize(n);
+	LAPACKE_dgetrf(LAPACK_COL_MAJOR, n, n, &minv[0][0], n, &pivot[0]);
+	LAPACKE_dgetri(LAPACK_COL_MAJOR, n,    &minv[0][0], n, &pivot[0]);
+#else
+    minv = inv(m);
+#endif
+}
+
+void mat_inv_sym(const vmat_t& m, vmat_t& minv){
 #ifdef USE_MKL
     int n = m.height();
 	minv = m;
@@ -573,9 +585,7 @@ void Solver::PrepareDDP(){
 
 }
 
-void Solver::CalcDirectionDDP(){
-    PrepareDDP();
-
+void Solver::BackwardDDP(){
  	V  [N] = L  [N];
 	Vx [N] = Lx [N];
 	Vxx[N] = Lxx[N];
@@ -594,7 +604,7 @@ void Solver::CalcDirectionDDP(){
     	
         // input dimension could be zero
 		if(n > 0){
-            syminv(Quu[k], Quuinv[k]);
+            mat_inv_sym(Quu[k], Quuinv[k]);
 
             int nuc = gu[k].height();
             // if input constraint is present
@@ -602,7 +612,7 @@ void Solver::CalcDirectionDDP(){
                 gu_Quuinv[k]      = gu[k]*Quuinv[k];
                 gu_Quuinv_gutr[k] = gu_Quuinv[k]*gu[k].trans();
 
-                syminv(gu_Quuinv_gutr[k], gu_Quuinv_gutr_inv[k]);
+                mat_inv_sym(gu_Quuinv_gutr[k], gu_Quuinv_gutr_inv[k]);
 
                 Quuhat[k]    = Quuinv[k] - gu_Quuinv[k].trans()*gu_Quuinv_gutr_inv[k]*gu_Quuinv[k];
                 Quuhat_Qu[k] = Quuhat[k]*Qu[k];
@@ -634,7 +644,9 @@ void Solver::CalcDirectionDDP(){
 
         //DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
 	}
+}
 
+void Solver::ForwardDDP(){
     // if the dimension of x0 is not zero, dx0 is also optimized
 	if(state[0]->dim == 0){
  		dx[0].clear();
@@ -655,6 +667,13 @@ void Solver::CalcDirectionDDP(){
 		//DSTR << "k: " << k << " du: " << du[k] << " dx: " << dx[k] << endl;
 		//DSTR << "k: " << k << " f_cor: " << f_cor[k] << endl;
 	}
+}
+
+void Solver::CalcDirectionDDP(){
+    PrepareDDP();
+
+    BackwardDDP();
+    ForwardDDP();
     
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){
@@ -681,17 +700,17 @@ void Solver::CalcDirectionDDP(){
 	}
 }
 
-void Solver::ForwardDynamics(){
-	for(int k = 0; k < N; k++){
-		Transition* tr = transition[k];
-		for(SubTransition* subtr : tr->subtran){
-			subtr->con->CalcLhs();
-		}
-	}
-}
+//void Solver::ForwardDynamics(){
+//	for(int k = 0; k < N; k++){
+//		Transition* tr = transition[k];
+//		for(SubTransition* subtr : tr->subtran){
+//			subtr->con->CalcLhs();
+//		}
+//	}
+//}
 
 real_t Solver::CalcObjectiveDDP(){
-    return 0.0;
+    //return 0.0;
 	//ForwardDynamics();
 
 	PrepareDDP();
