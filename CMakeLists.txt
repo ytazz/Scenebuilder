@@ -46,7 +46,7 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/adaptors)
-include_directories(${Boost_INCLUDE_DIR})
+#include_directories(${Boost_INCLUDE_DIR})
 include_directories(${PNG_PNG_INCLUDE_DIR})
 include_directories(${EXPAT_INCLUDE_DIR})
 include_directories(${MKL_INCLUDE_DIR})
