@@ -114,12 +114,14 @@ public:
 	};
 
 	struct SubState : UTRefCount{
-		int        index;
-		Variable*  var;
+		int                 index;
+		Variable*           var;
+	    vmat_t              Lxx;
 	};
 	struct SubInput : UTRefCount{
-		int        index;
-		Variable*  var;
+		int                 index;
+		Variable*           var;
+	    vmat_t              Luu;
 	};
 	struct SubTransition : UTRefCount{
 		Constraint*         con;
@@ -128,9 +130,16 @@ public:
 		vector<SubInput*>   u;
 	};
 	struct SubCost : UTRefCount{
-		Constraint*         con;
+        Constraint*         con;
 		vector<SubState*>   x;
 		vector<SubInput*>   u;
+
+	    real_t              L;
+	    vvec_t              Lx;
+	    vmat_t              Lxx;
+	    vvec_t              Lu;
+	    vmat_t              Luu;
+	    vmat_t              Lux;
 	};
     struct SubInputConstraint : UTRefCount{
         Constraint*         con;
@@ -246,11 +255,11 @@ public:
 	void DeleteCon(Constraint* con);    ///< delte variable
 
 	/// methods for DDP
-	void AddStateVar       (Variable*   var, int k);  ///< register var as a sub-state at k
-	void AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
-	void AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
-	void AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
-    void AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
+	SubState*           AddStateVar       (Variable*   var, int k);  ///< register var as a sub-state at k
+	SubInput*           AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
+	SubTransition*      AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
+	SubCost*            AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
+    SubInputConstraint* AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
 
 public:
 	/// virtual function that are to be overridden by derived classes
@@ -317,7 +326,7 @@ public:
 	real_t CalcError(ID mask, bool sum_or_max);
 
 	/// do initialization
-	void Init();
+	virtual void Init();
 
 	/// one step update
 	void Step();
