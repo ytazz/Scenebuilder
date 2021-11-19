@@ -95,7 +95,7 @@ public:
 	bool    showTorque;
 
 	int     mode;
-	bool    ready;
+	//bool    ready;
 
 	int     timeInit;
 	int     timeReset;
