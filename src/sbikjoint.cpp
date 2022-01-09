@@ -14,7 +14,7 @@ const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKMate::ConBase::ConBase(IKMate* _mate, const string& _name):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, _name), 1.0){	
+IKMate::ConBase::ConBase(IKMate* _mate, const string& _name):mate(_mate), Constraint(_mate->solver, 0, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){	
 	switch(mate->type){
 	case IKMate::Type::PointToPoint: nelem = 3; break;
 	case IKMate::Type::PointToLine : nelem = 2; break;

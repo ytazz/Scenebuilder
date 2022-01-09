@@ -12,7 +12,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::PosCon::PosCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::PosCon::PosCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -46,7 +46,7 @@ void IKBodyHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::OriCon::OriCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::OriCon::OriCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -84,7 +84,7 @@ void IKBodyHandle::OriCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::VelCon::VelCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::VelCon::VelCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < handle->body->parJoint->ndof; i++){
@@ -122,7 +122,7 @@ void IKBodyHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::AngvelCon::AngvelCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::AngvelCon::AngvelCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -164,7 +164,7 @@ void IKBodyHandle::AngvelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::AccCon::AccCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::AccCon::AccCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){
@@ -198,7 +198,7 @@ void IKBodyHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBodyHandle::AngaccCon::AngaccCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKBodyHandle::AngaccCon::AngaccCon(IKBodyHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(IKBody* b = handle->body; b != 0; b = b->parBody){
 		if(b->parBody){
 			for(int i = 0; i < b->parJoint->ndof; i++){

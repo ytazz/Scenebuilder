@@ -9,7 +9,7 @@ namespace Scenebuilder{;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), Constraint::Type::Equality, 1.0){
 	for(IKJointBase* jnt : body->joints){
 		AddC3Link(jnt->force_var[0]);
 		AddC3Link(jnt->force_var[1]);
@@ -38,7 +38,7 @@ void IKBody::ForceCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), 1.0){
+IKBody::MomentCon::MomentCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0, 0, ""), Constraint::Type::Equality, 1.0){
 	for(IKJointBase* jnt : body->joints){
 		AddC3Link(jnt->force_var [0]);
 		AddC3Link(jnt->force_var [1]);

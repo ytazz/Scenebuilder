@@ -3,15 +3,18 @@
 
 namespace Scenebuilder{;
 
-static const real_t pi = M_PI;
+static const real_t pi  = M_PI;
+static const real_t eps = 1.0e-10;
 
-Constraint::Constraint(Solver* solver, uint n, ID _id, real_t _scale):ID(_id){
+Constraint::Constraint(Solver* solver, uint n, ID _id, int _type, real_t _scale):ID(_id){
+    type       = _type;
 	nelem	   = n;
 	level      = 0;
 	index      = 0;
 	enabled    = true;
 	active     = true;
 	weight     = vec3_t(1.0, 1.0, 1.0);
+    //lambda     = vec3_t(1.0, 1.0, 1.0);
 	scale      = _scale;
 	scale2     = scale * scale;
 	scale_inv  = 1.0 / scale;
@@ -85,8 +88,20 @@ void Constraint::SetPriority(uint newlv){
 void Constraint::CalcError(){
 	if(enabled){
 		CalcDeviation();
-		for(int k = 0; k < nelem; k++)
-			e[k] = 0.5 * y[k] * y[k];
+
+        if( type == Type::Equality ||
+            type == Type::InequalityPenalty ){
+            // quadratic cost
+		    for(int k = 0; k < nelem; k++)
+			    e[k] = 0.5 * y[k] * y[k];
+        }
+        if( type == Type::InequalityBarrier ){
+            // logarithmic cost
+            for(int k = 0; k < nelem; k++){
+			    e[k] = -solver->param.complRelaxation*log(std::max(eps, y[k]));
+                e[k] = std::max(0.0, e[k]);
+            }
+        }
 	}
 	else{
 		y.clear();
@@ -118,9 +133,8 @@ void Constraint::ResetState(){
 
 void Constraint::CalcCorrection(){
 	// ガウスザイデルで用いるJ*J^Tの対角成分 = Jの各行の二乗和を計算
-	const real_t eps = (real_t)1.0e-10;
 	
-	J.clear();
+    J.clear();
 	for(Link* link : links_active){
 		link->AddRowSqr(J);
 	}
@@ -130,17 +144,30 @@ void Constraint::CalcCorrection(){
 		Jinv[k] = (J[k] > eps ? (real_t)1.0/J[k] : (real_t)0.0);
 	}
 
-	// 拘束偏差yと拘束誤差eの修正量を設定
+	// 拘束偏差yの修正量を設定
+	if( type == Type::Equality ||
+        type == Type::InequalityPenalty ){
+
+        // negative gradient of quadratic cost times correction rate
+	    dyd = -corrRate * y;
+    }
+    if( type == Type::InequalityBarrier ){
+        dyd =  corrRate * y;
+        //for(int k = 0; k < nelem; k++){
+        //    // negative gradient of logarithmic cost times correction rate
+        //    dyd[k] = corrRate * solver->param.complRelaxation/y[k];
+        //}
+    }
+
 	// ただし修正幅は上限を超えないようにする
-	dyd = -corrRate * y;
-	const real_t dyd_lim = corrMax;
+    const real_t dyd_lim = corrMax;
 	real_t dyd_max = 0.0;
 	for(int k = 0; k < nelem; k++)
 		dyd_max = std::max(dyd_max, std::abs(dyd[k]));
 	
 	if(dyd_max > dyd_lim)
 		dyd *= (dyd_lim / dyd_max);
-
+    
 	for(int k = 0; k < nelem; k++){
 		for(Link* link : links_active){
 			link->ColTrans(k, dyd[k], &Variable::UpdateConjugate3);
@@ -203,7 +230,7 @@ void Constraint::UpdateConjugate(uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConS::FixConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, _scale){
+FixConS::FixConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	desired = 0.0;
 	AddSLink(var, 1.0);
 }
@@ -214,7 +241,7 @@ void FixConS::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConV2::FixConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, _scale){
+FixConV2::FixConV2(Solver* solver, ID id, V2Var* var, real_t _scale):Constraint(solver, 2, id, Constraint::Type::Equality, _scale){
 	AddSLink(var, 1.0);
 }
 
@@ -225,7 +252,7 @@ void FixConV2::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConV3::FixConV3(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 3, id, _scale){
+FixConV3::FixConV3(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(var, 1.0);
 }
 
@@ -235,7 +262,7 @@ void FixConV3::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConQ::FixConQ(Solver* solver, ID id, QVar* var, real_t _scale):Constraint(solver, 3, id, _scale){
+FixConQ::FixConQ(Solver* solver, ID id, QVar* var, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(var, 1.0);
 }
 
@@ -252,28 +279,28 @@ void FixConQ::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConS::MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+MatchConS::MatchConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConV2::MatchConV2(Solver* solver, ID id, V2Var* var0, V2Var* var1, real_t _scale):Constraint(solver, 2, id, _scale){
+MatchConV2::MatchConV2(Solver* solver, ID id, V2Var* var0, V2Var* var1, real_t _scale):Constraint(solver, 2, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConV3::MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 3, id, _scale){
+MatchConV3::MatchConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
 
 //-------------------------------------------------------------------------------------------------
 
-MatchConQ::MatchConQ(Solver* solver, ID id, QVar* var0, QVar* var1, real_t _scale):Constraint(solver, 3, id, _scale){
+MatchConQ::MatchConQ(Solver* solver, ID id, QVar* var0, QVar* var1, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 }
@@ -291,7 +318,7 @@ void MatchConQ::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConS::RangeConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, _scale){
+RangeConS::RangeConS(Solver* solver, ID id, SVar* var, real_t _scale):Constraint(solver, 1, id, Constraint::Type::InequalityPenalty, _scale){
 	AddSLink(var, 1.0);
 	real_t inf = numeric_limits<real_t>::max();
 	_min = -inf;
@@ -324,7 +351,7 @@ void RangeConS::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, const vec2_t& _dir, real_t _scale):Constraint(solver, 1, id, _scale){
+RangeConV2::RangeConV2(Solver* solver, ID id, V2Var* var, const vec2_t& _dir, real_t _scale):Constraint(solver, 1, id, Constraint::Type::InequalityPenalty, _scale){
 	dir = _dir;
 
 	AddR2Link(var);
@@ -360,7 +387,7 @@ void RangeConV2::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConV3::RangeConV3(Solver* solver, ID id, V3Var* var, const vec3_t& _dir, real_t _scale):Constraint(solver, 1, id, _scale){
+RangeConV3::RangeConV3(Solver* solver, ID id, V3Var* var, const vec3_t& _dir, real_t _scale):Constraint(solver, 1, id, Constraint::Type::InequalityPenalty, _scale){
 	dir = _dir;
 
 	AddR3Link(var);
@@ -396,7 +423,7 @@ void RangeConV3::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-DiffConS::DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+DiffConS::DiffConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0, -1.0);
 	AddSLink(var1,  1.0);
 	real_t inf = numeric_limits<real_t>::max();
@@ -430,7 +457,7 @@ void DiffConS::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-FixConPlane::FixConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, _scale){
+FixConPlane::FixConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddR3Link(var);
 }
 
@@ -444,7 +471,7 @@ void FixConPlane::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-RangeConPlane::RangeConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, _scale){
+RangeConPlane::RangeConPlane(Solver* solver, ID id, V3Var* var, real_t _scale):Constraint(solver, 1, id, Constraint::Type::InequalityPenalty, _scale){
 	AddR3Link(var);
 	normal = vec3_t(0.0, 1.0, 0.0);
 	origin = vec3_t();
@@ -481,7 +508,7 @@ void RangeConPlane::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-ComplConS::ComplConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+ComplConS::ComplConS(Solver* solver, ID id, SVar* var0, SVar* var1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddSLink(var0);
 	AddSLink(var1);
 }
@@ -497,7 +524,7 @@ void ComplConS::CalcDeviation(){
 
 //-------------------------------------------------------------------------------------------------
 
-DistanceConV3::DistanceConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 1, id, _scale){
+DistanceConV3::DistanceConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::InequalityPenalty, _scale){
 	AddR3Link(var0);
 	AddR3Link(var1);
 }
@@ -505,7 +532,6 @@ DistanceConV3::DistanceConV3(Solver* solver, ID id, V3Var* var0, V3Var* var1, re
 void DistanceConV3::CalcCoef(){
 	diff = ((V3Var*)links[0]->var)->val - ((V3Var*)links[1]->var)->val;
 	diff_norm = diff.norm();
-	const real_t eps = 1.0e-10;
 	if(diff_norm < eps){
 		((R3Link*)links[0])->SetCoef( diff);
 		((R3Link*)links[1])->SetCoef(-diff);
@@ -537,7 +563,7 @@ void DistanceConV3::Project(real_t& l, uint k){
 
 //-------------------------------------------------------------------------------------------------
 
-C0ConS::C0ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, real_t _scale):Constraint(solver, 1, id, _scale){
+C0ConS::C0ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* p1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);
@@ -551,7 +577,7 @@ void C0ConS::CalcCoef(){
 
 //-------------------------------------------------------------------------------------------------
 
-C0ConV3::C0ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, _scale){
+C0ConV3::C0ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);
@@ -565,7 +591,7 @@ void C0ConV3::CalcCoef(){
 
 //-------------------------------------------------------------------------------------------------
 
-C1ConS::C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* a0, SVar* p1, real_t _scale):Constraint(solver, 1, id, _scale){
+C1ConS::C1ConS(Solver* solver, ID id, SVar* p0, SVar* v0, SVar* a0, SVar* p1, real_t _scale):Constraint(solver, 1, id, Constraint::Type::Equality, _scale){
 	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);
@@ -581,7 +607,7 @@ void C1ConS::CalcCoef(){
 
 //-------------------------------------------------------------------------------------------------
 
-C1ConV3::C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* a0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, _scale){
+C1ConV3::C1ConV3(Solver* solver, ID id, V3Var* p0, V3Var* v0, V3Var* a0, V3Var* p1, real_t _scale):Constraint(solver, 3, id, Constraint::Type::Equality, _scale){
 	AddSLink(p1);
 	AddSLink(p0);
 	AddSLink(v0);

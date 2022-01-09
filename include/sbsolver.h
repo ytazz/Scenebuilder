@@ -60,6 +60,7 @@ public:
 		real_t         cutoffStepSize;
 		bool           hastyStepSize;
 		real_t         regularization;
+        real_t         complRelaxation;  ///< relaxation parameter of barrier inequality constraints
 		
 		Param();
 	};
@@ -141,11 +142,11 @@ public:
 	    vmat_t              Luu;
 	    vmat_t              Lux;
 	};
-    struct SubInputConstraint : UTRefCount{
-        Constraint*         con;
-        int                 index;
-        vector<SubInput*>   u;
-    };
+    //struct SubInputConstraint : UTRefCount{
+    //    Constraint*         con;
+    //    int                 index;
+    //    vector<SubInput*>   u;
+    //};
 	struct State : UTRefCount{
 		int  dim;
 		vector< UTRef<SubState> > substate;
@@ -164,10 +165,10 @@ public:
 	struct Cost : UTRefCount{
 		vector< UTRef<SubCost> >  subcost;
 	};
-    struct InputConstraint : UTRefCount{
-        int  dim;
-        vector< UTRef<SubInputConstraint> > subcon;
-    };
+    //struct InputConstraint : UTRefCount{
+    //    int  dim;
+    //    vector< UTRef<SubInputConstraint> > subcon;
+    //};
 	
 	Param            param;
 	Status           status;
@@ -201,7 +202,7 @@ public:
 	vector< UTRef<Input> >            input;
 	vector< UTRef<Transition> >       transition;
 	vector< UTRef<Cost> >             cost;
-    vector< UTRef<InputConstraint> >  inputcon;
+    //vector< UTRef<InputConstraint> >  inputcon;
 	
 	int               N;
 	vector<vvec_t>    dx;
@@ -209,8 +210,11 @@ public:
 	vector<vmat_t>    fx;
 	vector<vmat_t>    fu;
 	vector<vvec_t>    f_cor;
-    vector<vmat_t>    gu;
-    vector<vvec_t>    g_cor;
+    vector<vmat_t>    fx_rev;
+	vector<vmat_t>    fu_rev;
+	vector<vvec_t>    f_cor_rev;
+    //vector<vmat_t>    gu;
+    //vector<vvec_t>    g_cor;
 	vector<real_t>    L;
 	vector<vvec_t>    Lx;
 	vector<vmat_t>    Lxx;
@@ -225,15 +229,26 @@ public:
 	vector<vmat_t>    Qux;
 	vector<vmat_t>    Quuinv;
 	vector<vvec_t>    Quuinv_Qu;
-    vector<vmat_t>    gu_Quuinv;
-    vector<vmat_t>    gu_Quuinv_gutr;
-    vector<vmat_t>    gu_Quuinv_gutr_inv;
-    vector<vmat_t>    Quuhat;
-    vector<vvec_t>    Quuhat_Qu;
-    vector<vvec_t>    g_cor_hat;
+    //vector<vmat_t>    gu_Quuinv;
+    //vector<vmat_t>    gu_Quuinv_gutr;
+    //vector<vmat_t>    gu_Quuinv_gutr_inv;
+    //vector<vmat_t>    Quuhat;
+    //vector<vvec_t>    Quuhat_Qu;
+    //vector<vvec_t>    g_cor_hat;
 	vector<real_t>    V;
 	vector<vvec_t>    Vx;
 	vector<vmat_t>    Vxx;
+	vector<real_t>    P;
+	vector<vvec_t>    Px;
+	vector<vvec_t>    Pu;
+	vector<vmat_t>    Pxx;
+	vector<vmat_t>    Puu;
+	vector<vmat_t>    Pux;
+	vector<vmat_t>    Puuinv;
+	vector<vvec_t>    Puuinv_Pu;
+    vector<real_t>    U;
+	vector<vvec_t>    Ux;
+	vector<vmat_t>    Uxx;
 
 public:
 	/// internal functions
@@ -243,8 +258,10 @@ public:
 	void    InitDDP             ();
 	void    ClearDDP            ();
 	void    PrepareDDP          ();
-	void    BackwardDDP         ();
-	void    ForwardDDP          ();
+	void    CalcValueBackwardDDP();
+	void    CalcValueForwardDDP ();
+	void    CalcStateBackwardDDP();
+	void    CalcStateForwardDDP ();
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();
 	//void    ForwardDynamics     ();
@@ -259,7 +276,7 @@ public:
 	SubInput*           AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
 	SubTransition*      AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
 	SubCost*            AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
-    SubInputConstraint* AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
+    //SubInputConstraint* AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
 
 public:
 	/// virtual function that are to be overridden by derived classes

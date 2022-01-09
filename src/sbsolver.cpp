@@ -18,19 +18,21 @@ namespace Scenebuilder{;
 static Timer timer;
 static Timer timer2;
 static const real_t inf = numeric_limits<real_t>::max();
+static const real_t eps = 1.0e-10;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 Solver::Param::Param(){
-	verbose        = false;
-	methodMajor    = Solver::Method::Major::GaussNewton;
-	methodMinor    = Solver::Method::Minor::GaussSeidel;
-	methodLapack   = Solver::Method::Lapack::DGELS;
-	minStepSize    =  0.01;
-	maxStepSize    = 10.0;
-	cutoffStepSize =  0.001;
-	hastyStepSize  = false;
-	regularization =  0.001;
+	verbose         = false;
+	methodMajor     = Solver::Method::Major::GaussNewton;
+	methodMinor     = Solver::Method::Minor::GaussSeidel;
+	methodLapack    = Solver::Method::Lapack::DGELS;
+	minStepSize     =  0.01;
+	maxStepSize     = 10.0;
+	cutoffStepSize  =  0.001;
+	hastyStepSize   = false;
+	regularization  =  0.001;
+    complRelaxation =  1.0;
 
 	numIter.resize(10, 1);
 }
@@ -285,14 +287,13 @@ real_t Solver::CalcObjective(){
 		if(!con->active)
 			continue;
 
-		obj += con->y.square();
+        for(int k = 0; k < con->nelem; k++)
+		    obj += con->e[k];
 	}
 
 	// ddp has its own way to calculate cost
 	if(param.methodMajor == Method::Major::DDP)
 		return CalcObjectiveDDP();
-
-	obj *= 0.5;
 
 	return obj;
 }
@@ -397,11 +398,14 @@ void Solver::Prepare(){
 		con->CalcError();
 
 		if(con->active){
-			conInfoType [con->tag ].numActive++;
-			conInfoType [con->tag ].error += con->y.norm();
-			
+            real_t esum = 0.0;
+            for(int k = 0; k < con->nelem; k++)
+                esum += con->e[k];
+            
+            conInfoType [con->tag  ].numActive++;
 			conInfoLevel[con->level].numActive++;
-			conInfoLevel[con->level].error += con->y.norm();
+			conInfoType [con->tag  ].error += esum;
+			conInfoLevel[con->level].error += esum;
 
 			cons_active.push_back(con);
 			cons_level[con->level].push_back(con);
@@ -464,8 +468,27 @@ void Solver::CalcEquation(){
 	pivot.resize(dimcon);
 
 	for(auto& con : cons_active){
+        vec3_t w = con->weight;
+        
+        // update multiplier of barrier inequality constraints
+        /*for(Constraint* con : cons_active){
+            if(con->type == Constraint::Type::InequalityBarrier){
+                for(int k = 0; k < con->nelem; k++){
+                    con->lambda[k] = param.complRelaxation/con->y[k];
+                }
+            }
+        }*/
+
+        // extra weight for barrier inequality constraints
+        if(con->type == Constraint::Type::InequalityBarrier){
+            for(int k = 0; k < con->nelem; k++){
+                w[k] *= std::min(10.0, sqrt(param.complRelaxation)/std::max(eps, con->y[k]));
+                //w[k] *= sqrt(con->lambda[k]/std::max(eps, con->y[k]));
+            }
+        }
+
 		for(auto& link : con->links_active){
-			link->RegisterCoef(A, con->weight);
+			link->RegisterCoef(A, w);
 		}
 		con->RegisterCorrection(b);
 		con->RegisterDeviation (yvec);
@@ -668,7 +691,7 @@ void Solver::Step(){
 	for(auto& var : vars_unlocked)
 		var->Modify(status.stepSize);
 
-	real_t objPrev = status.obj;
+   	real_t objPrev = status.obj;
 	status.obj      = CalcObjective();
 	status.objDiff  = status.obj - objPrev;
 	if(param.verbose){
@@ -680,6 +703,7 @@ void Solver::Step(){
 			 << " tstep:" << status.timeStep << endl;
 	}
 	status.iterCount++;
+
 }
 
 }
