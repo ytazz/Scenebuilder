@@ -177,4 +177,6 @@ void mattr_mat_mul_batch(const Matrix& m1, const Matrix& m2, Matrix& y, double a
 
 void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, real_t regularization);
 
+void LinsolveCholmod(SparseMatrix& A, SparseVector& b, SparseVector& x, real_t regularization);
+
 }
