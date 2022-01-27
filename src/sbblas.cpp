@@ -674,4 +674,24 @@ void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, re
 	}
 }
 
+#ifdef USE_CHOLMOD
+# include <cholmod.h>
+#endif
+
+void LinsolveCholmod(SparseMatrix& A, SparseVector& b, SparseVector& x, real_t regularization){
+#ifdef USE_CHOLMOD
+	cholmod_common cm;
+	cholmod_triplet* A_trip;
+	cholmod_sparse*  A_sparse;
+	cholmod_dense*   b_dense;
+	cholmod_dense*   x_dense;
+	
+	cholmod_start(&cm);
+
+
+
+	cholmod_finish(&cm);
+#endif
+}
+
 }
