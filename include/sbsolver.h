@@ -4,6 +4,7 @@
 #include <sbvariable.h>
 #include <sbconstraint.h>
 #include <sblink.h>
+#include <sbblas.h>
 
 namespace Scenebuilder{;
 
@@ -17,8 +18,8 @@ typedef vector< Constraint* >			Constraints;
 typedef vector< UTRef<Constraint> >		ConstraintRefs;
 typedef vector< UTRef<Link> >			LinkRefs;
 
-void mat_inv_gen(const vmat_t& m, vmat_t& minv);
-void mat_inv_sym(const vmat_t& m, vmat_t& minv);
+//void mat_inv_gen(const vmat_t& m, vmat_t& minv);
+//void mat_inv_sym(const vmat_t& m, vmat_t& minv);
 
 class Solver : public UTRefCount{
 public:
@@ -117,12 +118,10 @@ public:
 	struct SubState : UTRefCount{
 		int                 index;
 		Variable*           var;
-	    vmat_t              Lxx;
 	};
 	struct SubInput : UTRefCount{
 		int                 index;
 		Variable*           var;
-	    vmat_t              Luu;
 	};
 	struct SubTransition : UTRefCount{
 		Constraint*         con;
@@ -134,19 +133,8 @@ public:
         Constraint*         con;
 		vector<SubState*>   x;
 		vector<SubInput*>   u;
-
-	    real_t              L;
-	    vvec_t              Lx;
-	    vmat_t              Lxx;
-	    vvec_t              Lu;
-	    vmat_t              Luu;
-	    vmat_t              Lux;
 	};
-    //struct SubInputConstraint : UTRefCount{
-    //    Constraint*         con;
-    //    int                 index;
-    //    vector<SubInput*>   u;
-    //};
+
 	struct State : UTRefCount{
 		int  dim;
 		vector< UTRef<SubState> > substate;
@@ -165,10 +153,6 @@ public:
 	struct Cost : UTRefCount{
 		vector< UTRef<SubCost> >  subcost;
 	};
-    //struct InputConstraint : UTRefCount{
-    //    int  dim;
-    //    vector< UTRef<SubInputConstraint> > subcon;
-    //};
 	
 	Param            param;
 	Status           status;
@@ -202,53 +186,37 @@ public:
 	vector< UTRef<Input> >            input;
 	vector< UTRef<Transition> >       transition;
 	vector< UTRef<Cost> >             cost;
-    //vector< UTRef<InputConstraint> >  inputcon;
 	
 	int               N;
-	vector<vvec_t>    dx;
-	vector<vvec_t>    du;
-	vector<vmat_t>    fx;
-	vector<vmat_t>    fu;
-	vector<vvec_t>    f_cor;
-    vector<vmat_t>    fx_rev;
-	vector<vmat_t>    fu_rev;
-	vector<vvec_t>    f_cor_rev;
-    //vector<vmat_t>    gu;
-    //vector<vvec_t>    g_cor;
-	vector<real_t>    L;
-	vector<vvec_t>    Lx;
-	vector<vmat_t>    Lxx;
-	vector<vvec_t>    Lu;
-	vector<vmat_t>    Luu;
-	vector<vmat_t>    Lux;
+	vector<Vector>    dx;
+	vector<Vector>    du;
+	vector<Matrix>    fx;
+	vector<Matrix>    fu;
+	vector<Vector>    fcor;
+    vector<real_t>    L;
+	vector<Vector>    Lx;
+	vector<Matrix>    Lxx;
+	vector<Vector>    Lu;
+	vector<Matrix>    Luu;
+	vector<Matrix>    Lux;
 	vector<real_t>    Q;
-	vector<vvec_t>    Qx;
-	vector<vvec_t>    Qu;
-	vector<vmat_t>    Qxx;
-	vector<vmat_t>    Quu;
-	vector<vmat_t>    Qux;
-	vector<vmat_t>    Quuinv;
-	vector<vvec_t>    Quuinv_Qu;
-    //vector<vmat_t>    gu_Quuinv;
-    //vector<vmat_t>    gu_Quuinv_gutr;
-    //vector<vmat_t>    gu_Quuinv_gutr_inv;
-    //vector<vmat_t>    Quuhat;
-    //vector<vvec_t>    Quuhat_Qu;
-    //vector<vvec_t>    g_cor_hat;
+	vector<Vector>    Qx;
+	vector<Vector>    Qu;
+	vector<Matrix>    Qxx;
+	vector<Matrix>    Quu;
+	vector<Matrix>    Qux;
+	vector<Matrix>    Quuinv;
+	vector<Vector>    Quuinv_Qu;
 	vector<real_t>    V;
-	vector<vvec_t>    Vx;
-	vector<vmat_t>    Vxx;
-	vector<real_t>    P;
-	vector<vvec_t>    Px;
-	vector<vvec_t>    Pu;
-	vector<vmat_t>    Pxx;
-	vector<vmat_t>    Puu;
-	vector<vmat_t>    Pux;
-	vector<vmat_t>    Puuinv;
-	vector<vvec_t>    Puuinv_Pu;
-    vector<real_t>    U;
-	vector<vvec_t>    Ux;
-	vector<vmat_t>    Uxx;
+	vector<Vector>    Vx;
+	vector<Matrix>    Vxx;
+	vector<Vector>    Vxx_fcor;
+	vector<Matrix>    Vxx_fx;
+	vector<Matrix>    Vxx_fu;
+    vector<Vector>    Vx_plus_Vxx_fcor;
+	vector<Matrix>    Quuinv_Qux;
+	vector<Vector>    Qu_plus_Qux_dx;
+	Matrix            Vxxinv;
 
 public:
 	/// internal functions
@@ -258,13 +226,10 @@ public:
 	void    InitDDP             ();
 	void    ClearDDP            ();
 	void    PrepareDDP          ();
-	void    CalcValueBackwardDDP();
-	void    CalcValueForwardDDP ();
-	void    CalcStateBackwardDDP();
-	void    CalcStateForwardDDP ();
+	void    BackwardDDP         ();
+	void    ForwardDDP          ();
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();
-	//void    ForwardDynamics     ();
 	
 	void AddVar   (Variable* var);      ///< add variable
 	void DeleteVar(Variable* var);	    ///< delete variable
@@ -276,8 +241,7 @@ public:
 	SubInput*           AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
 	SubTransition*      AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
 	SubCost*            AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
-    //SubInputConstraint* AddInputConstraint(Constraint* con, int k);  ///< register con as an input constraint at k
-
+    
 public:
 	/// virtual function that are to be overridden by derived classes
 

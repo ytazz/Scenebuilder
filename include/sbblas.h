@@ -33,7 +33,7 @@ struct Matrix{
 
 	double& operator()(int i, int j){ return vh[l*j+i]; }
 
-	Matrix SubMatrix(int row, int col, int w, int h);
+	Matrix SubMatrix(int row, int col, int _m, int _n);
 
 	 Matrix();
 	 Matrix(int _m, int _n);

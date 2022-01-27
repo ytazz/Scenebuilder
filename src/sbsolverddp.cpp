@@ -22,7 +22,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 inline real_t square(real_t x){
 	return x*x;
 }
-
+/*
 void mat_inv_gen(const vmat_t& m, vmat_t& minv){
 #ifdef USE_MKL
     int n = m.height();
@@ -50,7 +50,7 @@ void mat_inv_sym(const vmat_t& m, vmat_t& minv){
 	//vmat_t test = minv*m;
 
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 Solver::SubInput* Solver::Input::Find(Variable* var){
@@ -166,205 +166,100 @@ Solver::SubCost* Solver::AddCostCon (Constraint* con, int k){
     return subcost;
 }
 
-//Solver::SubInputConstraint* Solver::AddInputConstraint(Constraint* con, int k){
-//	if(inputcon.size() <= k)
-//		inputcon.resize(k+1);
-//
-//	if(!inputcon[k])
-//		inputcon[k] = new InputConstraint();
-//
-//	Input* in_u = input[k];
-//
-//	SubInputConstraint* subcon = new SubInputConstraint();
-//	subcon->con = con;
-//
-//	for(Link* l : con->links){
-//		SubInput* subin;
-//
-//		subin = in_u->Find(l->var);
-//		if(subin){
-//			subcon->u.push_back(subin);
-//		}
-//	}
-//
-//	inputcon[k]->subcon.push_back(subcon);
-//
-//    return subcon;
-//}
-
 void Solver::InitDDP(){
 	N = (int)state.size()-1;
 
 	for(int k = 0; k < state.size(); k++){
         State* st = state[k];
 		st->dim = 0;
-        //DSTR << "x" << k << endl;
+
 		for(SubState* subst : st->substate){
 			if(subst->var->locked)
 				continue;
 
 			subst->index = st->dim;
 			st->dim += subst->var->nelem;
-
-            //DSTR << " " << subst->index << " " << subst->var->name << endl;
 		}
 	}
 
 	for(int k = 0; k < input.size(); k++){
         Input* in = input[k];
 		in->dim = 0;
-        //DSTR << "u" << k << endl;
+
 		for(SubInput* subin : in->subinput){
 			if(subin->var->locked)
 				continue;
 
 			subin->index = in->dim;
 			in->dim += subin->var->nelem;
-
-            //DSTR << " " << subin->index << " " << subin->var->name << endl;
 		}
 	}
 
-	for(int k = 0; k < transition.size(); k++){
-		Transition* tr = transition[k];
-        //DSTR << "f" << k << endl;
-        for(SubTransition* subtr : tr->subtran){
-            if(!subtr->con->enabled)
-                continue;
-
-            //DSTR << " " << subtr->con->name << " " << subtr->x1->index << endl;
-        }
-	}
-
-    //for(int k = 0; k < inputcon.size(); k++){
-    //    InputConstraint* incon = inputcon[k];
-    //    incon->dim = 0;
-    //
-    //    for(SubInputConstraint* subcon : incon->subcon){
-    //        if(!subcon->con->enabled)
-    //            continue;
-    //
-    //        subcon->index = incon->dim;
-    //        incon->dim += subcon->con->nelem;
-    //    }
-    //}
-
-	dx                .resize(N+1);
-	du                .resize(N);
-	fx                .resize(N);
-	fu                .resize(N);
-	f_cor             .resize(N);
-    fx_rev            .resize(N);
-    fu_rev            .resize(N);
-    f_cor_rev         .resize(N);
-    //gu                .resize(N);
-    //g_cor             .resize(N);
-	L                 .resize(N+1);
-	Lx                .resize(N+1);
-	Lxx               .resize(N+1);
-	Lu                .resize(N);
-	Luu               .resize(N);
-	Lux               .resize(N);
-	Q                 .resize(N);
-	Qx                .resize(N);
-	Qu                .resize(N);
-	Qxx               .resize(N);
-	Quu               .resize(N);
-	Quuinv            .resize(N);
-	Quuinv_Qu         .resize(N);
-	Qux               .resize(N);
-    //gu_Quuinv         .resize(N);
-    //gu_Quuinv_gutr    .resize(N);
-    //gu_Quuinv_gutr_inv.resize(N);
-    //Quuhat            .resize(N);
-    //Quuhat_Qu         .resize(N);
-    //g_cor_hat         .resize(N);
-	V                 .resize(N+1);
-	Vx                .resize(N+1);
-	Vxx               .resize(N+1);
-
-    P                 .resize(N);
-	Px                .resize(N);
-	Pu                .resize(N);
-	Pxx               .resize(N);
-	Puu               .resize(N);
-	Puuinv            .resize(N);
-	Puuinv_Pu         .resize(N);
-	Pux               .resize(N);
-    U                 .resize(N+1);
-	Ux                .resize(N+1);
-	Uxx               .resize(N+1);
+	dx       .resize(N+1);
+	du       .resize(N);
+	fx       .resize(N);
+	fu       .resize(N);
+	fcor     .resize(N);
+    L        .resize(N+1);
+	Lx       .resize(N+1);
+	Lxx      .resize(N+1);
+	Lu       .resize(N);
+	Luu      .resize(N);
+	Lux      .resize(N);
+	Q        .resize(N);
+	Qx       .resize(N);
+	Qu       .resize(N);
+	Qxx      .resize(N);
+	Quu      .resize(N);
+	Quuinv   .resize(N);
+	Quuinv_Qu.resize(N);
+	Qux      .resize(N);
+	V        .resize(N+1);
+	Vx       .resize(N+1);
+	Vxx      .resize(N+1);
+	Vxx_fcor .resize(N);
+	Vxx_fx   .resize(N);
+	Vxx_fu   .resize(N);
+	Vx_plus_Vxx_fcor.resize(N);
+	Quuinv_Qux      .resize(N);
+	Qu_plus_Qux_dx  .resize(N);
 
 	for(int k = 0; k <= N; k++){
 		int nx  = state[k]->dim;
 
-		dx [k].resize(nx);
-		Lx [k].resize(nx);
-		Lxx[k].resize(nx, nx);
-		Ux [k].resize(nx);
-		Uxx[k].resize(nx, nx);
-		Vx [k].resize(nx);
-		Vxx[k].resize(nx, nx);
-
-        for(SubState* subst : state[k]->substate){
-            subst->Lxx.resize(nx, nx);
-        }
-        for(SubCost* subcost : cost[k]->subcost){
-            subcost->Lx .resize(nx);
-            subcost->Lxx.resize(nx, nx);
-        }
+		dx [k].Allocate(nx);
+		Lx [k].Allocate(nx);
+		Lxx[k].Allocate(nx, nx);
+		Vx [k].Allocate(nx);
+		Vxx[k].Allocate(nx, nx);
+		if(k == 0){
+			Vxxinv.Allocate(nx, nx);
+		}
 
 		if(k < N){
 			int nu  = input[k]->dim;
 			int nx1 = state[k+1]->dim;
-            //int nuc = (inputcon.size() <= k ? 0 : inputcon[k]->dim);
 
-			du                [k].resize(nu      );
-			fx                [k].resize(nx1, nx );
-			fu                [k].resize(nx1, nu );
-			f_cor             [k].resize(nx1     );
-            fx_rev            [k].resize(nx,  nx1);
-            fu_rev            [k].resize(nx,  nu );
-            f_cor_rev         [k].resize(nx);
-            //gu                [k].resize(nuc, nu );
-            //g_cor             [k].resize(nuc     );
-			Lu                [k].resize(nu      );
-			Luu               [k].resize(nu , nu );
-			Lux               [k].resize(nu , nx );
-			Px                [k].resize(nx      );
-			Pu                [k].resize(nu      );
-			Pxx               [k].resize(nx , nx );
-			Puu               [k].resize(nu , nu );
-			Puuinv            [k].resize(nu , nu );
-			Puuinv_Pu         [k].resize(nu      );
-			Pux               [k].resize(nu , nx );
-			Qx                [k].resize(nx      );
-			Qu                [k].resize(nu      );
-			Qxx               [k].resize(nx , nx );
-			Quu               [k].resize(nu , nu );
-			Quuinv            [k].resize(nu , nu );
-			Quuinv_Qu         [k].resize(nu      );
-			Qux               [k].resize(nu , nx );
-            //gu_Quuinv         [k].resize(nuc, nu );
-            //gu_Quuinv_gutr    [k].resize(nuc, nuc);
-            //gu_Quuinv_gutr_inv[k].resize(nuc, nuc);
-            //Quuhat            [k].resize(nu , nu );
-            //Quuhat_Qu         [k].resize(nu      );
-            //g_cor_hat         [k].resize(nuc     );
-
-            for(SubInput* subin : input[k]->subinput){
-                subin->Luu.resize(nu, nu);
-            }
-            for(SubCost* subcost : cost[k]->subcost){
-                subcost->Lu .resize(nu);
-                subcost->Luu.resize(nu, nu);
-                subcost->Lux.resize(nu, nx);
-            }
-
-			//DSTR << "k: " << k << " nx: " << nx << " nu: " << nu << " cost: " << cost[k]->subcost.size() << endl;
-		}
-		else{
-			//DSTR << "k: " << k << " nx: " << nx << " cost: " << cost[k]->subcost.size() << endl;
+			du       [k].Allocate(nu      );
+			fx       [k].Allocate(nx1, nx );
+			fu       [k].Allocate(nx1, nu );
+			fcor     [k].Allocate(nx1     );
+            Lu       [k].Allocate(nu      );
+			Luu      [k].Allocate(nu , nu );
+			Lux      [k].Allocate(nu , nx );
+			Qx       [k].Allocate(nx      );
+			Qu       [k].Allocate(nu      );
+			Qxx      [k].Allocate(nx , nx );
+			Quu      [k].Allocate(nu , nu );
+			Quuinv   [k].Allocate(nu , nu );
+			Quuinv_Qu[k].Allocate(nu      );
+			Qux      [k].Allocate(nu , nx );
+	        Vxx_fcor [k].Allocate(nx1     );
+	        Vxx_fx   [k].Allocate(nx1, nx );
+	        Vxx_fu   [k].Allocate(nx1, nu );
+			Vx_plus_Vxx_fcor[k].Allocate(nx1);
+			Quuinv_Qux      [k].Allocate(nu, nx);
+			Qu_plus_Qux_dx  [k].Allocate(nu);
 		}
 	}
 
@@ -377,47 +272,28 @@ void Solver::ClearDDP(){
 	cost      .clear();
 	
 	N = 0;
-	dx                .clear();
-	du                .clear();
-	fx                .clear();
-	fu                .clear();
-	f_cor             .clear();
-    //gu                .clear();
-    //g_cor             .clear();
-	L                 .clear();
-	Lx                .clear();
-	Lxx               .clear();
-	Lu                .clear();
-	Luu               .clear();
-	Lux               .clear();
-	P                 .clear();
-	Px                .clear();
-	Pu                .clear();
-	Pxx               .clear();
-	Puu               .clear();
-	Pux               .clear();
-	Puuinv            .clear();
-	Puuinv_Pu         .clear();
-	Q                 .clear();
-	Qx                .clear();
-	Qu                .clear();
-	Qxx               .clear();
-	Quu               .clear();
-	Qux               .clear();
-	Quuinv            .clear();
-	Quuinv_Qu         .clear();
-    //gu_Quuinv         .clear();
-    //gu_Quuinv_gutr    .clear();
-    //gu_Quuinv_gutr_inv.clear();
-    //Quuhat            .clear();
-    //Quuhat_Qu         .clear();
-    //g_cor_hat         .clear();
-	U                 .clear();
-	Ux                .clear();
-	Uxx               .clear();
-	V                 .clear();
-	Vx                .clear();
-	Vxx               .clear();
+	dx       .clear();
+	du       .clear();
+	fx       .clear();
+	fu       .clear();
+	fcor     .clear();
+    L        .clear();
+	Lx       .clear();
+	Lxx      .clear();
+	Lu       .clear();
+	Luu      .clear();
+	Lux      .clear();
+	Q        .clear();
+	Qx       .clear();
+	Qu       .clear();
+	Qxx      .clear();
+	Quu      .clear();
+	Qux      .clear();
+	Quuinv   .clear();
+	Quuinv_Qu.clear();
+    V        .clear();
+	Vx       .clear();
+	Vxx      .clear();
 
 }
 
@@ -428,9 +304,9 @@ void Solver::PrepareDDP(){
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
 
-		fx   [k].clear();
-		fu   [k].clear();
-        f_cor[k].clear();
+		mat_clear(fx  [k]);
+		mat_clear(fu  [k]);
+        vec_clear(fcor[k]);
 
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
@@ -439,9 +315,7 @@ void Solver::PrepareDDP(){
 				continue;
             if(subtr->x1->var->locked)
                 continue;
-			// evaluate f
-			//subtr->con->CalcLhs();
-
+			
 			int i0 = subtr->con->index;
 			int n  = subtr->con->nelem;			
             
@@ -453,7 +327,7 @@ void Solver::PrepareDDP(){
 				int j0 = x0->var->index;
 				int m  = x0->var->nelem;
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fx[k][subtr->x1->index+i][x0->index+j] = -A[i0+i][j0+j];
+					fx[k](subtr->x1->index+i, x0->index+j) = -A[i0+i][j0+j];
 			}
             
             // set fu
@@ -464,80 +338,30 @@ void Solver::PrepareDDP(){
 				int j0 = u->var->index; 
 				int m  = u->var->nelem;
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fu[k][subtr->x1->index+i][u->index+j] = -A[i0+i][j0+j];
+					fu[k](subtr->x1->index+i, u->index+j) = -A[i0+i][j0+j];
 			}
             
             // set correction term
 			for(int i = 0; i < n; i++)
-				f_cor[k][subtr->x1->index+i] = b[i0+i];
+				fcor[k](subtr->x1->index+i) = b[i0+i];
 
 		}
 	}
 
-    for(int k = 0; k < N; k++){
-        mat_inv_gen(fx[k], fx_rev[k]);
-        //vmat_t test = fx[k]*fx_rev[k];
-        //DSTR << test << endl;
-        //DSTR << fx[k] << " " << fx_rev[k] << endl;
-
-        fu_rev   [k] = -fx_rev[k]*fu   [k];
-        f_cor_rev[k] = -fx_rev[k]*f_cor[k];
-    }
-
-    //for(int k = 0; k < inputcon.size(); k++){
-    //    InputConstraint* incon = inputcon[k];
-    //
-    //    gu   [k].clear();
-    //    g_cor[k].clear();
-    //
-    //    for(SubInputConstraint* subcon : incon->subcon){
-	//		if(!subcon->con->enabled)
-	//			continue;
-	//		if(!subcon->con->active)
-	//			continue;
-    //        
-    //        int i0 = subcon->con->index;
-	//        int n  = subcon->con->nelem;    
-    //
-    //        // set gu
-	//		for(SubInput* u : subcon->u){
-	//			if(u->var->locked)
-	//				continue;
-    //
-	//			int j0 = u->var->index; 
-	//			int m  = u->var->nelem;
-	//			for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-	//				gu[k][subcon->index+i][u->index+j] = A[i0+i][j0+j];
-	//		}
-    //        
-    //        // set correction term
-	//		for(int i = 0; i < n; i++)
-	//			g_cor[k][subcon->index+i] = b[i0+i];
-    //
-    //    }
-    //}
-
     for(int k = 0; k <= N; k++){
 		L  [k] = 0.0;
-		Lx [k].clear();
-		Lxx[k].clear();
+		vec_clear(Lx [k]);
+		mat_clear(Lxx[k]);
 	}
 	for(int k = 0; k < N; k++){
-		Lu [k].clear();
-		Luu[k].clear();
-		Lux[k].clear();
+		vec_clear(Lu [k]);
+		mat_clear(Luu[k]);
+		mat_clear(Lux[k]);
 	}
 
 	// calculate state cost
 	for(int k = 0; k <= N; k++){
-		for(SubCost* subcost : cost[k]->subcost){
-        	subcost->L   = 0.0;
-		    subcost->Lx .clear();
-		    subcost->Lxx.clear();
-		    subcost->Lu .clear();
-		    subcost->Luu.clear();
-		    subcost->Lux.clear();
-
+		for(SubCost* subcost : cost[k]->subcost){     
             if(!subcost->con->enabled)
 				continue;
 			if(!subcost->con->active)
@@ -548,7 +372,7 @@ void Solver::PrepareDDP(){
 
 			// sum up L
 			for(int i = 0; i < n; i++){
-				subcost->L += 0.5 * square(yvec[i0+i]);
+				L[k] += 0.5 * square(yvec[i0+i]);
 			}
 
 			// calc Lx
@@ -562,7 +386,7 @@ void Solver::PrepareDDP(){
 				// Lx = A^T y
 				for(int j = 0; j < m; j++){
 					for(int i = 0; i < n; i++){
-						subcost->Lx[x->index+j] += A[i0+i][j0+j]*yvec[i0+i];
+						Lx[k](x->index+j) += A[i0+i][j0+j]*yvec[i0+i];
 					}
 				}
 			}
@@ -580,14 +404,10 @@ void Solver::PrepareDDP(){
 				// Lxx = A^T A
 				for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 					for(int i = 0; i < n; i++){
-						subcost->Lxx[x0->index+j0][x1->index+j1] += A[i0+i][j00+j0]*A[i0+i][j01+j1];
+						Lxx[k](x0->index+j0, x1->index+j1) += A[i0+i][j00+j0]*A[i0+i][j01+j1];
 					}
 				}
 			}
-
-            L  [k] += subcost->L;
-            Lx [k] += subcost->Lx;
-            Lxx[k] += subcost->Lxx;
 
 			if(k < N){
 				// calc Lu
@@ -600,7 +420,7 @@ void Solver::PrepareDDP(){
 
 					for(int j = 0; j < m; j++){
 						for(int i = 0; i < n; i++){
-							subcost->Lu[u->index+j] += A[i0+i][j0+j]*yvec[i0+i];
+							Lu[k](u->index+j) += A[i0+i][j0+j]*yvec[i0+i];
 						}
 					}
 				}
@@ -618,7 +438,7 @@ void Solver::PrepareDDP(){
 					// Lxx = A^T A
 					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 						for(int i = 0; i < n; i++){
-							subcost->Luu[u0->index+j0][u1->index+j1] += A[i0+i][j00+j0]*A[i0+i][j01+j1];
+							Luu[k](u0->index+j0, u1->index+j1) += A[i0+i][j00+j0]*A[i0+i][j01+j1];
 						}
 					}
 				}
@@ -635,21 +455,15 @@ void Solver::PrepareDDP(){
 					// Lxx = A^T A
 					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 						for(int i = 0; i < n; i++){
-							subcost->Lux[u->index+j0][x->index+j1] += A[i0+i][j00+j0]*A[i0+i][j01+j1];
+							Lux[k](u->index+j0, x->index+j1) += A[i0+i][j00+j0]*A[i0+i][j01+j1];
 						}
 					}
 				}
-
-                Lu [k] += subcost->Lu;
-                Luu[k] += subcost->Luu;
-                Lux[k] += subcost->Lux;
 			}            
 		}
 
         // weights
 		for(SubState* subst : state[k]->substate){
-            subst->Lxx.clear();
-
             if(subst->var->locked)
                 continue;
 
@@ -657,15 +471,12 @@ void Solver::PrepareDDP(){
             int m  = subst->var->nelem;
             for(int j = 0; j < m; j++){
                 real_t wj = subst->var->weight[j];
-                subst->Lxx[j0+j][j0+j] += wj*wj;
-            }
 
-            Lxx[k] += subst->Lxx;
+				Lxx[k](j0+j, j0+j) += wj*wj;
+            }
         }
         if(k < N){
             for(SubInput* subin : input[k]->subinput){
-                subin->Luu.clear();
-
                 if(subin->var->locked)
                     continue;
 
@@ -673,157 +484,123 @@ void Solver::PrepareDDP(){
                 int m  = subin->var->nelem;
                 for(int j = 0; j < m; j++){
                     real_t wj = subin->var->weight[j];
-                    subin->Luu[j0+j][j0+j] += wj*wj;
-                }
 
-                Luu[k] += subin->Luu;
+					Luu[k](j0+j, j0+j) += wj*wj;
+                }
             }
         }
 	}
-
 }
 
-void Solver::CalcValueForwardDDP(){
-    U  [0] = 0.0;
-    Ux [0].clear();
-    Uxx[0].clear();
-
-    int nx = Uxx[0].height();
-    for(int i = 0; i < nx; i++)
-	    Uxx[0][i][i] = 1000.0;
-
-    for(int k = 0; k < N; k++){
-        P  [k] = L[k] + U[k] + (Lx[k] + Ux[k])*f_cor_rev[k] + (1.0/2.0)*(f_cor_rev[k]*((Lxx[k] + Uxx[k])*f_cor_rev[k]));
-        Px [k] = fx_rev[k].trans()*(Lx [k] + Ux [k] + (Lxx[k] + Uxx[k])*f_cor_rev[k]);
-        Pu [k] = fu_rev[k].trans()*(Lx [k] + Ux [k] + (Lxx[k] + Uxx[k])*f_cor_rev[k]) + Lu[k];
-        Pxx[k] = fx_rev[k].trans()*(Lxx[k] + Uxx[k])*fx_rev[k];
-        Puu[k] = fu_rev[k].trans()*(Lxx[k] + Uxx[k])*fu_rev[k] + Luu[k];
-        Pux[k] = (fu_rev[k].trans()*(Lxx[k] + Uxx[k]) + Lux[k])*fx_rev[k];
-
-        int n = Puu[k].height();
-	    for(int i = 0; i < n; i++)
-		    Puu[k][i][i] += param.regularization;
-    	
-	    mat_inv_sym(Puu[k], Puuinv[k]);
-
-	    Puuinv_Pu[k] = Puuinv[k]*Pu[k];
-
-	    U  [k+1] = P  [k] - (1.0/2.0)*(Pu[k]*Puuinv_Pu[k]);
-	    Ux [k+1] = Px [k] - Pux[k].trans()*Puuinv_Pu[k] ;
-	    Uxx[k+1] = Pxx[k] - Pux[k].trans()*Puuinv[k]*Pux[k];
-		
-        // enforce symmetry of Uxx
-	    int nx = Uxx[k+1].width();
-	    for(int i = 1; i < nx; i++) for(int j = 0; j < i; j++)
-		    Uxx[k+1][i][j] = Uxx[k+1][j][i];
-
-    }
-
-    // add terminal cost
-    //U  [N] += L  [N];
-    //Ux [N] += Lx [N];
-    //Uxx[N] += Lxx[N];
-    //mat_inv_sym(Uxx[N], Uxxinv);
-}
-
-void Solver::CalcValueBackwardDDP(){
+void Solver::BackwardDDP(){
  	V  [N] = L  [N];
-	Vx [N] = Lx [N];
-	Vxx[N] = Lxx[N];
+	vec_copy(Lx [N], Vx [N]);
+	mat_copy(Lxx[N], Vxx[N]);
 
 	for(int k = N-1; k >= 0; k--){
-        Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
-    	Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
-    	Qu [k] = Lu [k] + fu[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
-    	Qxx[k] = Lxx[k] + fx[k].trans()*Vxx[k+1]*fx[k];
-    	Quu[k] = Luu[k] + fu[k].trans()*Vxx[k+1]*fu[k];
-    	Qux[k] = Lux[k] + fu[k].trans()*Vxx[k+1]*fx[k];
-    	//const real_t eps = 0.1;
-		int n = Quu[k].height();
-		for(int i = 0; i < n; i++)
-			Quu[k][i][i] += param.regularization;
+		mat_vec_mul(Vxx[k+1], fcor[k], Vxx_fcor[k], 1.0, 0.0);
+        mat_mat_mul(Vxx[k+1], fx  [k], Vxx_fx  [k], 1.0, 0.0);
+        mat_mat_mul(Vxx[k+1], fu  [k], Vxx_fu  [k], 1.0, 0.0);
+        vec_copy(Vx[k+1]    , Vx_plus_Vxx_fcor[k]);
+        vec_add (Vxx_fcor[k], Vx_plus_Vxx_fcor[k]);
+
+        Q[k] = L[k] + V[k+1] + vec_dot(Vx[k+1], fcor[k]) + (1.0/2.0)*vec_dot(fcor[k], Vxx_fcor[k]);
+        
+        vec_copy(Lx[k], Qx[k]);
+        mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+
+        vec_copy(Lu[k], Qu[k]);
+        mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+
+        mat_copy(Lxx[k], Qxx[k]);
+        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+
+        mat_copy(Luu[k], Quu[k]);
+        mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+
+        mat_copy(Lux[k], Qux[k]);
+        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+
+		//Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
+    	//Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
+    	//Qu [k] = Lu [k] + fu[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
+    	//Qxx[k] = Lxx[k] + fx[k].trans()*Vxx[k+1]*fx[k];
+    	//Quu[k] = Luu[k] + fu[k].trans()*Vxx[k+1]*fu[k];
+    	//Qux[k] = Lux[k] + fu[k].trans()*Vxx[k+1]*fx[k];
     	
-        // input dimension could be zero
-		if(n > 0){
-            mat_inv_sym(Quu[k], Quuinv[k]);
+		for(int i = 0; i < Quu[k].m; i++)
+		    Quu[k](i,i) += param.regularization;
+    	
+		// input dimension could be zero
+		if(Quu[k].m > 0){
+            mat_inv_pd(Quu[k], Quuinv[k]);
+        
+			symmat_vec_mul(Quuinv[k], Qu[k], Quuinv_Qu[k], 1.0, 0.0);
+			//Quuinv_Qu = Quuinv*Qu;
 
-            //int nuc = gu[k].height();
-            // if input constraint is present
-            //if(nuc > 0){
-            //    gu_Quuinv[k]      = gu[k]*Quuinv[k];
-            //    gu_Quuinv_gutr[k] = gu_Quuinv[k]*gu[k].trans();
-            //
-            //    mat_inv_sym(gu_Quuinv_gutr[k], gu_Quuinv_gutr_inv[k]);
-            //
-            //    Quuhat[k]    = Quuinv[k] - gu_Quuinv[k].trans()*gu_Quuinv_gutr_inv[k]*gu_Quuinv[k];
-            //    Quuhat_Qu[k] = Quuhat[k]*Qu[k];
-            //
-            //    g_cor_hat[k] = gu_Quuinv[k].trans()*gu_Quuinv_gutr_inv[k]*g_cor[k];
-            //
-			//    V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuhat_Qu[k]) + Qu[k]*g_cor_hat[k] + (1.0/2.0)*(g_cor_hat[k]*(Quu[k]*g_cor_hat[k]));
-			//    Vx [k] = Qx [k] - Qux[k].trans()*(Quuhat_Qu [k] - g_cor_hat[k]);
-			//    Vxx[k] = Qxx[k] - Qux[k].trans()*Quuhat[k]*Qux[k];
-            //}
-            //else{
-			Quuinv_Qu[k] = Quuinv[k]*Qu[k];
-
-			V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
-			Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
-			Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
-            //}
+			V[k] = Q[k] - (1.0/2.0)*vec_dot(Qu[k], Quuinv_Qu[k]);
+        
+			vec_copy(Qx[k], Vx[k]);
+			mattr_vec_mul(Qux[k], Quuinv_Qu[k], Vx[k], -1.0, 1.0);
+	    
+			mat_copy(Qxx[k], Vxx[k]);
+			symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
+			mattr_mat_mul(Qux[k], Quuinv_Qux[k], Vxx[k], -1.0, 1.0);
+		
+			//mat_inv_sym(Quu[k], Quuinv[k]);
+			//
+			//Quuinv_Qu[k] = Quuinv[k]*Qu[k];
+			//
+			//V  [k] = Q  [k] - (1.0/2.0)*(Qu[k]*Quuinv_Qu[k]);
+			//Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
+			//Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
 		}
 		else{
 			V  [k] = Q  [k];
-			Vx [k] = Qx [k];
-			Vxx[k] = Qxx[k];
+			vec_copy(Qx [k], Vx [k]);
+			mat_copy(Qxx[k], Vxx[k]);
 		}
-		
-    	// enforce symmetry of Vxx
-		int nx = Vxx[k].width();
-		for(int i = 1; i < nx; i++) for(int j = 0; j < i; j++)
-			Vxx[k][i][j] = Vxx[k][j][i];
+				
+        // enforce symmetry of Uxx
+	    for(int i = 1; i < Vxx[k].m; i++) for(int j = 0; j < i; j++)
+		    Vxx[k](i,j) = Vxx[k](j,i);
 
-        //DSTR << "k " << k << "  V " << V[k] << "  Q " << Q[k] << endl;
 	}
 }
 
-void Solver::CalcStateForwardDDP(){
+void Solver::ForwardDDP(){
     // if the dimension of x0 is not zero, dx0 is also optimized
 	if(state[0]->dim == 0){
- 		dx[0].clear();
+ 		vec_clear(dx[0]);
+
+		//dx[0].clear();
 	}
 	else{
-		dx[0] = -Vxx[0].inv()*Vx[0];
+		mat_inv_pd(Vxx[0], Vxxinv);
+		symmat_vec_mul(Vxxinv, Vx[0], dx[0], -1.0, 0.0);
+    
+		//dx[0] = -Vxx[0].inv()*Vx[0];
 	}
 
-	for(int k = 0; k < N; k++){
-        //if(gu[k].height() > 0){
-        //    du[k] = -Quuhat[k]*(Qu[k] + Qux[k]*dx[k]) + g_cor_hat[k];
-        //}
-        //else{
-		du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
-        //}
-		dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
+    for(int k = 0; k < N; k++){
+        vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
+        mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
+        symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
 
-		//DSTR << "k: " << k << " du: " << du[k] << " dx: " << dx[k] << endl;
-		//DSTR << "k: " << k << " f_cor: " << f_cor[k] << endl;
+        vec_copy   (fcor[k], dx[k+1]);
+        mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
+        mat_vec_mul(fu  [k], du[k], dx[k+1], 1.0, 1.0);
+
+		//du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
+		//dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
 	}
-}
-
-void Solver::CalcStateBackwardDDP(){
-    //dx[N] = -Uxxinv*Ux[N];
-    //
-    //for(int k = N; k > 0; k--){
-    //    du[k-1] = -Puuinv[k-1]*(Pu[k-1] + Pux[k-1]*dx[k]);
-    //    dx[k-1] = fx_rev[k-1]*dx[k] + fu_rev[k-1]*du[k-1] + f_cor_rev[k-1];
-    //}
 }
 
 void Solver::CalcDirectionDDP(){
     PrepareDDP();
 
-    CalcValueBackwardDDP();
-    CalcStateForwardDDP();
+    BackwardDDP();
+    ForwardDDP();
     
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){
@@ -832,7 +609,7 @@ void Solver::CalcDirectionDDP(){
 
 			int j0 = subst->index;
 			for(int j = 0; j < subst->var->nelem; j++){
-				subst->var->dx[j] = dx[k][j0+j];
+				subst->var->dx[j] = dx[k](j0+j);
 			}
 		}
 	}
@@ -843,26 +620,14 @@ void Solver::CalcDirectionDDP(){
 
 			int j0 = subin->index;
 			for(int j = 0; j < subin->var->nelem; j++){
-				subin->var->dx[j] = du[k][j0+j];
+				subin->var->dx[j] = du[k](j0+j);
 			}
 		}
 		
 	}
 }
 
-//void Solver::ForwardDynamics(){
-//	for(int k = 0; k < N; k++){
-//		Transition* tr = transition[k];
-//		for(SubTransition* subtr : tr->subtran){
-//			subtr->con->CalcLhs();
-//		}
-//	}
-//}
-
 real_t Solver::CalcObjectiveDDP(){
-    //return 0.0;
-	//ForwardDynamics();
-
 	PrepareDDP();
 
 	real_t Lsum = 0.0;

@@ -331,10 +331,6 @@ void mat_inv_pd(const Matrix& m, Matrix& y){
 	LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', m.m, y.vh, y.l);
 }
 
-void symmat_solve  (const Matrix& A, const Vector& b, Vector& x){
-
-}
-
 void vec_clear(Vector& y){
 	vec_clear(std::move(y));
 }
