@@ -20,8 +20,6 @@
 # include <cusolverDn.h>
 #endif
 
-#include <set>
-
 namespace Scenebuilder{
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -602,15 +600,15 @@ void symmat_mat_mul(const Matrix& m1, const SparseMatrix& m2, SparseMatrix& y, d
 	}
 }
 
-void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, real_t regularization){
-	vector<int> order;
-	set<int> queue;
-	vector<Matrix>        Aii;
-	vector<Matrix>        Aii_inv;
-	vector<SparseMatrix>  Arow;
-	vector<Vector>        bi;
-	vector<Vector>        Aii_inv_bi;
-	vector<SparseMatrix>  Aii_inv_Arow;
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+LinearSolverCustom::LinearSolverCustom(){
+	mindeg = true;
+}
+
+void LinearSolverCustom::Init(SparseMatrix& A){
+	if(A.m == 0)
+		return;
 
 	Aii         .resize(A.m);
 	Aii_inv     .resize(A.m);
@@ -626,7 +624,26 @@ void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, re
 		bi          [i].Allocate(A.dim);
 		Aii_inv_bi  [i].Allocate(A.dim);
 		Aii_inv_Arow[i].Resize(1, A.n, A.dim);
+	}
+}
 
+void LinearSolverCustom::Finish(){
+
+}
+
+void LinearSolverCustom::Solve(SparseMatrix& A, SparseVector& b, SparseVector& x){
+	if(A.m == 0)
+		return;
+
+	for(int i = 0; i < A.m; i++){
+		Arow        [i].Clear();
+		Aii_inv_Arow[i].Clear();
+	}
+
+	queue.clear();
+	order.clear();
+
+	for(int i = 0; i < A.m; i++){
 		queue.insert(i);
 	}
 
@@ -653,8 +670,6 @@ void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, re
 		A.RowClear(i);
 		b.Clear(i);
 
-		for(int j = 0; j < A.dim; j++)
-			Aii[i](j,j) += regularization;
 		mat_inv_pd(Aii[i], Aii_inv[i]);
 
 		symmat_vec_mul(Aii_inv[i], bi[i], Aii_inv_bi[i], 1.0, 0.0);
@@ -674,23 +689,122 @@ void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, re
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 #ifdef USE_CHOLMOD
 # include <cholmod.h>
 #endif
 
-void LinsolveCholmod(SparseMatrix& A, SparseVector& b, SparseVector& x, real_t regularization){
+struct CholmodWork{
 #ifdef USE_CHOLMOD
-	cholmod_common cm;
+	cholmod_common   cm;
 	cholmod_triplet* A_trip;
 	cholmod_sparse*  A_sparse;
+	cholmod_factor*  L;
 	cholmod_dense*   b_dense;
 	cholmod_dense*   x_dense;
+#endif
+};
+
+LinearSolverCholmod::LinearSolverCholmod(){
+
+}
+
+void LinearSolverCholmod::Init(SparseMatrix& A){
+	if(A.m == 0)
+		return;
+
+#ifdef USE_CHOLMOD
+	nrow = A.m;
+	ncol = A.n;
+	nblock = 0;
+
+	for(auto& row : A.rows)
+		nblock += (int)row.size();
+
+	nzmax = nblock*(A.dim*A.dim);
+
+	CholmodWork* w = new CholmodWork();
+	cholmod_start(&w->cm);
+
+	w->cm.nmethods           = 1;
+	w->cm.method[0].ordering = CHOLMOD_AMD;
+	w->cm.supernodal         = CHOLMOD_AUTO; //CHOLMOD_SIMPLICIAL;
 	
-	cholmod_start(&cm);
+	w->A_trip  = cholmod_allocate_triplet(A.dim*nrow, A.dim*ncol, nzmax, 1, CHOLMOD_REAL, &w->cm);
+	w->b_dense = cholmod_zeros(A.dim*nrow, 1, CHOLMOD_REAL, &w->cm);
 
+	work = w;
+#endif
+}
 
+void LinearSolverCholmod::Finish(){
+#ifdef USE_CHOLMOD
+	CholmodWork* w = (CholmodWork*)work;
 
-	cholmod_finish(&cm);
+	cholmod_free_dense  (&w->b_dense , &w->cm);
+	cholmod_free_triplet(&w->A_trip  , &w->cm);
+
+	cholmod_finish(&w->cm);
+
+	delete (CholmodWork*)work;
+#endif
+}
+
+void LinearSolverCholmod::Solve(SparseMatrix& A, SparseVector& b, SparseVector& x){
+	if(A.m == 0)
+		return;
+
+#ifdef USE_CHOLMOD	
+	CholmodWork* w = (CholmodWork*)work;
+
+	int idx = 0;
+	for(int ix0 = 0; ix0 < A.rows.size(); ix0++){
+		for(auto it = A.rows[ix0].begin(); it != A.rows[ix0].end(); it++){
+			int     ix1 = it->first;
+			Matrix& _m  = it->second;
+
+			if(ix0 > ix1)
+				continue;
+
+			for(int i = 0; i < A.dim; i++){
+				int j0 = (ix0 == ix1 ? i : 0);
+				for(int j = j0; j < A.dim; j++){
+					((int   *)w->A_trip->i)[idx] = A.dim*ix0 + i;
+					((int   *)w->A_trip->j)[idx] = A.dim*ix1 + j;
+					((double*)w->A_trip->x)[idx] = _m(i,j);
+					idx++;
+				}
+			}
+		}
+	}
+	w->A_trip->nnz = idx;
+
+	for(auto it = b.begin(); it != b.end(); it++){
+		int     ix = it->first;
+		Vector& _v = it->second;
+
+		for(int i = 0; i < A.dim; i++){
+			((double*)w->b_dense->x)[A.dim*ix + i] = _v(i);
+		}
+	}
+
+	w->A_sparse = cholmod_triplet_to_sparse(w->A_trip, 0, &w->cm);
+
+	w->L = cholmod_analyze (w->A_sparse, &w->cm);
+	cholmod_factorize (w->A_sparse, w->L, &w->cm) ;
+	w->x_dense = cholmod_solve (CHOLMOD_A, w->L, w->b_dense, &w->cm);
+
+	// store result
+	for(int ix = 0; ix < ncol; ix++){
+		Vector& _v = x.SubVector(ix);
+		for(int j = 0; j < A.dim; j++)
+			_v(j) = -1.0 * ((double*)w->x_dense->x)[A.dim*ix + j];  //< flip sign here
+	}
+
+	cholmod_free_sparse (&w->A_sparse, &w->cm);
+	cholmod_free_factor (&w->L       , &w->cm);
+	cholmod_free_dense  (&w->x_dense , &w->cm);
 #endif
 }
 

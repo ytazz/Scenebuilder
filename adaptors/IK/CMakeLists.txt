@@ -14,6 +14,10 @@ add_library(sbik
 
 target_link_libraries(sbik Springhead::Springhead)
 
+if(USE_CHOLMOD)
+	target_link_libraries(sbik SuiteSparse::cholmod)
+endif()
+
 install(TARGETS sbik
 	EXPORT   sbikExport
 	LIBRARY  DESTINATION lib

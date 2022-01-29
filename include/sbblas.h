@@ -3,6 +3,7 @@
 #include <sbtypes.h>
 
 #include <map>
+#include <set>
 
 namespace Scenebuilder{;
 
@@ -175,8 +176,50 @@ void   symmat_mat_mul(const Matrix&       m1, const Matrix&       m2, Matrix&&  
 void   symmat_mat_mul(const Matrix&       m1, const SparseMatrix& m2, SparseMatrix& y, double alpha, double beta);
 void mattr_mat_mul_batch(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta);
 
-void Linsolve(SparseMatrix& A, SparseVector& b, SparseVector& x, bool mindeg, real_t regularization);
+class LinearSolver : public UTRefCount{
+public:
+	virtual void Init  (SparseMatrix& A) = 0;
+	virtual void Finish() = 0;
+	virtual void Solve (SparseMatrix& A, SparseVector& b, SparseVector& x) = 0;
 
-void LinsolveCholmod(SparseMatrix& A, SparseVector& b, SparseVector& x, real_t regularization);
+};
+
+class LinearSolverCustom : public LinearSolver{
+public:
+	bool mindeg;
+
+	vector<int> order;
+	set<int> queue;
+	vector<Matrix>        Aii;
+	vector<Matrix>        Aii_inv;
+	vector<SparseMatrix>  Arow;
+	vector<Vector>        bi;
+	vector<Vector>        Aii_inv_bi;
+	vector<SparseMatrix>  Aii_inv_Arow;
+
+public:
+	virtual void Init  (SparseMatrix& A);
+	virtual void Finish();
+	virtual void Solve (SparseMatrix& A, SparseVector& b, SparseVector& x);
+
+	LinearSolverCustom();
+};
+
+class LinearSolverCholmod : public LinearSolver{
+public:
+	int nrow;
+	int ncol;
+	int nblock;
+	int nzmax;
+
+	void* work;
+
+public:
+	virtual void Init  (SparseMatrix& A);
+	virtual void Finish();
+	virtual void Solve (SparseMatrix& A, SparseVector& b, SparseVector& x);
+
+	LinearSolverCholmod();
+};
 
 }
