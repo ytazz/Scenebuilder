@@ -177,13 +177,13 @@ add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 
 set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEADERS}")
 
-target_link_libraries(Scenebuilder Springhead::Springhead)
-target_link_libraries(Scenebuilder GLEW::GLEW)
-target_link_libraries(Scenebuilder ${EXPAT_LIBRARIES})
-target_link_libraries(Scenebuilder ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
+target_link_libraries(Scenebuilder PUBLIC Springhead::Springhead)
+target_link_libraries(Scenebuilder PUBLIC GLEW::GLEW)
+target_link_libraries(Scenebuilder PUBLIC ${EXPAT_LIBRARIES})
+target_link_libraries(Scenebuilder PUBLIC ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
 
 if(USE_CHOLMOD)
-	target_link_libraries(Scenebuilder SuiteSparse::cholmod)
+	target_link_libraries(Scenebuilder PRIVATE SuiteSparse::cholmod)
 endif()
 
 install(TARGETS Scenebuilder

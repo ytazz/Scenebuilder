@@ -76,6 +76,11 @@ struct SparseVector : std::map<int, Vector>{
 };
 
 struct SparseMatrix{
+	struct PrintCallback{
+		virtual bool Order(int lhs, int rhs) = 0;
+		virtual int  Label(int i, int j, bool nonzero) = 0;
+	};
+
 	int           m;
 	int           n;
 	int           dim;
@@ -95,7 +100,7 @@ struct SparseMatrix{
 	void           RowClear (int i);
 	void           ColClear (int j);
 
-	void  PrintSparsity(ostream& os);
+	void  PrintSparsity(ostream& os, PrintCallback* callback = 0);
 
 	SparseMatrix();
 };

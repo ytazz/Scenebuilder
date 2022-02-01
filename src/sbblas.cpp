@@ -251,19 +251,40 @@ void SparseMatrix::ColClear(int j){
 	}
 }
 
-void SparseMatrix::PrintSparsity(ostream& os){
+void SparseMatrix::PrintSparsity(ostream& os, SparseMatrix::PrintCallback* callback){
+	vector<int> ordering(m);
+	for(int i = 0; i < m; i++)
+		ordering[i] = i;
+
+	if(callback)
+		sort(ordering.begin(), ordering.end(), [callback](int lhs, int rhs){ return callback->Order(lhs, rhs); });
+
+	vector<int> ordering_rev(ordering.size());
+	for(int i = 0; i < ordering.size(); i++){
+		ordering_rev[ordering[i]] = i;
+	}
+	
+	vector<int> col;
 	for(int i = 0; i < m; i++){
+		int i_ordered = ordering[i];
+
+		col.clear();
+		for(Row::iterator it = rows[i_ordered].begin(); it != rows[i_ordered].end(); it++){
+			col.push_back(ordering_rev[it->first]);
+		}
+		sort(col.begin(), col.end());
+		
 		int j = 0;
-		for(Row::iterator it = rows[i].begin(); it != rows[i].end(); it++){
-			while(j < it->first){
-				os << '0' << ' ';
+		for(vector<int>::iterator it = col.begin(); it != col.end(); it++){
+			while(j < *it){
+				os << (callback ? callback->Label(ordering[i], ordering[j], false) : '0') << ' ';
 				j++;
 			}
-			os << '1' << ' ';
+			os << (callback ? callback->Label(ordering[i], ordering[j], true) : '1') << ' ';
 			j++;
 		}
 		while(j < n){
-			os << '0' << ' ';
+			os << (callback ? callback->Label(ordering[i], ordering[j], false) : '0') << ' ';
 			j++;
 		}
 		os << '\n';
