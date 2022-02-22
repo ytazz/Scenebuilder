@@ -7,7 +7,8 @@
 # ifdef _WIN32
 #  include <mkl_lapacke.h>
 # else
-#  include <lapacke.h>
+//#  include <lapacke.h>
+#  include <mkl_lapacke.h>
 # endif
 #endif
 
