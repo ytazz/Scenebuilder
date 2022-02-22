@@ -372,7 +372,8 @@ void Solver::PrepareDDP(){
 
 			// sum up L
 			for(int i = 0; i < n; i++){
-				L[k] += 0.5 * square(yvec[i0+i]);
+				//L[k] += 0.5 * square(yvec[i0+i]);
+				L[k] += 0.5 * square(b[i0+i]);
 			}
 
 			// calc Lx
@@ -386,7 +387,8 @@ void Solver::PrepareDDP(){
 				// Lx = A^T y
 				for(int j = 0; j < m; j++){
 					for(int i = 0; i < n; i++){
-						Lx[k](x->index+j) += A[i0+i][j0+j]*yvec[i0+i];
+						//Lx[k](x->index+j) += A[i0+i][j0+j]*yvec[i0+i];
+						Lx[k](x->index+j) += A[i0+i][j0+j]*(-b[i0+i]);
 					}
 				}
 			}
@@ -420,7 +422,8 @@ void Solver::PrepareDDP(){
 
 					for(int j = 0; j < m; j++){
 						for(int i = 0; i < n; i++){
-							Lu[k](u->index+j) += A[i0+i][j0+j]*yvec[i0+i];
+							//Lu[k](u->index+j) += A[i0+i][j0+j]*yvec[i0+i];
+							Lu[k](u->index+j) += A[i0+i][j0+j]*(-b[i0+i]);
 						}
 					}
 				}
