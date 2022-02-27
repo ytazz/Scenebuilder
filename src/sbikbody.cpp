@@ -19,17 +19,19 @@ IKBody::ForceCon::ForceCon(IKBody* b):body(b), Constraint(b->solver, 3, ID(0, 0,
 void IKBody::ForceCon::CalcCoef(){
 	uint idx = 0;
 	for(IKJointBase* jnt : body->joints){
-		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0]);
-		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1]);
-		((C3Link*)links[idx++])->SetCoef( (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2]);
+		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
+		((C3Link*)links[idx++])->SetCoef(sign*jnt->axis[0]);
+		((C3Link*)links[idx++])->SetCoef(sign*jnt->axis[1]);
+		((C3Link*)links[idx++])->SetCoef(sign*jnt->axis[2]);
 	}
 }
 void IKBody::ForceCon::CalcDeviation(){
 	y = body->force;
 	for(IKJointBase* jnt : body->joints){
-		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[0] * jnt->force_var[0]->val;
-		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[1] * jnt->force_var[1]->val;
-		y += (jnt->sockBody == body ? 1.0 : -1.0) * jnt->axis[2] * jnt->force_var[2]->val;
+		real_t sign = (jnt->sockBody == body ? 1.0 : -1.0);
+		y += sign * jnt->axis[0] * jnt->force_var[0]->val;
+		y += sign * jnt->axis[1] * jnt->force_var[1]->val;
+		y += sign * jnt->axis[2] * jnt->force_var[2]->val;
 	}
 	for(IKBodyHandle* handle : body->handles){
 		y += -1.0 * handle->force;
