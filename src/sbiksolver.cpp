@@ -335,7 +335,14 @@ void IKSolver::CompForceIK(){
 	mode = Mode::Force;
 	
 	Prepare();
-	Solver::Step();
+	
+	//Solver::Step();
+	// solving linear equation is costly, so do it by direct recursive computation
+	for(auto& body : ikBodies){
+		if(!body->parBody)
+			body->CompForceRecursive();
+	}
+
 	Finish();
 }
 

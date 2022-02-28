@@ -305,6 +305,53 @@ void IKBody::Integrate(real_t dt){
 	ori_var->val.unitize();
 }
 
+void IKBody::CompForceRecursive(){
+	for(IKBody* c : children){
+		c->CompForceRecursive();
+	}
+	if(!parBody)
+		return;
+
+	// f_body = f_handle + f_plug - sum_i(f_sock_i)
+	// m_body = m_handle + r_plug % f_plug + m_plug - sum_i(r_sock_i % f_sock_i + m_sock_i)
+
+	vec3_t f_plug = force ;
+
+	for(IKJointBase* jnt : joints){
+		if(jnt->sockBody == this){
+			for(int j = 0; j < 3; j++){
+				f_plug += jnt->axis[j] * jnt->force_var[j]->val;
+			}
+		}
+	}
+	for(IKBodyHandle* handle : handles){
+		f_plug -= handle->force ;
+	}
+
+	vec3_t m_plug = moment;
+	
+	vec3_t r = parJoint->sockPosAbs - centerPosAbs;
+	m_plug -= r % f_plug;
+
+	for(IKJointBase* jnt : joints){
+		if(jnt->sockBody == this){
+			r = jnt->sockPosAbs - centerPosAbs;
+			for(int j = 0; j < 3; j++){
+				m_plug += (r % jnt->axis[j]) * jnt->force_var[j]->val;
+				m_plug += jnt->axis[j] * jnt->moment_var[j]->val;
+			}
+		}
+	}
+	for(IKBodyHandle* handle : handles){
+		m_plug -= handle->moment;
+	}
+
+	for(int j = 0; j < 3; j++){
+		parJoint->force_var [j]->val = parJoint->axis[j]*f_plug;	
+		parJoint->moment_var[j]->val = parJoint->axis[j]*m_plug;
+	}
+}	
+
 void IKBody::Draw(GRRenderIf* render){
 	Vec3f p0, p1;
 	
