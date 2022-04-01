@@ -112,7 +112,14 @@ public:
 	}
 
 	virtual void Send(const byte* data, size_t len){
-		sendto(sock, (const char*)data, len, 0, (sockaddr*)&siRemote, sizeof(siRemote));
+		int ret = sendto(sock, (const char*)data, len, 0, (sockaddr*)&siRemote, sizeof(siRemote));
+		if(ret == -1){
+			int code = WSAGetLastError();
+			Message::Error("socket error code: %d", code);
+		}
+		else if(ret < len){
+			Message::Error("sent less than requested");
+		}
 	}
 
 	UDPSenderImplWinsock(){
