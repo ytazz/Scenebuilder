@@ -93,7 +93,7 @@ void Constraint::CalcError(){
             type == Type::InequalityPenalty ){
             // quadratic cost
 		    for(int k = 0; k < nelem; k++)
-			    e[k] = 0.5 * y[k] * y[k];
+			    e[k] = 0.5 * weight[k]*weight[k]*y[k]*y[k];
         }
         if( type == Type::InequalityBarrier ){
             // logarithmic cost
