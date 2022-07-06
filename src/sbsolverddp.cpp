@@ -458,7 +458,8 @@ void Solver::PrepareDDP(){
 
 			//int i0 = subcost->con->index;
 			int n  = subcost->con->nelem;
-			subcost->con->RegisterCorrection(subcost->b, 0);
+			//subcost->con->RegisterCorrection(subcost->b, 0);
+			subcost->con->RegisterDeviation(subcost->b, 0);
 
 			// sum up L
 			for(int i = 0; i < n; i++){
@@ -481,7 +482,8 @@ void Solver::PrepareDDP(){
 					for(int i = 0; i < n; i++){
 						//Lx[k](x->index+j) += A[i0+i][j0+j]*yvec[i0+i];
 						//Lx[k](x->index+j) += A[i0+i][j0+j]*(-b[i0+i]);
-						Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
+						//Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
+						Lx[k](x.x->index+j) += x.A[i][j]*(subcost->b[i]);
 					}
 				}
 			}
@@ -519,7 +521,8 @@ void Solver::PrepareDDP(){
 						for(int i = 0; i < n; i++){
 							//Lu[k](u->index+j) += A[i0+i][j0+j]*yvec[i0+i];
 							//Lu[k](u->index+j) += A[i0+i][j0+j]*(-b[i0+i]);
-							Lu[k](u.u->index+j) += u.A[i][j]*(-subcost->b[i]);
+							//Lu[k](u.u->index+j) += u.A[i][j]*(-subcost->b[i]);
+							Lu[k](u.u->index+j) += u.A[i][j]*(subcost->b[i]);
 						}
 					}
 				}
@@ -606,27 +609,37 @@ void Solver::BackwardDDP(){
 
 	for(int k = N-1; k >= 0; k--){
 		mat_vec_mul(Vxx[k+1], fcor[k], Vxx_fcor[k], 1.0, 0.0);
-        mat_mat_mul(Vxx[k+1], fx  [k], Vxx_fx  [k], 1.0, 0.0);
-        mat_mat_mul(Vxx[k+1], fu  [k], Vxx_fu  [k], 1.0, 0.0);
+
+		if(state[k]->dim != 0)
+			mat_mat_mul(Vxx[k+1], fx  [k], Vxx_fx  [k], 1.0, 0.0);
+
+		if(input[k]->dim != 0)
+			mat_mat_mul(Vxx[k+1], fu  [k], Vxx_fu  [k], 1.0, 0.0);
+
         vec_copy(Vx[k+1]    , Vx_plus_Vxx_fcor[k]);
         vec_add (Vxx_fcor[k], Vx_plus_Vxx_fcor[k]);
 
         Q[k] = L[k] + V[k+1] + vec_dot(Vx[k+1], fcor[k]) + (1.0/2.0)*vec_dot(fcor[k], Vxx_fcor[k]);
         
         vec_copy(Lx[k], Qx[k]);
-        mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+        if(state[k]->dim != 0)
+			mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
 
         vec_copy(Lu[k], Qu[k]);
-        mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+        if(input[k]->dim != 0)
+			mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
 
         mat_copy(Lxx[k], Qxx[k]);
-        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+		if(state[k]->dim != 0)
+	        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
 
         mat_copy(Luu[k], Quu[k]);
-        mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+		if(input[k]->dim != 0)
+			mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
 
         mat_copy(Lux[k], Qux[k]);
-        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+		if(input[k]->dim != 0)
+	        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
 
 		//Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
     	//Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
@@ -690,13 +703,22 @@ void Solver::ForwardDDP(){
 	}
 
     for(int k = 0; k < N; k++){
-        vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
-        mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
-        symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
+		if(input[k]->dim != 0){
+			vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
+
+			if(state[k]->dim != 0)
+				mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
+
+			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
+		}
 
         vec_copy   (fcor[k], dx[k+1]);
-        mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
-        mat_vec_mul(fu  [k], du[k], dx[k+1], 1.0, 1.0);
+
+		if(state[k]->dim != 0)
+			mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
+
+		if(input[k]->dim != 0)
+			mat_vec_mul(fu  [k], du[k], dx[k+1], 1.0, 1.0);
 
 		//du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
 		//dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
