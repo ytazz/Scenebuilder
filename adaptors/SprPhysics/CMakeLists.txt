@@ -12,7 +12,7 @@ add_library(sbsprphysics
   ${SCENEBUILDER_SPRPHYSICS_HEADERS}
 )
 
-target_link_libraries(sbsprphysics Springhead::Springhead)
+target_link_libraries(sbsprphysics Scenebuilder Springhead::Springhead)
 
 install(TARGETS sbsprphysics
 	EXPORT   sbsprphysicsExport

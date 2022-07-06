@@ -453,13 +453,11 @@ void Solver::CalcEquation(){
 		con->index = dimcon;
 		dimcon += con->nelem;
 	}
-	int t1 = timer2.CountUS();
-
+	
 	// 変数あるいは拘束の数が不正
 	if(dimvar == 0 || dimcon == 0)
 		return;
 			
-	timer2.CountUS();
 	A   .resize(dimcon + dimvar_weighted, dimvar);
 	b   .resize(dimcon + dimvar_weighted);
 	yvec.resize(dimcon);
@@ -468,7 +466,10 @@ void Solver::CalcEquation(){
 	yvec.clear();
 	pivot.resize(dimcon);
 
-	for(auto& con : cons_active){
+	//for(auto& con : cons_active){
+#pragma omp parallel for
+	for(int i = 0; i < cons_active.size(); i++){
+		Constraint* con = cons_active[i];
         vec3_t w = con->weight;
         
         // update multiplier of barrier inequality constraints
@@ -489,12 +490,17 @@ void Solver::CalcEquation(){
         }
 
 		for(auto& link : con->links_active){
-			link->RegisterCoef(A, w);
+			link->RegisterCoef(A, link->con->index, link->var->index, w);
 		}
-		con->RegisterCorrection(b);
-		con->RegisterDeviation (yvec);
+		con->RegisterCorrection(b   , con->index);
+		con->RegisterDeviation (yvec, con->index);
 	}
-	for(auto& var : vars_unlocked){
+
+
+#pragma omp parallel for
+	//for(auto& var : vars_unlocked){
+	for(int j = 0; j < vars_unlocked.size(); j++){
+		Variable* var = vars_unlocked[j];
 		if(var->index_weighted != -1){
 			for(int j = 0; j < var->nelem; j++)
 				A[dimcon + var->index_weighted + j][var->index + j] = var->weight[j];

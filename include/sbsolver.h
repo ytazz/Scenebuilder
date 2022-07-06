@@ -123,16 +123,29 @@ public:
 		int                 index;
 		Variable*           var;
 	};
+	struct SubStateLink{
+		SubState* x;
+		Link*     link;
+		vmat_t    A;
+	};
+	struct SubInputLink{
+		SubInput* u;
+		Link*     link;
+		vmat_t    A;
+	};
+		
 	struct SubTransition : UTRefCount{
-		Constraint*         con;
-		SubState*           x1;
-		vector<SubState*>   x0;
-		vector<SubInput*>   u;
+		Constraint*            con;
+		SubState*              x1;
+		vector<SubStateLink>   x0;
+		vector<SubInputLink>   u;
+		vvec_t                 b;
 	};
 	struct SubCost : UTRefCount{
-        Constraint*         con;
-		vector<SubState*>   x;
-		vector<SubInput*>   u;
+        Constraint*            con;
+		vector<SubStateLink>   x;
+		vector<SubInputLink>   u;
+		vvec_t                 b;
 	};
 
 	struct State : UTRefCount{

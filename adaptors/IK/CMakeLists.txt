@@ -12,7 +12,7 @@ add_library(sbik
   ${SCENEBUILDER_IK_HEADERS}
 )
 
-target_link_libraries(sbik Springhead::Springhead)
+target_link_libraries(sbik Scenebuilder Springhead::Springhead)
 
 install(TARGETS sbik
 	EXPORT   sbikExport

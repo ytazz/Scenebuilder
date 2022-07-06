@@ -115,14 +115,16 @@ void Constraint::CalcDeviation(){
 		link->AddError();
 }
 
-void Constraint::RegisterCorrection(vvec_t& dydvec){
+void Constraint::RegisterCorrection(vvec_t& dydvec, int offset){
 	for(int i = 0; i < nelem; i++)
-		dydvec[index+i] = weight[i] * dyd[i];
+		//dydvec[index+i] = weight[i] * dyd[i];
+		dydvec[offset+i] = weight[i] * dyd[i];
 }
 
-void Constraint::RegisterDeviation(vvec_t& yvec){
+void Constraint::RegisterDeviation(vvec_t& yvec, int offset){
 	for(int i = 0; i < nelem; i++)
-		yvec[index+i] = weight[i] * y[i];
+		//yvec[index+i] = weight[i] * y[i];
+		yvec[offset+i] = weight[i] * y[i];
 }
 
 void Constraint::ResetState(){
