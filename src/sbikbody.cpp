@@ -343,7 +343,7 @@ void IKBody::CompForceRecursive(){
 		}
 	}
 	for(IKBodyHandle* handle : handles){
-		m_plug -= handle->moment;
+		m_plug -= ((handle->sockPosAbs - centerPosAbs) % handle->force + handle->moment);
 	}
 
 	for(int j = 0; j < 3; j++){
