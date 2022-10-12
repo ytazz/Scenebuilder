@@ -303,6 +303,9 @@ void IKBody::Integrate(real_t dt){
 
 	ori_var->val = quat_t::Rot(angvel_var->val * dt) * ori_var->val;
 	ori_var->val.unitize();
+
+	pos = pos_var->val;
+	ori = ori_var->val;
 }
 
 void IKBody::CompForceRecursive(){

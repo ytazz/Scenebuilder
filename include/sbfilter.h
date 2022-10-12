@@ -11,6 +11,8 @@ struct FilterLinear{
     real_t w;
     real_t u;
     real_t yd, y;
+    bool   first;
+    real_t yd_max;
 
     void SetCutoff(real_t f);
 
@@ -26,6 +28,8 @@ struct FilterButterworth3{
     real_t w, w2, w3;
     real_t u;
     real_t ydd, yd, y;
+    bool   first;
+    real_t yd_max;
 
     // set cutoff frequency [Hz]
     void   SetCutoff(real_t f);

@@ -186,14 +186,14 @@ typedef FixedStr<char, 32>  str32_t;
 typedef FixedStr<char, 256>	str256_t;
 
 // remove elements from array
-template<class T, class E>
+/*template<class T, class E>
 void RemoveFromArray(vector< shared_ptr<T> >& arr, E elem){
 	for(typename vector< shared_ptr<T> >::iterator it = arr.begin(); it != arr.end(); ){
 		if(it->get() == elem)
 			 it = arr.erase(it);
 		else it++;
 	}
-}
+}*/
 template<class T, class E>
 void RemoveFromArray(vector<T>& arr, E elem){
 	for(typename vector<T>::iterator it = arr.begin(); it != arr.end(); ){
