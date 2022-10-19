@@ -12,7 +12,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointSync::PosCon::PosCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointSync::PosCon::PosCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(sync->joint[0]->q_var[idx]);
 	AddSLink(sync->joint[1]->q_var[idx]);
 }
@@ -26,7 +26,7 @@ void IKJointSync::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointSync::VelCon::VelCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointSync::VelCon::VelCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(sync->joint[0]->qd_var[idx]);
 	AddSLink(sync->joint[1]->qd_var[idx]);
 }
@@ -40,7 +40,7 @@ void IKJointSync::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointSync::AccCon::AccCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointSync::AccCon::AccCon(IKJointSync* s, int _idx, const string& _name):sync(s), idx(_idx), Constraint(s->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(sync->joint[0]->qdd_var[idx]);
 	AddSLink(sync->joint[1]->qdd_var[idx]);
 }

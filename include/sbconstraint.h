@@ -24,17 +24,27 @@ class M3Link;
  */
 class Constraint : public UTRefCount, public ID{
 public:
+    struct Type{
+        enum{
+            Equality,
+            InequalityPenalty,
+            InequalityBarrier,
+        };
+    };
+
 	typedef void (Constraint::*UpdateFunc)(uint k, real_t d);
 
 	Solver*		solver;
+    int         type;       ///< constraint type
 	Links		links;		///< links to constrained variables
 	Links       links_active;
 	int         nelem;
 	int         level;      ///< priority level
 	int         index;
 	bool		enabled;	///< enabled constraint (controlled by user)
-	bool		active;		///< active constraint (task-related constraints, range constraints)
+	bool		active;		///< active constraint  (for penalty inequality constraints)
 	vec3_t      weight;     ///< weight of constraint error (component-wise)
+    //vec3_t      lambda;     ///< lagrange multiplier (for barrier inequality constraints)
 	real_t		scale, scale2, scale_inv, scale2_inv;		///< scaling coefficient
 	
 	/** error correction rate
@@ -82,8 +92,8 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
-	void RegisterCorrection(vvec_t& dydvec);
-	void RegisterDeviation (vvec_t& yvec);
+	void RegisterCorrection(vvec_t& dydvec, int offset);
+	void RegisterDeviation (vvec_t& yvec  , int offset);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);
@@ -108,7 +118,7 @@ public:
 	 */
 	virtual void Project(real_t& l, uint k){}
 	
-	Constraint(Solver* solver, uint n, ID _id = ID(), real_t _scale = 1.0);
+	Constraint(Solver* solver, uint n, ID _id, int type, real_t _scale);
 };
 
 /** fixation constraint

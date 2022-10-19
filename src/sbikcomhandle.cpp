@@ -36,7 +36,7 @@ void IKComHandleBase::DeleteBody(IKBody* _body){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::PosCon::PosCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKComHandle::PosCon::PosCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -77,7 +77,7 @@ void IKComHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::VelCon::VelCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKComHandle::VelCon::VelCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -122,7 +122,7 @@ void IKComHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::AccCon::AccCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKComHandle::AccCon::AccCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){
@@ -164,7 +164,7 @@ void IKComHandle::AccCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKComHandle::MomentumCon::MomentumCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), 1.0){
+IKComHandle::MomentumCon::MomentumCon(IKComHandle* h, const string& _name):handle(h), Constraint(h->solver, 3, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	for(uint i = 0; i < handle->joints.size(); i++){
 		IKJoint* jnt = handle->joints[i].joint;
 		for(int n = 0; n < jnt->ndof; n++){

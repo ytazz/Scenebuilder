@@ -103,6 +103,8 @@ public:
 	void     GetPose(pose_t& p);
 
 	void     SetInitialPose(const pose_t& p);
+
+	void     CompForceRecursive();
 	
 	void     Draw(GRRenderIf* render);
 

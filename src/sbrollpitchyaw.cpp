@@ -28,9 +28,34 @@ quat_t FromRollPitchYaw(const vec3_t& angles){
 }
 
 vec3_t VelocityFromRollPitchYaw(const vec3_t& angle, const vec3_t& angled){
-    return vec3_t( cos(angle[2])*cos(angle[1]), sin(angle[2])*cos(angle[1]), -sin(angle[1]))*angled[0]
-         + vec3_t(-sin(angle[2])              , cos(angle[2])              ,  0.0          )*angled[1]
-         + vec3_t( 0.0                        , 0.0                        ,  1.0          )*angled[2];
+	vec3_t ex(1.0, 0.0, 0.0);
+	vec3_t ey(0.0, 1.0, 0.0);
+	vec3_t ez(0.0, 0.0, 1.0);
+	quat_t qz  =      quat_t::Rot(angle.z, 'z');
+	quat_t qzy = qz * quat_t::Rot(angle.y, 'y');
+	vec3_t wx = ex*angled.x;
+	vec3_t wy = ey*angled.y;
+	vec3_t wz = ez*angled.z;
+
+	return wz + qz*wy + qzy*wx;
+    //return vec3_t( cos(angle[2])*cos(angle[1]), sin(angle[2])*cos(angle[1]), -sin(angle[1]))*angled[0]
+    //     + vec3_t(-sin(angle[2])              , cos(angle[2])              ,  0.0          )*angled[1]
+    //     + vec3_t( 0.0                        , 0.0                        ,  1.0          )*angled[2];
+}
+
+vec3_t AccelerationFromRollPitchYaw(const vec3_t& angle, const vec3_t& angled, const vec3_t& angledd){
+	vec3_t ex(1.0, 0.0, 0.0);
+	vec3_t ey(0.0, 1.0, 0.0);
+	vec3_t ez(0.0, 0.0, 1.0);
+	quat_t qz  =      quat_t::Rot(angle.z, 'z');
+	quat_t qzy = qz * quat_t::Rot(angle.y, 'y');
+	vec3_t wx = ex*angled.x;
+	vec3_t wy = ey*angled.y;
+	vec3_t wz = ez*angled.z;
+
+	return ez*angledd.z + qz*ey*angledd.y + qzy*ex*angledd.x
+		 + wz % (qz*wy)
+		 + (wz + qz*wy) % (qzy*wx);
 }
 
 vec3_t ToAxisAngle(const quat_t& q){

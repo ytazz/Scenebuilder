@@ -11,8 +11,9 @@ if(WIN32)
 endif()
 
 set(MKL_INCLUDE_DIR  "" CACHE PATH "include directory of MKL")
-set(USE_CURSES false CACHE BOOL "use curses or not")
-set(USE_LIBPNG false CACHE BOOL "use libpng or not")
+set(USE_CURSES  false CACHE BOOL "use curses or not")
+set(USE_LIBPNG  false CACHE BOOL "use libpng or not")
+set(USE_CHOLMOD false CACHE BOOL "use cholmod or not")
 
 if(UNIX)
 	set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
@@ -30,6 +31,10 @@ find_package(Springhead)
 if(USE_LIBPNG)
     find_package(PNG)
 	add_compile_definitions(USE_LIBPNG)
+endif()
+if(USE_CHOLMOD)
+    find_package(SuiteSparse)
+	add_compile_definitions(USE_CHOLMOD)
 endif()
 
 
@@ -55,6 +60,7 @@ set(BUILD_DIMP_ADAPTOR false CACHE BOOL "build dimp adaptor or not")
 
 set(SCENEBUILDER_HEADERS
 	include/sbadaptor.h
+	include/sbblas.h
 	include/sbbuffer.h
 	include/sbbuilder.h
 	include/sbcalc.h
@@ -112,6 +118,7 @@ set(SCENEBUILDER_HEADERS
 
 set(SCENEBUILDER_SOURCES
 	src/sbadaptor.cpp
+	src/sbblas.cpp
 	src/sbbuilder.cpp
 	src/sbcalc.cpp
 	src/sbconsole.cpp
@@ -170,10 +177,14 @@ add_library(Scenebuilder ${SCENEBUILDER_SOURCES} ${SCENEBUILDER_HEADERS})
 
 set_target_properties(Scenebuilder PROPERTIES PUBLIC_HEADER "${SCENEBUILDER_HEADERS}")
 
-target_link_libraries(Scenebuilder Springhead::Springhead)
-target_link_libraries(Scenebuilder GLEW::GLEW)
-target_link_libraries(Scenebuilder ${EXPAT_LIBRARIES})
-target_link_libraries(Scenebuilder ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
+target_link_libraries(Scenebuilder PUBLIC Springhead::Springhead)
+target_link_libraries(Scenebuilder PUBLIC GLEW::GLEW)
+target_link_libraries(Scenebuilder PUBLIC ${EXPAT_LIBRARIES})
+target_link_libraries(Scenebuilder PUBLIC ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
+
+if(USE_CHOLMOD)
+	target_link_libraries(Scenebuilder PRIVATE SuiteSparse::cholmod)
+endif()
 
 install(TARGETS Scenebuilder
   EXPORT        ScenebuilderExport

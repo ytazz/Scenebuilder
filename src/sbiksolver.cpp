@@ -297,8 +297,13 @@ void IKSolver::CompPosIK(){
 	Prepare();
 	timeUpdate = 0;
 	timer2.CountUS();
-	for(int i = 0; i < numIter; i++){
-		Solver::Step();
+	if(numIter == 0){
+		Update();
+	}
+	else{
+		for(int i = 0; i < numIter; i++){
+			Solver::Step();
+		}
 	}
 	timeStep = timer2.CountUS();
 	Finish();
@@ -335,7 +340,14 @@ void IKSolver::CompForceIK(){
 	mode = Mode::Force;
 	
 	Prepare();
-	Solver::Step();
+	
+	//Solver::Step();
+	// solving linear equation is costly, so do it by direct recursive computation
+	for(auto& body : ikBodies){
+		if(!body->parBody)
+			body->CompForceRecursive();
+	}
+
 	Finish();
 }
 

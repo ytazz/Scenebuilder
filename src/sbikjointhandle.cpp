@@ -12,7 +12,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointHandle::PosCon::PosCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(handle->joint->q_var[idx]);
 }
 void IKJointHandle::PosCon::CalcCoef(){
@@ -24,7 +24,7 @@ void IKJointHandle::PosCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointHandle::VelCon::VelCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(handle->joint->qd_var[idx]);
 }
 void IKJointHandle::VelCon::CalcCoef(){
@@ -39,7 +39,7 @@ void IKJointHandle::VelCon::CalcDeviation(){
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), 1.0){
+IKJointHandle::AccCon::AccCon(IKJointHandle* h, int _idx, const string& _name):handle(h), idx(_idx), Constraint(h->solver, 1, ID(0, 0, 0, _name), Constraint::Type::Equality, 1.0){
 	AddSLink(handle->joint->qdd_var[idx]);
 }
 void IKJointHandle::AccCon::CalcCoef(){
