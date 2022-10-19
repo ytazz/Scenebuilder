@@ -2,6 +2,7 @@
 
 #include <sbtypes.h>
 #include <sbtokenizer.h>
+#include <sbconverter.h>
 
 namespace Scenebuilder{;
 
