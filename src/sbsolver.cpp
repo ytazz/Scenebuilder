@@ -264,7 +264,7 @@ real_t Solver::CalcUpdatedObjective(real_t alpha){
 	// 更新量が上限を超えている場合はinfを返す
 	real_t a2 = alpha*alpha;
 	for(Variable* var : vars_unlocked){
-		real_t d2 = var->dx.square();
+		real_t d2 = var->scale2*var->dx.square();
 		if(a2*d2 > var->dmax2)
 			return inf;
 	}
@@ -492,7 +492,7 @@ void Solver::CalcEquation(){
 		for(auto& link : con->links_active){
 			link->RegisterCoef(A, link->con->index, link->var->index, w);
 		}
-		con->RegisterCorrection(b   , con->index);
+		con->RegisterCorrection(b   , con->weight, con->index);
 		con->RegisterDeviation (yvec, con->index);
 	}
 

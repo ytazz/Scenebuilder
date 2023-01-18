@@ -92,7 +92,7 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
-	void RegisterCorrection(vvec_t& dydvec, int offset);
+	void RegisterCorrection(vvec_t& dydvec, const vec3_t& _weight, int offset);
 	void RegisterDeviation (vvec_t& yvec  , int offset);
 
 	/// steepest-descent

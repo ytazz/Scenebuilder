@@ -93,10 +93,11 @@ void Constraint::CalcError(){
             type == Type::InequalityPenalty ){
             // quadratic cost
 		    for(int k = 0; k < nelem; k++)
-			    e[k] = 0.5 * weight[k]*weight[k]*y[k]*y[k];
+			    e[k] = 0.5 * weight[k]*weight[k]*scale2_inv*y[k]*y[k];
         }
         if( type == Type::InequalityBarrier ){
             // logarithmic cost
+			// T.B.D. take into account weight and scale
             for(int k = 0; k < nelem; k++){
 			    e[k] = -solver->param.complRelaxation*log(std::max(eps, y[k]));
                 e[k] = std::max(0.0, e[k]);
@@ -115,16 +116,16 @@ void Constraint::CalcDeviation(){
 		link->AddError();
 }
 
-void Constraint::RegisterCorrection(vvec_t& dydvec, int offset){
+void Constraint::RegisterCorrection(vvec_t& dydvec, const vec3_t& _weight, int offset){
 	for(int i = 0; i < nelem; i++)
 		//dydvec[index+i] = weight[i] * dyd[i];
-		dydvec[offset+i] = weight[i] * dyd[i];
+		dydvec[offset+i] = (_weight[i]*scale_inv) * dyd[i];
 }
 
 void Constraint::RegisterDeviation(vvec_t& yvec, int offset){
 	for(int i = 0; i < nelem; i++)
 		//yvec[index+i] = weight[i] * y[i];
-		yvec[offset+i] = weight[i] * y[i];
+		yvec[offset+i] = (weight[i]*scale_inv) * y[i];
 }
 
 void Constraint::ResetState(){

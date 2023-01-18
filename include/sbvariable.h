@@ -135,7 +135,7 @@ public:
 		return val;
 	}
 	virtual void Modify(real_t alpha){
-		val = val_tmp + alpha * dx[0];
+		val = val_tmp + (alpha*scale) * dx[0];
 	}
 
 	SVar(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Scalar, solver, _id, _scale){
@@ -156,8 +156,8 @@ public:
 		return val[k];
 	}
 	virtual void Modify(real_t alpha){
-		val[0] = val_tmp[0] + alpha * dx[0];
-		val[1] = val_tmp[1] + alpha * dx[1];
+		val[0] = val_tmp[0] + (alpha*scale) * dx[0];
+		val[1] = val_tmp[1] + (alpha*scale) * dx[1];
 	}
 
 	V2Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec2, solver, _id, _scale){
@@ -178,7 +178,7 @@ public:
 		return val[k];
 	}
 	virtual void Modify(real_t alpha){
-		val = val_tmp + alpha * dx;
+		val = val_tmp + (alpha*scale) * dx;
 	}
 
 	V3Var(Solver* solver, ID _id = ID(), real_t _scale = 1.0):VariableImpl(Variable::Vec3, solver, _id, _scale){
@@ -199,7 +199,7 @@ public:
 		return val[k];
 	}
 	virtual void Modify(real_t alpha){
-		val = quat_t::Rot(alpha * dx) * val_tmp;
+		val = quat_t::Rot((alpha*scale) * dx) * val_tmp;
 		val.unitize();
 	}
 

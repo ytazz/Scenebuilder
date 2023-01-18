@@ -238,7 +238,10 @@ public:
 	void    CalcEquation        ();
 	void    InitDDP             ();
 	void    ClearDDP            ();
-	void    PrepareDDP          ();
+	//void    PrepareDDP          ();
+	void    CalcTransitionDDP   ();
+	void    CalcCostDDP         ();
+	void    CalcCostGradientDDP ();
 	void    BackwardDDP         ();
 	void    ForwardDDP          ();
 	void    CalcDirectionDDP    ();
