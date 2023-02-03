@@ -149,8 +149,8 @@ Solver::SubCost* Solver::AddCostCon (Constraint* con, int k){
 	if(!cost[k])
 		cost[k] = new Cost();
 
-	State* st_x = (k < state.size() ? state[k] : (State*)0);
-	Input* in_u = (k < input.size() ? input[k] : (Input*)0);
+	State* st_x = (k < state.size() ? (State*)state[k] : (State*)0);
+	Input* in_u = (k < input.size() ? (Input*)input[k] : (Input*)0);
 
 	SubCost* subcost = new SubCost();
 	subcost->con = con;
