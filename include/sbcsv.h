@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <sbtypes.h>
 #include <sbtokenizer.h>
@@ -6,10 +6,10 @@
 
 namespace Scenebuilder{;
 
-/* CSV“Ç‚İ‚İƒNƒ‰ƒX
-	- ƒtƒ@ƒCƒ‹ƒRƒ“ƒeƒ“ƒc‚ğ•¶š—ñ‚Æ‚µ‚Äƒg[ƒNƒiƒCƒY‚µC’l‚ğæ“¾‚É–ˆ‰ñŒ^•ÏŠ·‚·‚éD
-	- ƒfƒŠƒ~ƒ^‚ª˜A‘±‚µ‚½ê‡C‚P‚Â‚Ì—ñ‚Æ‚µ‚Äˆµ‚¤
-	- ‰üs‚ª˜A‘±‚µ‚½ê‡C‚P‚Â‚Ìs‚Æ‚µ‚Äˆµ‚¤D
+/* CSVèª­ã¿è¾¼ã¿ã‚¯ãƒ©ã‚¹
+	- ãƒ•ã‚¡ã‚¤ãƒ«ã‚³ãƒ³ãƒ†ãƒ³ãƒ„ã‚’æ–‡å­—åˆ—ã¨ã—ã¦ãƒˆãƒ¼ã‚¯ãƒŠã‚¤ã‚ºã—ï¼Œå€¤ã‚’å–å¾—æ™‚ã«æ¯å›å‹å¤‰æ›ã™ã‚‹ï¼
+	- ãƒ‡ãƒªãƒŸã‚¿ãŒé€£ç¶šã—ãŸå ´åˆï¼Œï¼‘ã¤ã®åˆ—ã¨ã—ã¦æ‰±ã†
+	- æ”¹è¡ŒãŒé€£ç¶šã—ãŸå ´åˆï¼Œï¼‘ã¤ã®è¡Œã¨ã—ã¦æ‰±ã†ï¼
  */
 class CsvReader{
 public:
@@ -25,13 +25,13 @@ public:
 	Tokenizer colIt;
 
 public:
-	/// ƒNƒŠƒA
+	/// ã‚¯ãƒªã‚¢
 	void Clear(){
 		contents.clear();
 		row.clear();
 	}
 
-	/// “Ç‚İ‚Ş
+	/// èª­ã¿è¾¼ã‚€
 	bool Read(const string& filename, const string& delim, bool compress = false){
 		ifstream ifs;
 		ifs.open(filename, ifstream::in | ifstream::binary);
@@ -48,7 +48,7 @@ public:
 		//ifs.read(&contents[0], len);
 		//ifs.close();
 	
-		// ‚Ü‚¸s”‚ğ”‚¦‚é
+		// ã¾ãšè¡Œæ•°ã‚’æ•°ãˆã‚‹
 		//rowIt.Set(contents, "\n", compress);
 		//int nrow = 0;
 		//for(; !rowIt.IsEnd(); rowIt.Next())
@@ -69,13 +69,13 @@ public:
 		for(int i = 0; !ifs.eof(); i++){
 			Row& r = row[i];
 			
-			// ‹ós‚Ìê‡‚Ís‚Ì‚İ’Ç‰Á‚µ—ñ‚Íì‚ç‚È‚¢
+			// ç©ºè¡Œã®å ´åˆã¯è¡Œã®ã¿è¿½åŠ ã—åˆ—ã¯ä½œã‚‰ãªã„
 			//string_iterator_pair str = rowIt.GetToken();
 			std::getline(ifs, r.line);
 			if(r.line.empty())
 				continue;
 
-			// —ñ”‚ğ”‚¦‚é
+			// åˆ—æ•°ã‚’æ•°ãˆã‚‹
 			colIt.Set(r.line, delim, compress);
 			int ncol = 0;
 			for(; !colIt.IsEnd(); colIt.Next())
@@ -88,24 +88,24 @@ public:
 			}
 		}
 
-		// ––”ö‚É‹ós‚ª“ü‚Á‚Ä‚¢‚éê‡íœ
+		// æœ«å°¾ã«ç©ºè¡ŒãŒå…¥ã£ã¦ã„ã‚‹å ´åˆå‰Šé™¤
 		while(!row.empty() && row.back().col.empty())
 			row.pop_back();
 			
 		return true;
 	}
 
-	/// s”
+	/// è¡Œæ•°
 	uint	NumRow(){
 		return (uint)row.size();
 	}
 
-	/// is–Ú‚Ì—ñ”
+	/// iè¡Œç›®ã®åˆ—æ•°
 	uint	NumCol(int i){
 		return (uint)row[i].col.size();
 	}
 
-	/// ƒ‰ƒxƒ‹i1s–Ú—v‘fj‚ªŠ’è‚Ì•¶š—ñ‚Å‚ ‚é—ñ‚ğ’T‚·
+	/// ãƒ©ãƒ™ãƒ«ï¼ˆ1è¡Œç›®è¦ç´ ï¼‰ãŒæ‰€å®šã®æ–‡å­—åˆ—ã§ã‚ã‚‹åˆ—ã‚’æ¢ã™
 	int FindColumn(string label){
 		if(NumRow() == 0)
 			return -1;
@@ -122,7 +122,7 @@ public:
 		return val;
 	}
 
-	/// is, j—ñ‚Ì—v‘f‚ğŒ^•ÏŠ·‚µ‚Ä•Ô‚·
+	/// iè¡Œ, jåˆ—ã®è¦ç´ ã‚’å‹å¤‰æ›ã—ã¦è¿”ã™
 	template<class T>
 	T Get(uint i, uint j){
 		if(i >= row.size())
@@ -135,7 +135,7 @@ public:
 
 };
 
-// ƒXƒs[ƒh—Dæ‚Å•”•ª“Áê‰»
+// ã‚¹ãƒ”ãƒ¼ãƒ‰å„ªå…ˆã§éƒ¨åˆ†ç‰¹æ®ŠåŒ–
 template<>
 inline int CsvReader::Get<int>(string_iterator_pair str){
 	return atoi(to_string(str).c_str());

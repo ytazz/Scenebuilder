@@ -270,9 +270,8 @@ real_t Solver::CalcUpdatedObjective(real_t alpha){
 	}
 	
 	// 変数を仮に更新して評価値を計算
-	for(Variable* var : vars_unlocked)
-		var->Modify(alpha);
-
+	ModifyVariables(alpha);
+	
 	return CalcObjective();
 }
 
@@ -678,6 +677,19 @@ void Solver::CalcDirection(){
 	}
 }
 
+void Solver::ModifyVariables(real_t alpha){
+	if(param.methodMajor == Method::Major::DDP){
+		ModifyVariablesDDP(alpha);
+		for(auto& var : vars_unlocked)
+			var->Modify(1.0);
+	}
+	else{
+		for(auto& var : vars_unlocked)
+			var->Modify(alpha);
+	}
+
+}
+
 void Solver::Step(){
 	if(!ready)
 		Init();
@@ -695,8 +707,7 @@ void Solver::Step(){
 	status.timeStep = timer.CountUS();
 
 	// 変数を更新
-	for(auto& var : vars_unlocked)
-		var->Modify(status.stepSize);
+	ModifyVariables(status.stepSize);
 
    	real_t objPrev = status.obj;
 	status.obj      = CalcObjective();

@@ -236,16 +236,17 @@ public:
 	void    Prepare             ();
 	real_t  CalcUpdatedObjective(real_t alpha);
 	void    CalcEquation        ();
+	void    ModifyVariables     (real_t alpha);
 	void    InitDDP             ();
 	void    ClearDDP            ();
-	//void    PrepareDDP          ();
 	void    CalcTransitionDDP   ();
 	void    CalcCostDDP         ();
 	void    CalcCostGradientDDP ();
 	void    BackwardDDP         ();
-	void    ForwardDDP          ();
+	void    ForwardDDP          (real_t alpha);
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();
+	void    ModifyVariablesDDP  (real_t alpha);
 	
 	void AddVar   (Variable* var);      ///< add variable
 	void DeleteVar(Variable* var);	    ///< delete variable

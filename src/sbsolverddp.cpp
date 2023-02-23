@@ -407,7 +407,7 @@ void Solver::CalcTransitionDDP(){
 
 				//int j0 = x0->var->index;
 				int m  = x0.x->var->nelem;
-				x0.link->RegisterCoef(x0.A, 0, 0, subtr->con->weight);
+				x0.link->RegisterCoef(x0.A, 0, 0, one/*subtr->con->weight*/);
 
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
 					fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
@@ -420,7 +420,7 @@ void Solver::CalcTransitionDDP(){
 
 				//int j0 = u->var->index; 
 				int m = u.u->var->nelem;
-				u.link->RegisterCoef(u.A, 0, 0, subtr->con->weight);
+				u.link->RegisterCoef(u.A, 0, 0, one/*subtr->con->weight*/);
 
 				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
 					fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
@@ -452,8 +452,8 @@ void Solver::CalcCostDDP(){
 				continue;
 
 			int n  = subcost->con->nelem;
-			//subcost->con->RegisterDeviation(subcost->b, 0);
-			subcost->con->RegisterCorrection(subcost->b, subcost->con->weight, 0);
+			subcost->con->RegisterDeviation(subcost->b, 0);
+			//subcost->con->RegisterCorrection(subcost->b, subcost->con->weight, 0);
 
 			// sum up L
 			for(int i = 0; i < n; i++){
@@ -501,7 +501,8 @@ void Solver::CalcCostGradientDDP(){
 				// Lx = A^T y
 				for(int j = 0; j < m; j++){
 					for(int i = 0; i < n; i++){
-						Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
+						//Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
+						Lx[k](x.x->index+j) += x.A[i][j]*(subcost->b[i]);
 					}
 				}
 			}
@@ -534,7 +535,8 @@ void Solver::CalcCostGradientDDP(){
 
 					for(int j = 0; j < m; j++){
 						for(int i = 0; i < n; i++){
-							Lu[k](u.u->index+j) += u.A[i][j]*(-subcost->b[i]);
+							//Lu[k](u.u->index+j) += u.A[i][j]*(-subcost->b[i]);
+							Lu[k](u.u->index+j) += u.A[i][j]*(subcost->b[i]);
 						}
 					}
 				}
@@ -695,16 +697,14 @@ void Solver::BackwardDDP(){
 	}
 }
 
-void Solver::ForwardDDP(){
+void Solver::ForwardDDP(real_t alpha){
     // if the dimension of x0 is not zero, dx0 is also optimized
 	if(state[0]->dim == 0){
  		vec_clear(dx[0]);
-
-		//dx[0].clear();
 	}
 	else{
 		mat_inv_pd(Vxx[0], Vxxinv);
-		symmat_vec_mul(Vxxinv, Vx[0], dx[0], -1.0, 0.0);
+		symmat_vec_mul(Vxxinv, Vx[0], dx[0], -alpha, 0.0);
     
 		//dx[0] = -Vxx[0].inv()*Vx[0];
 	}
@@ -717,7 +717,7 @@ void Solver::ForwardDDP(){
 			if(state[k]->dim != 0)
 				mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
 
-			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
+			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -alpha, 0.0);
 		}
 
         vec_copy   (fcor[k], dx[k+1]);
@@ -742,7 +742,20 @@ void Solver::CalcDirectionDDP(){
 	CalcCostGradientDDP();
 	
     BackwardDDP();
-    ForwardDDP();
+}
+
+real_t Solver::CalcObjectiveDDP(){
+	CalcCostDDP();
+
+	real_t Lsum = 0.0;
+	for(int k = 0; k <= N; k++)
+		Lsum += L[k];
+
+	return Lsum;
+}
+
+void Solver::ModifyVariablesDDP(real_t alpha){
+    ForwardDDP(alpha);
     
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){
@@ -764,19 +777,8 @@ void Solver::CalcDirectionDDP(){
 			for(int j = 0; j < subin->var->nelem; j++){
 				subin->var->dx[j] = du[k](j0+j);
 			}
-		}
-		
+		}	
 	}
-}
-
-real_t Solver::CalcObjectiveDDP(){
-	CalcCostDDP();
-
-	real_t Lsum = 0.0;
-	for(int k = 0; k <= N; k++)
-		Lsum += L[k];
-
-	return Lsum;
 }
 
 }
