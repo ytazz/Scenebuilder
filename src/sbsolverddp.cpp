@@ -607,6 +607,26 @@ void Solver::CalcCostGradientDDP(){
 	//DSTR << " tLgrad: " << tLgrad << endl;
 }
 
+void PrintSparsity(int k, const Matrix& m){
+	FILE* file;
+	char filename [256];
+	sprintf(filename, "quu_%d.csv", k);
+	file = fopen(filename, "w");
+
+	const real_t eps = 1.0e-10;
+
+	for(int i = 0; i < m.m; i++){
+		for(int j = 0; j < m.n; j++){
+			fprintf(file, "%d", (std::abs(m(i,j)) < eps ? 0 : 1));
+			if(j != m.n-1)
+				fprintf(file, ", ");
+		}
+		fprintf(file, "\n");
+	}
+
+	fclose(file);
+}
+
 void Solver::BackwardDDP(){
  	V  [N] = L  [N];
 	vec_copy(Lx [N], Vx [N]);
@@ -644,7 +664,7 @@ void Solver::BackwardDDP(){
 			mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
 
         mat_copy(Lux[k], Qux[k]);
-		if(input[k]->dim != 0)
+		if(input[k]->dim != 0 && state[k]->dim != 0)
 	        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
 
 		//Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
@@ -656,6 +676,8 @@ void Solver::BackwardDDP(){
     	
 		for(int i = 0; i < Quu[k].m; i++)
 		    Quu[k](i,i) += param.regularization;
+
+		//PrintSparsity(k, Quu[k]);
     	
 		// input dimension could be zero
 		if(Quu[k].m > 0){
@@ -667,11 +689,14 @@ void Solver::BackwardDDP(){
 			V[k] = Q[k] - (1.0/2.0)*vec_dot(Qu[k], Quuinv_Qu[k]);
         
 			vec_copy(Qx[k], Vx[k]);
-			mattr_vec_mul(Qux[k], Quuinv_Qu[k], Vx[k], -1.0, 1.0);
+			if(state[k]->dim != 0)
+				mattr_vec_mul(Qux[k], Quuinv_Qu[k], Vx[k], -1.0, 1.0);
 	    
 			mat_copy(Qxx[k], Vxx[k]);
-			symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
-			mattr_mat_mul(Qux[k], Quuinv_Qux[k], Vxx[k], -1.0, 1.0);
+			if(state[k]->dim != 0){
+				symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
+				mattr_mat_mul(Qux[k], Quuinv_Qux[k], Vxx[k], -1.0, 1.0);
+			}
 		
 			//mat_inv_sym(Quu[k], Quuinv[k]);
 			//
@@ -732,6 +757,7 @@ void Solver::ForwardDDP(real_t alpha){
 		//dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
 
 		int tfor = timer2.CountUS();
+		//DSTR << "dx[k]: " << dx[k] << endl;
 		//DSTR << "for  " << k << " : " << tfor << endl;
 	}
 }

@@ -261,16 +261,16 @@ void Solver::Init(){
 }
 
 real_t Solver::CalcUpdatedObjective(real_t alpha){
-	// 更新量が上限を超えている場合はinfを返す
+	// temporarily update variables
+	ModifyVariables(alpha);
+	
+	// return inf if variable update exceeds limit (so that this stepsize will not be chosen)
 	real_t a2 = alpha*alpha;
 	for(Variable* var : vars_unlocked){
 		real_t d2 = var->scale2*var->dx.square();
 		if(a2*d2 > var->dmax2)
 			return inf;
 	}
-	
-	// 変数を仮に更新して評価値を計算
-	ModifyVariables(alpha);
 	
 	return CalcObjective();
 }
@@ -327,6 +327,7 @@ real_t Solver::CalcStepSize(){
 		if(a[1] - a[0] > a[2] - a[1]){
 			aprobe = 0.5 * (a[0] + a[1]);
 			cprobe = CalcUpdatedObjective(aprobe);
+
 			if(cprobe <= c[1]){
 				a[2] = a[1];
 				a[1] = aprobe;
@@ -694,7 +695,9 @@ void Solver::Step(){
 	if(!ready)
 		Init();
 
+	timer.CountUS();
 	Prepare();
+	int timePre = timer.CountUS();
 
 	// 更新方向を計算
 	timer.CountUS();
@@ -706,19 +709,25 @@ void Solver::Step(){
 	status.stepSize = CalcStepSize();
 	status.timeStep = timer.CountUS();
 
+	timer.CountUS();
 	// 変数を更新
 	ModifyVariables(status.stepSize);
 
    	real_t objPrev = status.obj;
 	status.obj      = CalcObjective();
 	status.objDiff  = status.obj - objPrev;
+	int timeMod = timer.CountUS();
+
 	if(param.verbose){
 		Message::Out("iter:%d, step:%f, obj:%f", status.iterCount, status.stepSize, status.obj);
 		DSTR << "iter:"   << status.iterCount
 			 << " step:"  << status.stepSize
 			 << " obj:"   << status.obj
+			 << " tpre:"  << timePre
 			 << " tdir:"  << status.timeDir
-			 << " tstep:" << status.timeStep << endl;
+			 << " tstep:" << status.timeStep
+			 << " tmod:"  << timeMod
+			 << endl;
 	}
 	status.iterCount++;
 
