@@ -460,10 +460,10 @@ void Solver::CalcEquation(){
 			
 	A   .resize(dimcon + dimvar_weighted, dimvar);
 	b   .resize(dimcon + dimvar_weighted);
-	yvec.resize(dimcon);
+	//yvec.resize(dimcon);
 	A   .clear();
 	b   .clear();
-	yvec.clear();
+	//yvec.clear();
 	pivot.resize(dimcon);
 
 	//for(auto& con : cons_active){
@@ -480,7 +480,7 @@ void Solver::CalcEquation(){
                 }
             }
         }*/
-
+		/*
         // extra weight for barrier inequality constraints
         if(con->type == Constraint::Type::InequalityBarrier){
             for(int k = 0; k < con->nelem; k++){
@@ -488,12 +488,12 @@ void Solver::CalcEquation(){
                 //w[k] *= sqrt(con->lambda[k]/std::max(eps, con->y[k]));
             }
         }
-
+		*/
 		for(auto& link : con->links_active){
 			link->RegisterCoef(A, link->con->index, link->var->index, w);
 		}
 		con->RegisterCorrection(b   , con->weight, con->index);
-		con->RegisterDeviation (yvec, con->index);
+		//con->RegisterDeviation (yvec, con->index);
 	}
 
 

@@ -185,7 +185,7 @@ public:
 	vmat_t      A, AtrA;
 	vvec_t      b, b2;
 	vvec_t      Atrb;
-	vvec_t      yvec;
+	//vvec_t      yvec;
 	vvec_t      dxvec;
 	vector<int> pivot;
 

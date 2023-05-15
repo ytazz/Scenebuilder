@@ -456,8 +456,15 @@ void Solver::CalcCostDDP(){
 			//subcost->con->RegisterCorrection(subcost->b, subcost->con->weight, 0);
 
 			// sum up L
-			for(int i = 0; i < n; i++){
-				L[k] += 0.5 * square(subcost->b[i]);
+			if( subcost->con->type == Constraint::Type::Equality ||
+				subcost->con->type == Constraint::Type::InequalityPenalty ){
+				for(int i = 0; i < n; i++){
+					L[k] += 0.5 * square(subcost->con->weight[i]*subcost->b[i]);
+				}
+			}
+			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+				// assume n = 1
+				L[k] = -square(subcost->con->weight[0])*log(subcost->b[0]);
 			}
 		}
 	}
@@ -498,11 +505,19 @@ void Solver::CalcCostGradientDDP(){
 				int m = x.x->var->nelem;
 				x.link->RegisterCoef(x.A, 0, 0, subcost->con->weight);
 
-				// Lx = A^T y
-				for(int j = 0; j < m; j++){
-					for(int i = 0; i < n; i++){
-						//Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
-						Lx[k](x.x->index+j) += x.A[i][j]*(subcost->b[i]);
+				if( subcost->con->type == Constraint::Type::Equality ||
+					subcost->con->type == Constraint::Type::InequalityPenalty ){
+					// Lx = A^T y
+					for(int j = 0; j < m; j++){
+						for(int i = 0; i < n; i++){
+							//Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
+							Lx[k](x.x->index+j) += x.A[i][j]*(subcost->con->weight[i]*subcost->b[i]);
+						}
+					}
+				}
+				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+					for(int j = 0; j < m; j++){
+						Lx[k](x.x->index+j) += x.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
 					}
 				}
 			}
@@ -521,6 +536,13 @@ void Solver::CalcCostGradientDDP(){
 						Lxx[k](x0.x->index+j0, x1.x->index+j1) += x0.A[i][j0]*x1.A[i][j1];
 					}
 				}
+
+				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+					real_t tmp = 1.0/square(subcost->b[0]);
+					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
+						Lxx[k](x0.x->index+j0, x1.x->index+j1) *= tmp;
+					}
+				}
 			}
 
 			if(k < N){
@@ -533,10 +555,17 @@ void Solver::CalcCostGradientDDP(){
 					int m  = u.u->var->nelem;
 					u.link->RegisterCoef(u.A, 0, 0, subcost->con->weight);
 
-					for(int j = 0; j < m; j++){
-						for(int i = 0; i < n; i++){
-							//Lu[k](u.u->index+j) += u.A[i][j]*(-subcost->b[i]);
-							Lu[k](u.u->index+j) += u.A[i][j]*(subcost->b[i]);
+					if( subcost->con->type == Constraint::Type::Equality ||
+						subcost->con->type == Constraint::Type::InequalityPenalty ){
+						for(int j = 0; j < m; j++){
+							for(int i = 0; i < n; i++){
+								Lu[k](u.u->index+j) += u.A[i][j]*(subcost->con->weight[i]*subcost->b[i]);
+							}
+						}
+					}
+					if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+						for(int j = 0; j < m; j++){
+							Lu[k](u.u->index+j) += u.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
 						}
 					}
 				}
@@ -555,6 +584,13 @@ void Solver::CalcCostGradientDDP(){
 							Luu[k](u0.u->index+j0, u1.u->index+j1) += u0.A[i][j0]*u1.A[i][j1];
 						}
 					}
+
+					//if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+					//	real_t tmp = 1.0/square(subcost->b[0]);
+					//	for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
+					//		Luu[k](u0.u->index+j0, u1.u->index+j1) *= tmp;
+					//	}
+					//}
 				}
 				// calc Lux
 				for(SubInputLink& u : subcost->u)for(SubStateLink& x : subcost->x){
@@ -568,6 +604,13 @@ void Solver::CalcCostGradientDDP(){
 					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 						for(int i = 0; i < n; i++){
 							Lux[k](u.u->index+j0, x.x->index+j1) += u.A[i][j0]*x.A[i][j1];
+						}
+					}
+
+					if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+						real_t tmp = 1.0/square(subcost->b[0]);
+						for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
+							Lux[k](u.u->index+j0, x.x->index+j1) *= tmp;
 						}
 					}
 				}
@@ -738,11 +781,13 @@ void Solver::ForwardDDP(real_t alpha){
 		timer2.CountUS();
 		if(input[k]->dim != 0){
 			vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
+			for(int i = 0; i < Qu_plus_Qux_dx[k].n; i++)
+				Qu_plus_Qux_dx[k](i) *= alpha;
 
 			if(state[k]->dim != 0)
 				mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
 
-			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -alpha, 0.0);
+			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
 		}
 
         vec_copy   (fcor[k], dx[k+1]);
