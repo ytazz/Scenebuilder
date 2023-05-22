@@ -243,6 +243,9 @@ void Solver::InitDDP(){
 	}
 
 	for(int k = 0; k <= N; k++){
+		if(!cost[k])
+			continue;
+
 		for(SubCost* subcost : cost[k]->subcost){     
             if(!subcost->con->enabled)
 				continue;
@@ -445,6 +448,9 @@ void Solver::CalcCostDDP(){
 	// calculate state cost
 #pragma omp parallel for
 	for(int k = 0; k <= N; k++){
+		if(!cost[k])
+			continue;
+
 		for(SubCost* subcost : cost[k]->subcost){     
             if(!subcost->con->enabled)
 				continue;
@@ -488,6 +494,9 @@ void Solver::CalcCostGradientDDP(){
 	// calculate state cost
 #pragma omp parallel for
 	for(int k = 0; k <= N; k++){
+		if(!cost[k])
+			continue;
+
 		for(SubCost* subcost : cost[k]->subcost){     
             if(!subcost->con->enabled)
 				continue;

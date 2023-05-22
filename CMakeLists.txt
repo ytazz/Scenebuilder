@@ -23,6 +23,11 @@ if(UNIX)
 	set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 endif()
 
+set(USE_OPENMP false CACHE BOOL "use openmp or not")
+if(USE_OPENMP)
+	find_package(OpenMP)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS thread)
 find_package(GLEW)
 find_package(EXPAT)
@@ -181,6 +186,7 @@ target_link_libraries(Scenebuilder PUBLIC Springhead::Springhead)
 target_link_libraries(Scenebuilder PUBLIC GLEW::GLEW)
 target_link_libraries(Scenebuilder PUBLIC ${EXPAT_LIBRARIES})
 target_link_libraries(Scenebuilder PUBLIC ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
+target_link_libraries(Scenebuilder PRIVATE OpenMP::OpenMP_CXX)
 
 if(USE_CHOLMOD)
 	target_link_libraries(Scenebuilder PRIVATE SuiteSparse::cholmod)
