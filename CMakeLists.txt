@@ -186,7 +186,9 @@ target_link_libraries(Scenebuilder PUBLIC Springhead::Springhead)
 target_link_libraries(Scenebuilder PUBLIC GLEW::GLEW)
 target_link_libraries(Scenebuilder PUBLIC ${EXPAT_LIBRARIES})
 target_link_libraries(Scenebuilder PUBLIC ${GLEW_LIBRARIES})  # in case GLEW::GLEW is not found
-target_link_libraries(Scenebuilder PRIVATE OpenMP::OpenMP_CXX)
+if(USE_OPENMP)
+	target_link_libraries(Scenebuilder PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(USE_CHOLMOD)
 	target_link_libraries(Scenebuilder PRIVATE SuiteSparse::cholmod)

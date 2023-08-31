@@ -24,35 +24,7 @@ static const real_t inf = numeric_limits<real_t>::max();
 inline real_t square(real_t x){
 	return x*x;
 }
-/*
-void mat_inv_gen(const vmat_t& m, vmat_t& minv){
-#ifdef USE_MKL
-    int n = m.height();
-	minv = m;
-	vector<int> pivot; pivot.resize(n, 0);
-    int ret;
-	ret = LAPACKE_dgetrf(LAPACK_COL_MAJOR, n, n, &minv[0][0], n, &pivot[0]);
-	ret = LAPACKE_dgetri(LAPACK_COL_MAJOR, n,    &minv[0][0], n, &pivot[0]);
-#else
-    minv = inv(m);
-#endif
-}
 
-void mat_inv_sym(const vmat_t& m, vmat_t& minv){
-#ifdef USE_MKL
-    int n = m.height();
-	minv = m;
-	LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', n, &minv[0][0], n);
-	LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', n, &minv[0][0], n);
-	for(int i = 1; i < n; i++) for(int j = 0; j < i; j++)
-		minv[i][j] = minv[j][i];
-#else
-    minv = inv(m);
-#endif
-	//vmat_t test = minv*m;
-
-}
-*/
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 Solver::SubInput* Solver::Input::Find(Variable* var){
@@ -180,6 +152,13 @@ Solver::SubCost* Solver::AddCostCon (Constraint* con, int k){
     return subcost;
 }
 
+void Solver::SetTimeStep(real_t _dt, int k){
+	if(dt.size() <= k)
+		dt.resize(k+1);
+
+	dt[k] = _dt;
+}
+
 void Solver::InitDDP(){
 	N = (int)state.size()-1;
 
@@ -297,6 +276,9 @@ void Solver::InitDDP(){
 	V        .resize(N+1);
 	Vx       .resize(N+1);
 	Vxx      .resize(N+1);
+	dV       .resize(N+1);
+	dVx      .resize(N+1);
+	dVxx     .resize(N+1);
 	Vxx_fcor .resize(N);
 	Vxx_fx   .resize(N);
 	Vxx_fu   .resize(N);
@@ -307,11 +289,13 @@ void Solver::InitDDP(){
 	for(int k = 0; k <= N; k++){
 		int nx  = state[k]->dim;
 
-		dx [k].Allocate(nx);
-		Lx [k].Allocate(nx);
-		Lxx[k].Allocate(nx, nx);
-		Vx [k].Allocate(nx);
-		Vxx[k].Allocate(nx, nx);
+		dx  [k].Allocate(nx);
+		Lx  [k].Allocate(nx);
+		Lxx [k].Allocate(nx, nx);
+		Vx  [k].Allocate(nx);
+		Vxx [k].Allocate(nx, nx);
+		dVx [k].Allocate(nx);
+		dVxx[k].Allocate(nx, nx);
 		if(k == 0){
 			Vxxinv.Allocate(nx, nx);
 		}
@@ -385,6 +369,11 @@ void Solver::CalcTransitionDDP(){
 #pragma omp parallel for
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
+		real_t h, hinv;
+		if(param.methodMajor == Method::Major::DDPContinuous){
+			h    = dt[k];
+			hinv = 1.0/h;	
+		}
 
 		mat_clear(fx  [k]);
 		mat_clear(fu  [k]);
@@ -404,16 +393,28 @@ void Solver::CalcTransitionDDP(){
             subtr->con->RegisterCorrection(subtr->b, one, 0);
 
 			// set fx
+			int ix0 = 0;
 			for(SubStateLink& x0 : subtr->x0){
 				if(x0.x->var->locked)
 					continue;
 
-				//int j0 = x0->var->index;
-				int m  = x0.x->var->nelem;
-				x0.link->RegisterCoef(x0.A, 0, 0, one/*subtr->con->weight*/);
+				int m = x0.x->var->nelem;
+				x0.link->RegisterCoef(x0.A, 0, 0, one);
 
-				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
+				// continuous time
+				if(param.methodMajor == Method::Major::DDPContinuous){
+					if(ix0 != 0){
+						for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+							fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j]*hinv;
+					}
+				}
+				// discrete time
+				else{
+					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+						fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
+				}
+
+				ix0++;
 			}
             
             // set fu
@@ -423,20 +424,55 @@ void Solver::CalcTransitionDDP(){
 
 				//int j0 = u->var->index; 
 				int m = u.u->var->nelem;
-				u.link->RegisterCoef(u.A, 0, 0, one/*subtr->con->weight*/);
+				u.link->RegisterCoef(u.A, 0, 0, one);
 
-				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
+				// continuous time
+				if(param.methodMajor == Method::Major::DDPContinuous){
+					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+						fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j]*hinv;
+				}
+				// discrete time
+				else{
+					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+						fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
+				}
 			}
             
             // set correction term
-			for(int i = 0; i < n; i++)
-				fcor[k](subtr->x1->index+i) = subtr->b[i];
-
+			// continuous time
+			if(param.methodMajor == Method::Major::DDPContinuous){
+				for(int i = 0; i < n; i++)
+					fcor[k](subtr->x1->index+i) = subtr->b[i]*hinv;				
+			}
+			// discrete time
+			else{
+				for(int i = 0; i < n; i++)
+					fcor[k](subtr->x1->index+i) = subtr->b[i];
+			}
 		}
 	}
-	int tf = timer2.CountUS();
+	status.timeTrans = timer2.CountUS();
 	//DSTR << " tf: " << tf << endl;
+	/*
+	FILE* file = fopen("fx.csv", "w");
+	int k = 5;
+	for(int i = 0; i < fx[k].m; i++){
+		for(int j = 0; j < fx[k].n; j++){
+			fprintf(file, "%f, ", fx[k](i,j));
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
+
+	file = fopen("fu.csv", "w");
+	for(int i = 0; i < fu[k].m; i++){
+		for(int j = 0; j < fu[k].n; j++){
+			fprintf(file, "%f, ", fu[k](i,j));
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
+	*/
 }
 
 void Solver::CalcCostDDP(){
@@ -472,10 +508,11 @@ void Solver::CalcCostDDP(){
 				// assume n = 1
 				L[k] = -square(subcost->con->weight[0])*log(subcost->b[0]);
 			}
+
 		}
 	}
 
-	int tL = timer2.CountUS();
+	status.timeCost = timer2.CountUS();
 	//DSTR << " tL: " << tL << endl;
 }
 
@@ -519,7 +556,6 @@ void Solver::CalcCostGradientDDP(){
 					// Lx = A^T y
 					for(int j = 0; j < m; j++){
 						for(int i = 0; i < n; i++){
-							//Lx[k](x.x->index+j) += x.A[i][j]*(-subcost->b[i]);
 							Lx[k](x.x->index+j) += x.A[i][j]*(subcost->con->weight[i]*subcost->b[i]);
 						}
 					}
@@ -654,9 +690,29 @@ void Solver::CalcCostGradientDDP(){
             }
         }
 	}
-	int tLgrad = timer2.CountUS();
+	status.timeCostGrad = timer2.CountUS();
 
 	//DSTR << " tLgrad: " << tLgrad << endl;
+	/*
+	FILE* file = fopen("Luu.csv", "w");
+	int k = 5;
+	for(int i = 0; i < Luu[k].m; i++){
+		for(int j = 0; j < Luu[k].n; j++){
+			fprintf(file, "%f, ", Luu[k](i,j));
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
+
+	file = fopen("Lux.csv", "w");
+	for(int i = 0; i < Lux[k].m; i++){
+		for(int j = 0; j < Lux[k].n; j++){
+			fprintf(file, "%f, ", Lux[k](i,j));
+		}
+		fprintf(file, "\n");
+	}
+	fclose(file);
+	*/
 }
 
 void PrintSparsity(int k, const Matrix& m){
@@ -680,6 +736,8 @@ void PrintSparsity(int k, const Matrix& m){
 }
 
 void Solver::BackwardDDP(){
+	int tback1, tback2, tback3;
+
  	V  [N] = L  [N];
 	vec_copy(Lx [N], Vx [N]);
 	mat_copy(Lxx[N], Vxx[N]);
@@ -699,25 +757,30 @@ void Solver::BackwardDDP(){
 
         Q[k] = L[k] + V[k+1] + vec_dot(Vx[k+1], fcor[k]) + (1.0/2.0)*vec_dot(fcor[k], Vxx_fcor[k]);
         
-        vec_copy(Lx[k], Qx[k]);
-        if(state[k]->dim != 0)
+        if(state[k]->dim != 0){
+			vec_copy(Lx[k], Qx[k]);
 			mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+		}
 
-        vec_copy(Lu[k], Qu[k]);
-        if(input[k]->dim != 0)
+        if(input[k]->dim != 0){
+			vec_copy(Lu[k], Qu[k]);
 			mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+		}
 
-        mat_copy(Lxx[k], Qxx[k]);
-		if(state[k]->dim != 0)
+        if(state[k]->dim != 0){
+			mat_copy(Lxx[k], Qxx[k]);
 	        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+		}
 
-        mat_copy(Luu[k], Quu[k]);
-		if(input[k]->dim != 0)
+        if(input[k]->dim != 0){
+			mat_copy(Luu[k], Quu[k]);
 			mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+		}
 
-        mat_copy(Lux[k], Qux[k]);
-		if(input[k]->dim != 0 && state[k]->dim != 0)
+        if(input[k]->dim != 0 && state[k]->dim != 0){
+			mat_copy(Lux[k], Qux[k]);
 	        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+		}
 
 		//Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
     	//Qx [k] = Lx [k] + fx[k].trans()*(Vx [k+1] + Vxx[k+1]*f_cor[k]);
@@ -730,11 +793,15 @@ void Solver::BackwardDDP(){
 		    Quu[k](i,i) += param.regularization;
 
 		//PrintSparsity(k, Quu[k]);
-    	
+    	tback1 = timer2.CountUS();
+
 		// input dimension could be zero
 		if(Quu[k].m > 0){
+			timer2.CountUS();
             mat_inv_pd(Quu[k], Quuinv[k]);
+			tback2 = timer2.CountUS();
         
+			timer2.CountUS();
 			symmat_vec_mul(Quuinv[k], Qu[k], Quuinv_Qu[k], 1.0, 0.0);
 			//Quuinv_Qu = Quuinv*Qu;
 
@@ -749,7 +816,7 @@ void Solver::BackwardDDP(){
 				symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
 				mattr_mat_mul(Qux[k], Quuinv_Qux[k], Vxx[k], -1.0, 1.0);
 			}
-		
+			tback3 = timer2.CountUS();
 			//mat_inv_sym(Quu[k], Quuinv[k]);
 			//
 			//Quuinv_Qu[k] = Quuinv[k]*Qu[k];
@@ -758,7 +825,7 @@ void Solver::BackwardDDP(){
 			//Vx [k] = Qx [k] - Qux[k].trans()*Quuinv_Qu [k];
 			//Vxx[k] = Qxx[k] - Qux[k].trans()*Quuinv[k]*Qux[k];
 		}
-		else{
+		else if(state[k]->dim != 0){
 			V  [k] = Q  [k];
 			vec_copy(Qx [k], Vx [k]);
 			mat_copy(Qxx[k], Vxx[k]);
@@ -768,9 +835,105 @@ void Solver::BackwardDDP(){
 	    for(int i = 1; i < Vxx[k].m; i++) for(int j = 0; j < i; j++)
 		    Vxx[k](i,j) = Vxx[k](j,i);
 
-		int tback = timer2.CountUS();
-		//DSTR << "back " << k << " : " << " nx: " << state[k]->dim << " nu: " << input[k]->dim << " T: " << tback << endl;
+		//int tback = timer2.CountUS();
+		//DSTR << "back " << k << " : " << " nx: " << state[k]->dim << " nu: " << input[k]->dim
+		//	 << " T1: " << tback1
+		//	 << " T2: " << tback2
+		//	 << " T3: " << tback3
+		//	 << endl;
 		//DSTR << "Vk: " << V[k] << endl;
+		/*
+		char filename[256];
+		sprintf(filename, "Quu%d.csv", k);
+		FILE* file = fopen(filename, "w");
+		for(int i = 0; i < Quu[k].m; i++){
+			for(int j = 0; j < Quu[k].n; j++){
+				fprintf(file, "%f, ", Quu[k](i,j));
+			}
+			fprintf(file, "\n");
+		}
+		fclose(file);
+		*/
+	}
+}
+
+void Solver::BackwardDDPContinuous(){
+ 	V  [N] = L  [N];
+	vec_copy(Lx [N], Vx [N]);
+	mat_copy(Lxx[N], Vxx[N]);
+
+	for(int k = N-1; k >= 0; k--){
+		timer2.CountUS();
+
+		real_t h = dt[k]/1000;
+
+		// Q
+        Q[k] = L[k] + vec_dot(Vx[k+1], fcor[k]);
+        
+		// Qx
+        vec_copy(Lx[k], Qx[k]);
+        if(state[k]->dim != 0){
+			mattr_vec_mul(fx[k], Vx[k+1], Qx[k], 1.0, 1.0);
+			mat_vec_mul  (Vxx[k+1], fcor[k], Qx[k], 1.0, 1.0);
+		}
+		
+		// Qu
+        vec_copy(Lu[k], Qu[k]);
+        if(input[k]->dim != 0)
+			mattr_vec_mul(fu[k], Vx[k+1], Qu[k], 1.0, 1.0);
+
+		// Qxx
+        mat_copy(Lxx[k], Qxx[k]);
+		if(state[k]->dim != 0){
+	        mattr_mat_mul(fx[k], Vxx[k+1], Qxx[k], 1.0, 1.0);
+			mat_mat_mul  (Vxx[k+1], fx[k], Qxx[k], 1.0, 1.0);
+		}
+
+		// Qux
+        mat_copy(Lux[k], Qux[k]);
+		if(input[k]->dim != 0 && state[k]->dim != 0)
+	        mattr_mat_mul(fu[k], Vxx[k+1], Qux[k], 1.0, 1.0);
+    	
+		// input dimension could be zero
+		if(Quu[k].m > 0){
+			// assume diagonal matrix and calc inverse
+			mat_clear(Quuinv[k]);
+			for(int i = 0; i < Quuinv[k].m; i++)
+				Quuinv[k](i,i) = 1.0/Luu[k](i,i);
+			
+            symmat_vec_mul(Quuinv[k], Qu[k], Quuinv_Qu[k], 1.0, 0.0);
+
+			dV[k] = Q[k] - (1.0/2.0)*vec_dot(Qu[k], Quuinv_Qu[k]);
+
+			vec_copy(Qx[k], dVx[k]);
+			if(state[k]->dim != 0)
+				mattr_vec_mul(Qux[k], Quuinv_Qu[k], dVx[k], -1.0, 1.0);
+						
+			mat_copy(Qxx[k], dVxx[k]);
+			if(state[k]->dim != 0){
+				symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
+				mattr_mat_mul(Qux[k], Quuinv_Qux[k], dVxx[k], -1.0, 1.0);
+			}
+		}
+		else{
+			dV  [k] = Q  [k];
+			vec_copy(Qx [k], dVx [k]);
+			mat_copy(Qxx[k], dVxx[k]);
+		}
+
+		V[k] = V[k+1] + dV[k]*h;
+
+		for(int i = 0; i < Vx[k].n; i++)
+			Vx[k](i) = Vx[k+1](i) + dVx[k](i)*h;
+
+		for(int i = 0; i < Vxx[k].m; i++)for(int j = 0; j < Vxx[k].n; j++)
+			Vxx[k](i,j) = Vxx[k+1](i,j) + dVxx[k](i,j)*h;
+
+        // enforce symmetry of Uxx
+	    for(int i = 1; i < Vxx[k].m; i++) for(int j = 0; j < i; j++)
+		    Vxx[k](i,j) = Vxx[k](j,i);
+
+		int tback = timer2.CountUS();
 	}
 }
 
@@ -816,12 +979,57 @@ void Solver::ForwardDDP(real_t alpha){
 	}
 }
 
+void Solver::ForwardDDPContinuous(real_t alpha){
+    // if the dimension of x0 is not zero, dx0 is also optimized
+	if(state[0]->dim == 0){
+ 		vec_clear(dx[0]);
+	}
+	else{
+		mat_inv_pd(Vxx[0], Vxxinv);
+		symmat_vec_mul(Vxxinv, Vx[0], dx[0], -alpha, 0.0);
+	}
+
+    for(int k = 0; k < N; k++){
+		timer2.CountUS();
+		if(input[k]->dim != 0){
+			vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
+			for(int i = 0; i < Qu_plus_Qux_dx[k].n; i++)
+				Qu_plus_Qux_dx[k](i) *= alpha;
+
+			if(state[k]->dim != 0)
+				mat_vec_mul(Qux[k], dx[k], Qu_plus_Qux_dx[k], 1.0, 1.0);
+
+			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
+		}
+
+        vec_copy   (fcor[k], dx[k+1]);
+
+		if(state[k]->dim != 0)
+			mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
+
+		if(input[k]->dim != 0)
+			mat_vec_mul(fu  [k], du[k], dx[k+1], 1.0, 1.0);
+
+		for(int i = 0; i < dx[k+1].n; i++)
+			dx[k+1](i) *= dt[k];
+
+		vec_add(dx[k], dx[k+1]);
+
+		int tfor = timer2.CountUS();
+	}
+}
+
 void Solver::CalcDirectionDDP(){
+
     CalcTransitionDDP();
 	CalcCostDDP();
 	CalcCostGradientDDP();
-	
-    BackwardDDP();
+
+	timer.CountUS();
+	if(param.methodMajor == Method::Major::DDPContinuous)
+	 	 BackwardDDPContinuous();
+	else BackwardDDP();
+	status.timeBack = timer.CountUS();
 }
 
 real_t Solver::CalcObjectiveDDP(){
@@ -835,7 +1043,9 @@ real_t Solver::CalcObjectiveDDP(){
 }
 
 void Solver::ModifyVariablesDDP(real_t alpha){
-    ForwardDDP(alpha);
+    if(param.methodMajor == Method::Major::DDPContinuous)
+		 ForwardDDPContinuous(alpha);
+	else ForwardDDP(alpha);
     
 	for(int k = 0; k <= N; k++){
 		for(SubState* subst : state[k]->substate){

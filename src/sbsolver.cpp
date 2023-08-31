@@ -254,7 +254,8 @@ void Solver::Init(){
 	//		file[i].close();
 	//}
 
-	if(param.methodMajor == Method::Major::DDP)
+	if( param.methodMajor == Method::Major::DDP || 
+		param.methodMajor == Method::Major::DDPContinuous )
 		InitDDP();
 
 	ready = true;
@@ -271,30 +272,36 @@ real_t Solver::CalcUpdatedObjective(real_t alpha){
 		if(a2*d2 > var->dmax2)
 			return inf;
 	}
-	
-	return CalcObjective();
-}
 
-real_t Solver::CalcObjective(){
-	real_t obj = 0.0;
 	for(auto& con : cons){
 		if(!con->enabled)
 			continue;
 		
 		con->CalcCoef ();
 		con->CalcError();
-		
+	}
+
+	return CalcObjective();
+}
+
+real_t Solver::CalcObjective(){
+	// ddp has its own way to calculate cost
+	if( param.methodMajor == Method::Major::DDP || 
+		param.methodMajor == Method::Major::DDPContinuous ){
+		return CalcObjectiveDDP();
+	}
+
+	real_t obj = 0.0;
+	for(auto& con : cons){
+		if(!con->enabled)
+			continue;
 		if(!con->active)
 			continue;
 
-        for(int k = 0; k < con->nelem; k++)
-		    obj += con->e[k];
+		for(int k = 0; k < con->nelem; k++)
+			obj += con->e[k];
 	}
-
-	// ddp has its own way to calculate cost
-	if(param.methodMajor == Method::Major::DDP)
-		return CalcObjectiveDDP();
-
+	
 	return obj;
 }
 
@@ -670,7 +677,8 @@ void Solver::CalcDirection(){
 			//DSTR << "level " << L << ": " << ptimer.CountUS() << endl;
 		}
 	}
-	if(param.methodMajor == Method::Major::DDP){
+	if( param.methodMajor == Method::Major::DDP || 
+		param.methodMajor == Method::Major::DDPContinuous ){
 		for(auto& con : cons_active)
 			con->CalcCorrection();
 
@@ -679,7 +687,8 @@ void Solver::CalcDirection(){
 }
 
 void Solver::ModifyVariables(real_t alpha){
-	if(param.methodMajor == Method::Major::DDP){
+	if( param.methodMajor == Method::Major::DDP || 
+		param.methodMajor == Method::Major::DDPContinuous ){
 		ModifyVariablesDDP(alpha);
 		for(auto& var : vars_unlocked)
 			var->Modify(1.0);
@@ -697,7 +706,10 @@ void Solver::Step(){
 
 	timer.CountUS();
 	Prepare();
-	int timePre = timer.CountUS();
+	real_t objPrev = status.obj;
+	status.obj      = CalcObjective();
+	status.objDiff  = status.obj - objPrev;
+	status.timePre = timer.CountUS();
 
 	// 更新方向を計算
 	timer.CountUS();
@@ -712,21 +724,17 @@ void Solver::Step(){
 	timer.CountUS();
 	// 変数を更新
 	ModifyVariables(status.stepSize);
-
-   	real_t objPrev = status.obj;
-	status.obj      = CalcObjective();
-	status.objDiff  = status.obj - objPrev;
-	int timeMod = timer.CountUS();
+   	status.timeMod = timer.CountUS();
 
 	if(param.verbose){
 		Message::Out("iter:%d, step:%f, obj:%f", status.iterCount, status.stepSize, status.obj);
 		DSTR << "iter:"   << status.iterCount
 			 << " step:"  << status.stepSize
 			 << " obj:"   << status.obj
-			 << " tpre:"  << timePre
+			 << " tpre:"  << status.timePre
 			 << " tdir:"  << status.timeDir
 			 << " tstep:" << status.timeStep
-			 << " tmod:"  << timeMod
+			 << " tmod:"  << status.timeMod
 			 << endl;
 	}
 	status.iterCount++;

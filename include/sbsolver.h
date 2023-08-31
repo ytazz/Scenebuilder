@@ -18,9 +18,6 @@ typedef vector< Constraint* >			Constraints;
 typedef vector< UTRef<Constraint> >		ConstraintRefs;
 typedef vector< UTRef<Link> >			LinkRefs;
 
-//void mat_inv_gen(const vmat_t& m, vmat_t& minv);
-//void mat_inv_sym(const vmat_t& m, vmat_t& minv);
-
 class Solver : public UTRefCount{
 public:
 	struct Method{
@@ -30,6 +27,7 @@ public:
 				GaussNewton,   ///< Gauss Newton method
 				Prioritized,
 				DDP,           ///< Differential Dynamic Programming
+				DDPContinuous, ///< DDP, continuous-time version
                 Num
 			};
 		};
@@ -71,8 +69,14 @@ public:
 		real_t  objDiff;    ///< change of value of objective function
 		real_t  stepSize;   ///< step size
 		int     iterCount;  ///< cumulative iteration count
+		int     timePre;
 		int     timeDir;
 		int     timeStep;
+		int     timeMod;
+		int     timeTrans;
+		int     timeCost;
+		int     timeCostGrad;
+		int     timeBack;
 
 		Status();
 	};
@@ -201,6 +205,7 @@ public:
 	vector< UTRef<Cost> >             cost;
 	
 	int               N;
+	vector<real_t>    dt;
 	vector<Vector>    dx;
 	vector<Vector>    du;
 	vector<Matrix>    fx;
@@ -220,9 +225,9 @@ public:
 	vector<Matrix>    Qux;
 	vector<Matrix>    Quuinv;
 	vector<Vector>    Quuinv_Qu;
-	vector<real_t>    V;
-	vector<Vector>    Vx;
-	vector<Matrix>    Vxx;
+	vector<real_t>    V, dV;
+	vector<Vector>    Vx, dVx;
+	vector<Matrix>    Vxx, dVxx;
 	vector<Vector>    Vxx_fcor;
 	vector<Matrix>    Vxx_fx;
 	vector<Matrix>    Vxx_fu;
@@ -243,7 +248,9 @@ public:
 	void    CalcCostDDP         ();
 	void    CalcCostGradientDDP ();
 	void    BackwardDDP         ();
+	void    BackwardDDPContinuous();
 	void    ForwardDDP          (real_t alpha);
+	void    ForwardDDPContinuous(real_t alpha);
 	void    CalcDirectionDDP    ();
 	real_t  CalcObjectiveDDP    ();
 	void    ModifyVariablesDDP  (real_t alpha);
@@ -258,6 +265,7 @@ public:
 	SubInput*           AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
 	SubTransition*      AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
 	SubCost*            AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
+	void                SetTimeStep       (real_t     _dt , int k);  ///< set timestep of k-th step (for continuous ddp)
     
 public:
 	/// virtual function that are to be overridden by derived classes
