@@ -15,7 +15,8 @@ class Link : public UTRefCount{
 public:
 	Variable*		var;
 	Constraint*		con;
-	bool			active;
+	//bool			active;
+	int             index;  ///< index of var in all variables linked with con
 
 	void Connect();
 
@@ -37,7 +38,7 @@ public:
 	/// var->func(J.col(k) * d)
 	virtual void ColTrans(uint k, real_t  d, Variable  ::UpdateFunc func) = 0;
 
-	Link(Variable* v, Constraint* c):var(v), con(c){}
+	Link(Variable* v, Constraint* c);
 };
 
 typedef std::vector< UTRef<Link> >	LinkRefs;

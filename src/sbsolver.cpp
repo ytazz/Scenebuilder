@@ -34,6 +34,8 @@ Solver::Param::Param(){
 	hastyStepSize   = false;
 	regularization  =  0.001;
     complRelaxation =  1.0;
+	useHessian      = false;
+	parallelize     = false;
 
 	numIter.resize(10, 1);
 }
@@ -368,7 +370,7 @@ real_t Solver::CalcStepSize(){
 }
 
 void Solver::Prepare(){
-	timer.CountUS();
+	timer2.CountUS();
 
 	vars_unlocked.clear();
 	for(auto& var : vars){
@@ -402,8 +404,9 @@ void Solver::Prepare(){
 		}
 		else continue;
 
-		con->CalcCoef ();
-		con->CalcError();
+		con->CalcCoef   ();
+		con->CalcHessian();
+		con->CalcError  ();
 
 		if(con->active){
             real_t esum = 0.0;
@@ -434,7 +437,7 @@ void Solver::Prepare(){
 				var->links_active.push_back(link);
 		}
 	}
-	int timeCoef = timer.CountUS();
+	int timeCoef = timer2.CountUS();
 	//DSTR << "tcoef " << timeCoef << endl;
 }
 
@@ -474,7 +477,7 @@ void Solver::CalcEquation(){
 	pivot.resize(dimcon);
 
 	//for(auto& con : cons_active){
-#pragma omp parallel for
+#pragma omp parallel for if(param.parallelize)
 	for(int i = 0; i < cons_active.size(); i++){
 		Constraint* con = cons_active[i];
         vec3_t w = con->weight;
@@ -504,7 +507,7 @@ void Solver::CalcEquation(){
 	}
 
 
-#pragma omp parallel for
+#pragma omp parallel for if(param.parallelize)
 	//for(auto& var : vars_unlocked){
 	for(int j = 0; j < vars_unlocked.size(); j++){
 		Variable* var = vars_unlocked[j];

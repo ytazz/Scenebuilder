@@ -2,9 +2,17 @@
 
 namespace Scenebuilder{;
 
+Link::Link(Variable* v, Constraint* c){
+	var = v;
+	con = c;
+	index = 0;
+}
+
 void Link::Connect(){
 	var->links.push_back(this);
 	con->links.push_back(this);
+	index = con->nelem_var;
+	con->nelem_var += var->nelem;
 }
 
 //-------------------------------------------------------------------------------------------------

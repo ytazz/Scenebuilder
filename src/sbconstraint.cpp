@@ -9,12 +9,13 @@ static const real_t eps = 1.0e-10;
 Constraint::Constraint(Solver* solver, uint n, ID _id, int _type, real_t _scale):ID(_id){
     type       = _type;
 	nelem	   = n;
+	nelem_var  = 0;
 	level      = 0;
 	index      = 0;
 	enabled    = true;
 	active     = true;
 	weight     = vec3_t(1.0, 1.0, 1.0);
-    //lambda     = vec3_t(1.0, 1.0, 1.0);
+    barrier_margin = 0.001;
 	scale      = _scale;
 	scale2     = scale * scale;
 	scale_inv  = 1.0 / scale;
@@ -26,6 +27,7 @@ Constraint::Constraint(Solver* solver, uint n, ID _id, int _type, real_t _scale)
 }
 
 SLink* Constraint::AddSLink(Variable* var, real_t coef){
+	assert(nelem == var->nelem);
 	UTRef<SLink> link(new SLink(var, this, coef));
 	link->Connect();
 	solver->links.push_back(link);
@@ -33,6 +35,7 @@ SLink* Constraint::AddSLink(Variable* var, real_t coef){
 }
 
 C2Link* Constraint::AddC2Link(Variable* var){
+	assert(nelem == 2 && var->nelem == 1);
 	UTRef<C2Link> link(new C2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -40,6 +43,7 @@ C2Link* Constraint::AddC2Link(Variable* var){
 }
 
 R2Link* Constraint::AddR2Link(Variable* var){
+	assert(nelem == 1 && var->nelem == 2);
 	UTRef<R2Link> link(new R2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -47,6 +51,7 @@ R2Link* Constraint::AddR2Link(Variable* var){
 }
 
 M2Link* Constraint::AddM2Link(Variable* var){
+	assert(nelem == 2 && var->nelem == 2);
 	UTRef<M2Link> link(new M2Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -54,6 +59,7 @@ M2Link* Constraint::AddM2Link(Variable* var){
 }
 
 X3Link* Constraint::AddX3Link(Variable* var){
+	assert(nelem == 3 && var->nelem == 3);
 	UTRef<X3Link> link(new X3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -61,6 +67,7 @@ X3Link* Constraint::AddX3Link(Variable* var){
 }
 
 C3Link* Constraint::AddC3Link(Variable* var){
+	assert(nelem == 3 && var->nelem == 1);
 	UTRef<C3Link> link(new C3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -68,6 +75,7 @@ C3Link* Constraint::AddC3Link(Variable* var){
 }
 
 R3Link* Constraint::AddR3Link(Variable* var){
+	assert(nelem == 1 && var->nelem == 3);
 	UTRef<R3Link> link(new R3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -75,6 +83,7 @@ R3Link* Constraint::AddR3Link(Variable* var){
 }
 
 M3Link* Constraint::AddM3Link(Variable* var){
+	assert(nelem == 3 && var->nelem == 3);
 	UTRef<M3Link> link(new M3Link(var, this));
 	link->Connect();
 	solver->links.push_back(link);
@@ -99,7 +108,7 @@ void Constraint::CalcError(){
             // logarithmic cost
 			// T.B.D. take into account weight and scale
             for(int k = 0; k < nelem; k++){
-			    e[k] = -solver->param.complRelaxation*log(std::max(eps, y[k]));
+			    e[k] = -solver->param.complRelaxation*log(std::max(barrier_margin, y[k]));
                 e[k] = std::max(0.0, e[k]);
             }
         }

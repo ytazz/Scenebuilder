@@ -20,6 +20,7 @@ static Timer timer;
 static Timer timer2;
 
 static const real_t inf = numeric_limits<real_t>::max();
+static const real_t eps = 1.0e-10;
 
 inline real_t square(real_t x){
 	return x*x;
@@ -114,6 +115,49 @@ Solver::SubTransition* Solver::AddTransitionCon(Constraint* con, int k){
     return subtr;
 }
 
+Solver::SubReverseTransition* Solver::AddReverseTransitionCon(Constraint* con, int k){
+	if(transition_rev.size() <= k)
+		transition_rev.resize(k+1);
+
+	if(!transition_rev[k])
+		transition_rev[k] = new ReverseTransition();
+
+	State* st_x0 = state[k+0];
+	State* st_x1 = state[k+1];
+	Input* in_u  = input[k+0];
+
+	SubReverseTransition* subtr = new SubReverseTransition();
+	subtr->con = con;
+	for(Link* l : con->links){
+		SubState* subst;
+		SubInput* subin;
+
+		// variable that belongs to st_x0 must be unique
+		subst = st_x0->Find(l->var);
+		if(subst){
+			subtr->x0 = subst;
+		}
+		subst = st_x1->Find(l->var);
+		if(subst){
+			SubStateLink xl;
+			xl.x    = subst;
+			xl.link = l;
+			subtr->x1.push_back(xl);
+		}
+		subin = in_u->Find(l->var);
+		if(subin){
+			SubInputLink ul;
+			ul.u    = subin;
+			ul.link = l;
+			subtr->u.push_back(ul);
+		}
+	}
+
+	transition_rev[k]->subtran.push_back(subtr);
+
+    return subtr;
+}
+
 Solver::SubCost* Solver::AddCostCon (Constraint* con, int k){
 	if(cost.size() <= k)
 		cost.resize(k+1);
@@ -190,7 +234,6 @@ void Solver::InitDDP(){
 
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
-
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
 				continue;
@@ -217,6 +260,40 @@ void Solver::InitDDP(){
 				int m = u.u->var->nelem;
 				u.A.resize(n, m);
 				u.A.clear();			
+			}
+		}
+	}
+
+	if(!transition_rev.empty()){
+		for(int k = 0; k < N; k++){
+			ReverseTransition* tr_rev = transition_rev[k];
+			for(SubReverseTransition* subtr : tr_rev->subtran){
+				if(!subtr->con->enabled)
+					continue;
+				if(subtr->x0->var->locked)
+					continue;
+			
+				int n  = subtr->con->nelem;			
+				subtr->b.resize(n);
+				subtr->b.clear();
+            
+				for(SubStateLink& x1 : subtr->x1){
+					if(x1.x->var->locked)
+						continue;
+
+					int m  = x1.x->var->nelem;
+					x1.A.resize(n, m);
+					x1.A.clear();
+				}
+            
+				for(SubInputLink& u : subtr->u){
+					if(u.u->var->locked)
+						continue;
+
+					int m = u.u->var->nelem;
+					u.A.resize(n, m);
+					u.A.clear();			
+				}
 			}
 		}
 	}
@@ -259,6 +336,15 @@ void Solver::InitDDP(){
 	fx       .resize(N);
 	fu       .resize(N);
 	fcor     .resize(N);
+	fxx      .resize(N);
+    fuu      .resize(N);
+    fux      .resize(N);
+	fx_rev   .resize(N);
+	fu_rev   .resize(N);
+	fcor_rev .resize(N);
+	fxx_rev  .resize(N);
+    fuu_rev  .resize(N);
+    fux_rev  .resize(N);
     L        .resize(N+1);
 	Lx       .resize(N+1);
 	Lxx      .resize(N+1);
@@ -304,10 +390,31 @@ void Solver::InitDDP(){
 			int nu  = input[k]->dim;
 			int nx1 = state[k+1]->dim;
 
-			du       [k].Allocate(nu      );
-			fx       [k].Allocate(nx1, nx );
-			fu       [k].Allocate(nx1, nu );
-			fcor     [k].Allocate(nx1     );
+			du[k].Allocate(nu);
+
+			fx  [k].Allocate(nx1, nx);
+			fu  [k].Allocate(nx1, nu);
+			fcor[k].Allocate(nx1    );
+			fxx[k].resize(nx1);
+			fuu[k].resize(nx1);
+			fux[k].resize(nx1);
+			for(int i = 0; i < nx1; i++){
+				fxx[k][i].Allocate(nx, nx);
+				fuu[k][i].Allocate(nu, nu);
+				fux[k][i].Allocate(nu, nx);
+			}
+			fx_rev   [k].Allocate(nx, nx1);
+			fu_rev   [k].Allocate(nx, nu );
+			fcor_rev [k].Allocate(nx     );
+			fxx_rev[k].resize(nx);
+			fuu_rev[k].resize(nx);
+			fux_rev[k].resize(nx);
+			for(int i = 0; i < nx; i++){
+				fxx_rev[k][i].Allocate(nx1, nx1);
+				fuu_rev[k][i].Allocate(nu , nu );
+				fux_rev[k][i].Allocate(nu , nx1);
+			}
+
             Lu       [k].Allocate(nu      );
 			Luu      [k].Allocate(nu , nu );
 			Lux      [k].Allocate(nu , nx );
@@ -341,6 +448,15 @@ void Solver::ClearDDP(){
 	fx       .clear();
 	fu       .clear();
 	fcor     .clear();
+	fxx      .clear();
+	fuu      .clear();
+	fux      .clear();
+	fx_rev   .clear();
+	fu_rev   .clear();
+	fcor_rev .clear();
+	fxx_rev  .clear();
+	fuu_rev  .clear();
+	fux_rev  .clear();
     L        .clear();
 	Lx       .clear();
 	Lxx      .clear();
@@ -366,7 +482,7 @@ void Solver::CalcTransitionDDP(){
 
 	vec3_t one(1.0, 1.0, 1.0);
 
-#pragma omp parallel for
+#pragma omp parallel for if(param.parallelize)
 	for(int k = 0; k < N; k++){
 		Transition* tr = transition[k];
 		real_t h, hinv;
@@ -378,6 +494,12 @@ void Solver::CalcTransitionDDP(){
 		mat_clear(fx  [k]);
 		mat_clear(fu  [k]);
         vec_clear(fcor[k]);
+		int nx = fx[k].m;
+		for(int i = 0; i < nx; i++){
+			mat_clear(fxx[k][i]);
+			mat_clear(fux[k][i]);
+			mat_clear(fuu[k][i]);
+		}
 
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
@@ -410,8 +532,9 @@ void Solver::CalcTransitionDDP(){
 				}
 				// discrete time
 				else{
-					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-						fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
+					//for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					//	fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
+					submat_copy(x0.A, fx[k], -1.0, subtr->x1->index, x0.x->index);
 				}
 
 				ix0++;
@@ -433,8 +556,9 @@ void Solver::CalcTransitionDDP(){
 				}
 				// discrete time
 				else{
-					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-						fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
+					//for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					//	fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
+					submat_copy(u.A, fu[k], -1.0, subtr->x1->index, u.u->index);
 				}
 			}
             
@@ -446,12 +570,80 @@ void Solver::CalcTransitionDDP(){
 			}
 			// discrete time
 			else{
-				for(int i = 0; i < n; i++)
-					fcor[k](subtr->x1->index+i) = subtr->b[i];
+				//for(int i = 0; i < n; i++)
+				//	fcor[k](subtr->x1->index+i) = subtr->b[i];
+				subvec_copy(subtr->b, fcor[k], 1.0, subtr->x1->index);
+			}
+			
+			if(param.useHessian){
+				// set fxx
+				for(SubStateLink& x00 : subtr->x0) for(SubStateLink& x01 : subtr->x0){
+					if(x00.x->var->locked || x01.x->var->locked)
+						continue;
+
+					int m0 = x00.x->var->nelem;
+					int m1 = x01.x->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*x00.x->var->scale*x01.x->var->scale;
+
+					// continuous time
+					if(param.methodMajor == Method::Major::DDPContinuous){
+					}
+					// discrete time
+					else{
+						if(!subtr->con->hessian.empty()){
+							for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+								fxx[k][subtr->x1->index+i](x00.x->index+j0, x01.x->index+j1) = sc*subtr->con->hessian[i][x00.link->index+j0][x01.link->index+j1];
+						}
+					}
+				}
+				// set fux
+				for(SubInputLink& u : subtr->u) for(SubStateLink& x0 : subtr->x0){
+					if(u.u->var->locked || x0.x->var->locked)
+						continue;
+
+					int m0 = u .u->var->nelem;
+					int m1 = x0.x->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*u.u->var->scale*x0.x->var->scale;
+
+					// continuous time
+					if(param.methodMajor == Method::Major::DDPContinuous){
+					}
+					// discrete time
+					else{
+						if(!subtr->con->hessian.empty()){
+							for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+								fux[k][subtr->x1->index+i](u.u->index+j0, x0.x->index+j1) = sc*subtr->con->hessian[i][u.link->index+j0][x0.link->index+j1];
+						}
+					}
+				}
+				// set fuu
+				for(SubInputLink& u0 : subtr->u) for(SubInputLink& u1 : subtr->u){
+					if(u0.u->var->locked || u1.u->var->locked)
+						continue;
+
+					int m0 = u0.u->var->nelem;
+					int m1 = u1.u->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*u0.u->var->scale*u1.u->var->scale;
+
+					// continuous time
+					if(param.methodMajor == Method::Major::DDPContinuous){
+					}
+					// discrete time
+					else{
+						if(!subtr->con->hessian.empty()){
+							for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+								fuu[k][subtr->x1->index+i](u0.u->index+j0, u1.u->index+j1) = sc*subtr->con->hessian[i][u0.link->index+j0][u1.link->index+j1];
+						}
+					}
+				}
 			}
 		}
 	}
 	status.timeTrans = timer2.CountUS();
+
 	//DSTR << " tf: " << tf << endl;
 	/*
 	FILE* file = fopen("fx.csv", "w");
@@ -473,6 +665,219 @@ void Solver::CalcTransitionDDP(){
 	}
 	fclose(file);
 	*/
+	/*
+	for(int k = 0; k < N; k++){
+		int nx1 = dx[k+1].n;
+		int nx  = dx[k].n;
+		int nu  = du[k].n;
+		for(int i = 0; i < nx1; i++){
+			char filename[256];
+			sprintf(filename, "fxx_%d_%d.csv", k, i);
+			FILE* file = fopen(filename, "w");
+
+			for(int r = 0; r < nx; r++){
+				for(int c = 0; c < nx; c++){
+					real_t v = fxx[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+
+			sprintf(filename, "fux_%d_%d.csv", k, i);
+			file = fopen(filename, "w");
+
+			for(int r = 0; r < nu; r++){
+				for(int c = 0; c < nx; c++){
+					real_t v = fux[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+			
+			sprintf(filename, "fuu_%d_%d.csv", k, i);
+			file = fopen(filename, "w");
+
+			for(int r = 0; r < nu; r++){
+				for(int c = 0; c < nu; c++){
+					real_t v = fuu[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+
+		}
+	}
+	*/
+}
+
+void Solver::CalcReverseTransitionDDP(){
+	timer2.CountUS();
+
+	vec3_t one(1.0, 1.0, 1.0);
+
+#pragma omp parallel for if(param.parallelize)
+	for(int k = 0; k < N; k++){
+		ReverseTransition* tr = transition_rev[k];
+		
+		mat_clear(fx_rev  [k]);
+		mat_clear(fu_rev  [k]);
+        vec_clear(fcor_rev[k]);
+		int nx = fx_rev[k].m;
+		for(int i = 0; i < nx; i++){
+			mat_clear(fxx_rev[k][i]);
+			mat_clear(fux_rev[k][i]);
+			mat_clear(fuu_rev[k][i]);
+		}
+
+		for(SubReverseTransition* subtr : tr->subtran){
+			if(!subtr->con->enabled)
+				continue;
+			if(!subtr->con->active)
+				continue;
+            if(subtr->x0->var->locked)
+                continue;
+			
+			int i0 = subtr->con->index;
+			int n  = subtr->con->nelem;
+			// for fcor, constraint weight should be ignored
+            subtr->con->RegisterCorrection(subtr->b, one, 0);
+
+			// set fx
+			for(SubStateLink& x1 : subtr->x1){
+				if(x1.x->var->locked)
+					continue;
+
+				int m = x1.x->var->nelem;
+				x1.link->RegisterCoef(x1.A, 0, 0, one);
+
+				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					fx_rev[k](subtr->x0->index+i, x1.x->index+j) = -x1.A[i][j];
+				
+			}
+            
+            // set fu
+			for(SubInputLink& u : subtr->u){
+				if(u.u->var->locked)
+					continue;
+
+				//int j0 = u->var->index; 
+				int m = u.u->var->nelem;
+				u.link->RegisterCoef(u.A, 0, 0, one);
+
+				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
+					fu_rev[k](subtr->x0->index+i, u.u->index+j) = -u.A[i][j];
+			}
+            
+            // set correction term
+			for(int i = 0; i < n; i++)
+				fcor_rev[k](subtr->x0->index+i) = subtr->b[i];
+			
+			if(param.useHessian){
+				// set fxx
+				for(SubStateLink& x10 : subtr->x1) for(SubStateLink& x11 : subtr->x1){
+					if(x10.x->var->locked || x11.x->var->locked)
+						continue;
+
+					int m0 = x10.x->var->nelem;
+					int m1 = x11.x->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*x10.x->var->scale*x11.x->var->scale;
+
+					if(!subtr->con->hessian.empty()){
+						for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+							fxx_rev[k][subtr->x0->index+i](x10.x->index+j0, x11.x->index+j1) = sc*subtr->con->hessian[i][x10.link->index+j0][x11.link->index+j1];
+					}
+				}
+				// set fux
+				for(SubInputLink& u : subtr->u) for(SubStateLink& x1 : subtr->x1){
+					if(u.u->var->locked || x1.x->var->locked)
+						continue;
+
+					int m0 = u .u->var->nelem;
+					int m1 = x1.x->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*u.u->var->scale*x1.x->var->scale;
+
+					if(!subtr->con->hessian.empty()){
+						for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+							fux_rev[k][subtr->x0->index+i](u.u->index+j0, x1.x->index+j1) = sc*subtr->con->hessian[i][u.link->index+j0][x1.link->index+j1];
+					}
+				}
+				// set fuu
+				for(SubInputLink& u0 : subtr->u) for(SubInputLink& u1 : subtr->u){
+					if(u0.u->var->locked || u1.u->var->locked)
+						continue;
+
+					int m0 = u0.u->var->nelem;
+					int m1 = u1.u->var->nelem;
+
+					real_t sc = subtr->con->scale_inv*u0.u->var->scale*u1.u->var->scale;
+
+					if(!subtr->con->hessian.empty()){
+						for(int i = 0; i < n; i++)for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++)
+							fuu_rev[k][subtr->x0->index+i](u0.u->index+j0, u1.u->index+j1) = sc*subtr->con->hessian[i][u0.link->index+j0][u1.link->index+j1];
+					}
+				}
+			}
+
+		}
+	}
+	status.timeTransRev = timer2.CountUS();
+	/*
+	for(int k = 0; k < N; k++){
+		int nx1 = dx[k+1].n;
+		int nx  = dx[k].n;
+		int nu  = du[k].n;
+		for(int i = 0; i < nx; i++){
+			char filename[256];
+			sprintf(filename, "fxx_rev_%d_%d.csv", k, i);
+			FILE* file = fopen(filename, "w");
+
+			for(int r = 0; r < nx1; r++){
+				for(int c = 0; c < nx1; c++){
+					real_t v = fxx_rev[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+
+			sprintf(filename, "fux_rev_%d_%d.csv", k, i);
+			file = fopen(filename, "w");
+
+			for(int r = 0; r < nu; r++){
+				for(int c = 0; c < nx1; c++){
+					real_t v = fux_rev[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+			
+			sprintf(filename, "fuu_rev_%d_%d.csv", k, i);
+			file = fopen(filename, "w");
+
+			for(int r = 0; r < nu; r++){
+				for(int c = 0; c < nu; c++){
+					real_t v = fuu_rev[k][i](r,c);
+					if(v != 0.0)
+						fprintf(file, "%d, %d, %f\n", r, c, v);
+				}
+			}
+
+			fclose(file);
+
+		}
+	}
+	*/
 }
 
 void Solver::CalcCostDDP(){
@@ -482,7 +887,7 @@ void Solver::CalcCostDDP(){
 
 	timer2.CountUS();
 	// calculate state cost
-#pragma omp parallel for
+#pragma omp parallel for if(param.parallelize)
 	for(int k = 0; k <= N; k++){
 		if(!cost[k])
 			continue;
@@ -506,7 +911,7 @@ void Solver::CalcCostDDP(){
 			}
 			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
 				// assume n = 1
-				L[k] = -square(subcost->con->weight[0])*log(subcost->b[0]);
+				L[k] += -square(subcost->con->weight[0])*log(std::min(std::max(subcost->con->barrier_margin, subcost->b[0]), 1.0));
 			}
 
 		}
@@ -529,7 +934,7 @@ void Solver::CalcCostGradientDDP(){
 
 	timer2.CountUS();
 	// calculate state cost
-#pragma omp parallel for
+#pragma omp parallel for if(param.parallelize)
 	for(int k = 0; k <= N; k++){
 		if(!cost[k])
 			continue;
@@ -561,8 +966,10 @@ void Solver::CalcCostGradientDDP(){
 					}
 				}
 				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-					for(int j = 0; j < m; j++){
-						Lx[k](x.x->index+j) += x.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
+					if(subcost->con->barrier_margin < subcost->b[0] && subcost->b[0] < 1.0){
+						for(int j = 0; j < m; j++){
+							Lx[k](x.x->index+j) += x.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
+						}
 					}
 				}
 			}
@@ -575,17 +982,18 @@ void Solver::CalcCostGradientDDP(){
 				int m0  = x0.x->var->nelem;
 				int m1  = x1.x->var->nelem;
 
+				real_t tmp;
+				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+					if(subcost->con->barrier_margin < subcost->b[0] && subcost->b[0] < 1.0)
+						 tmp = 1.0/square(subcost->b[0]);
+					else tmp = 0.0;
+				}
+				else tmp = 1.0;
+				
 				// Lxx = A^T A
 				for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 					for(int i = 0; i < n; i++){
-						Lxx[k](x0.x->index+j0, x1.x->index+j1) += x0.A[i][j0]*x1.A[i][j1];
-					}
-				}
-
-				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-					real_t tmp = 1.0/square(subcost->b[0]);
-					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-						Lxx[k](x0.x->index+j0, x1.x->index+j1) *= tmp;
+						Lxx[k](x0.x->index+j0, x1.x->index+j1) += tmp*x0.A[i][j0]*x1.A[i][j1];
 					}
 				}
 			}
@@ -610,7 +1018,7 @@ void Solver::CalcCostGradientDDP(){
 					}
 					if( subcost->con->type == Constraint::Type::InequalityBarrier ){
 						for(int j = 0; j < m; j++){
-							Lu[k](u.u->index+j) += u.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
+							Lu[k](u.u->index+j) += u.A[0][j]*(-subcost->con->weight[0]/std::max(subcost->con->barrier_margin, subcost->b[0]));
 						}
 					}
 				}
@@ -623,19 +1031,18 @@ void Solver::CalcCostGradientDDP(){
 					int m0  = u0.u->var->nelem;
 					int m1  = u1.u->var->nelem;
 
+					real_t tmp;
+					if( subcost->con->type == Constraint::Type::InequalityBarrier )
+						 tmp = 1.0/square(std::max(subcost->con->barrier_margin, subcost->b[0]));
+					else tmp = 1.0;
+
 					// Lxx = A^T A
 					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 						for(int i = 0; i < n; i++){
-							Luu[k](u0.u->index+j0, u1.u->index+j1) += u0.A[i][j0]*u1.A[i][j1];
+							Luu[k](u0.u->index+j0, u1.u->index+j1) += tmp*u0.A[i][j0]*u1.A[i][j1];
 						}
 					}
 
-					//if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-					//	real_t tmp = 1.0/square(subcost->b[0]);
-					//	for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-					//		Luu[k](u0.u->index+j0, u1.u->index+j1) *= tmp;
-					//	}
-					//}
 				}
 				// calc Lux
 				for(SubInputLink& u : subcost->u)for(SubStateLink& x : subcost->x){
@@ -645,17 +1052,15 @@ void Solver::CalcCostGradientDDP(){
 					int m0  = u.u->var->nelem;
 					int m1  = x.x->var->nelem;
 
+					real_t tmp;
+					if( subcost->con->type == Constraint::Type::InequalityBarrier )
+						 tmp = 1.0/square(std::max(subcost->con->barrier_margin, subcost->b[0]));
+					else tmp = 1.0;
+
 					// Lxx = A^T A
 					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
 						for(int i = 0; i < n; i++){
-							Lux[k](u.u->index+j0, x.x->index+j1) += u.A[i][j0]*x.A[i][j1];
-						}
-					}
-
-					if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-						real_t tmp = 1.0/square(subcost->b[0]);
-						for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-							Lux[k](u.u->index+j0, x.x->index+j1) *= tmp;
+							Lux[k](u.u->index+j0, x.x->index+j1) += tmp*u.A[i][j0]*x.A[i][j1];
 						}
 					}
 				}
@@ -721,8 +1126,6 @@ void PrintSparsity(int k, const Matrix& m){
 	sprintf(filename, "quu_%d.csv", k);
 	file = fopen(filename, "w");
 
-	const real_t eps = 1.0e-10;
-
 	for(int i = 0; i < m.m; i++){
 		for(int j = 0; j < m.n; j++){
 			fprintf(file, "%d", (std::abs(m(i,j)) < eps ? 0 : 1));
@@ -770,6 +1173,8 @@ void Solver::BackwardDDP(){
         if(state[k]->dim != 0){
 			mat_copy(Lxx[k], Qxx[k]);
 	        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+
+
 		}
 
         if(input[k]->dim != 0){
@@ -841,7 +1246,7 @@ void Solver::BackwardDDP(){
 		//	 << " T2: " << tback2
 		//	 << " T3: " << tback3
 		//	 << endl;
-		//DSTR << "Vk: " << V[k] << endl;
+		//DSTR << "Vk: " << k << " " << V[k] << endl;
 		/*
 		char filename[256];
 		sprintf(filename, "Quu%d.csv", k);
@@ -939,7 +1344,8 @@ void Solver::BackwardDDPContinuous(){
 
 void Solver::ForwardDDP(real_t alpha){
     // if the dimension of x0 is not zero, dx0 is also optimized
-	if(state[0]->dim == 0){
+	//if(state[0]->dim == 0){
+	if(param.fixInitialState){
  		vec_clear(dx[0]);
 	}
 	else{
@@ -951,7 +1357,10 @@ void Solver::ForwardDDP(real_t alpha){
 
     for(int k = 0; k < N; k++){
 		timer2.CountUS();
-		if(input[k]->dim != 0){
+		if(k == 0 && param.fixInitialInput){
+			vec_clear(du[0]);
+		}
+		else if(input[k]->dim != 0){
 			vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
 			for(int i = 0; i < Qu_plus_Qux_dx[k].n; i++)
 				Qu_plus_Qux_dx[k](i) *= alpha;
@@ -962,7 +1371,7 @@ void Solver::ForwardDDP(real_t alpha){
 			symmat_vec_mul(Quuinv[k], Qu_plus_Qux_dx[k], du[k], -1.0, 0.0);
 		}
 
-        vec_copy   (fcor[k], dx[k+1]);
+        vec_copy(fcor[k], dx[k+1]);
 
 		if(state[k]->dim != 0)
 			mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
@@ -1022,6 +1431,7 @@ void Solver::ForwardDDPContinuous(real_t alpha){
 void Solver::CalcDirectionDDP(){
 
     CalcTransitionDDP();
+	//CalcReverseTransitionDDP();
 	CalcCostDDP();
 	CalcCostGradientDDP();
 

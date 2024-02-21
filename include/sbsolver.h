@@ -60,6 +60,10 @@ public:
 		bool           hastyStepSize;
 		real_t         regularization;
         real_t         complRelaxation;  ///< relaxation parameter of barrier inequality constraints
+		bool           useHessian;
+		bool           fixInitialState;  ///< fix initial state in ddp
+		bool           fixInitialInput;  ///< fix initial input in ddp
+		bool           parallelize;
 		
 		Param();
 	};
@@ -73,9 +77,8 @@ public:
 		int     timeDir;
 		int     timeStep;
 		int     timeMod;
-		int     timeTrans;
-		int     timeCost;
-		int     timeCostGrad;
+		int     timeTrans, timeTransRev;
+		int     timeCost, timeCostGrad;
 		int     timeBack;
 
 		Status();
@@ -145,6 +148,13 @@ public:
 		vector<SubInputLink>   u;
 		vvec_t                 b;
 	};
+	struct SubReverseTransition : UTRefCount{
+		Constraint*            con;
+		SubState*              x0;
+		vector<SubStateLink>   x1;
+		vector<SubInputLink>   u;
+		vvec_t                 b;
+	};
 	struct SubCost : UTRefCount{
         Constraint*            con;
 		vector<SubStateLink>   x;
@@ -166,6 +176,9 @@ public:
 	};
 	struct Transition : UTRefCount{
 		vector< UTRef<SubTransition> > subtran;
+	};
+	struct ReverseTransition : UTRefCount{
+		vector< UTRef<SubReverseTransition> > subtran;
 	};
 	struct Cost : UTRefCount{
 		vector< UTRef<SubCost> >  subcost;
@@ -199,18 +212,22 @@ public:
 
 	bool  ready;
 
-	vector< UTRef<State> >            state;
-	vector< UTRef<Input> >            input;
-	vector< UTRef<Transition> >       transition;
-	vector< UTRef<Cost> >             cost;
+	vector< UTRef<State> >             state;
+	vector< UTRef<Input> >             input;
+	vector< UTRef<Transition> >        transition;
+	vector< UTRef<ReverseTransition> > transition_rev;
+	vector< UTRef<Cost> >              cost;
 	
 	int               N;
 	vector<real_t>    dt;
 	vector<Vector>    dx;
 	vector<Vector>    du;
-	vector<Matrix>    fx;
-	vector<Matrix>    fu;
-	vector<Vector>    fcor;
+	vector<Matrix>    fx, fx_rev;
+	vector<Matrix>    fu, fu_rev;
+	vector<Vector>    fcor, fcor_rev;
+	vector< vector<Matrix> > fxx, fxx_rev;
+    vector< vector<Matrix> > fux, fux_rev;
+    vector< vector<Matrix> > fuu, fuu_rev;
     vector<real_t>    L;
 	vector<Vector>    Lx;
 	vector<Matrix>    Lxx;
@@ -241,10 +258,10 @@ public:
 	void    Prepare             ();
 	real_t  CalcUpdatedObjective(real_t alpha);
 	void    CalcEquation        ();
-	void    ModifyVariables     (real_t alpha);
 	void    InitDDP             ();
 	void    ClearDDP            ();
 	void    CalcTransitionDDP   ();
+	void    CalcReverseTransitionDDP();
 	void    CalcCostDDP         ();
 	void    CalcCostGradientDDP ();
 	void    BackwardDDP         ();
@@ -261,14 +278,18 @@ public:
 	void DeleteCon(Constraint* con);    ///< delte variable
 
 	/// methods for DDP
-	SubState*           AddStateVar       (Variable*   var, int k);  ///< register var as a sub-state at k
-	SubInput*           AddInputVar       (Variable*   var, int k);  ///< register var as a sub-input at k
-	SubTransition*      AddTransitionCon  (Constraint* con, int k);  ///< register con as a transition at k
-	SubCost*            AddCostCon        (Constraint* con, int k);  ///< register con as a cost at k
-	void                SetTimeStep       (real_t     _dt , int k);  ///< set timestep of k-th step (for continuous ddp)
+	SubState*             AddStateVar            (Variable*   var, int k);  ///< register var as a sub-state at k
+	SubInput*             AddInputVar            (Variable*   var, int k);  ///< register var as a sub-input at k
+	SubTransition*        AddTransitionCon       (Constraint* con, int k);  ///< register con as a forward transition at k
+	SubReverseTransition* AddReverseTransitionCon(Constraint* con, int k);  ///< register con as a reverse transition at k
+	SubCost*              AddCostCon             (Constraint* con, int k);  ///< register con as a cost at k
+	void                  SetTimeStep            (real_t     _dt , int k);  ///< set timestep of k-th step (for continuous ddp)
     
 public:
 	/// virtual function that are to be overridden by derived classes
+
+	/// 
+	virtual void    ModifyVariables     (real_t alpha);
 
 	/// evaluate objective function
 	virtual real_t  CalcObjective();

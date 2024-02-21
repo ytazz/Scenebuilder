@@ -35,8 +35,8 @@ struct Vector{
 	void Allocate(int _n);
 	void Resize  (int _n);
 
-	double& operator()(int i)     { return vh[i]; }
-	double  operator()(int i)const{ return vh[i]; }
+	double& operator()(int i)     { assert(0 <= i && i < n); return vh[i]; }
+	double  operator()(int i)const{ assert(0 <= i && i < n); return vh[i]; }
 
 	Vector SubVector(int ofst, int sz);
 
@@ -53,8 +53,8 @@ struct Matrix{
 	void Allocate(int _m, int _n);
 	void Resize  (int _m, int _n);
 
-	double& operator()(int i, int j)     { return vh[l*j+i]; }
-	double& operator()(int i, int j)const{ return vh[l*j+i]; }
+	double& operator()(int i, int j)     { assert(0 <= i && i < m && 0 <= j && j < n); return vh[l*j+i]; }
+	double& operator()(int i, int j)const{ assert(0 <= i && i < m && 0 <= j && j < n); return vh[l*j+i]; }
 
 	Matrix SubMatrix(int row, int col, int _m, int _n);
 
@@ -157,6 +157,7 @@ ostream& operator<<(ostream& os, Matrix& m);
 template<size_t N, class D>
 void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
 	typedef typename D::element_type T;
+	assert(y.n == N);
 	const T* v0 = &v[0];
 	double*  v1 = y.vh;
 	for(int i = 0; i < N; i++)
@@ -165,6 +166,7 @@ void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
 
 template<class T>
 void vec_copy(const PTM::VVector<T>& v, Vector& y){
+	assert(y.n == v.size());
 	const T* v0 = &v[0];
 	double*  v1 = y.vh;
 	for(int i = 0; i < y.n; i++)
@@ -174,6 +176,7 @@ void vec_copy(const PTM::VVector<T>& v, Vector& y){
 template<size_t H, size_t W, class D>
 void  mat_copy (const PTM::TMatrixBase<H, W, D>& m1, Matrix&& y){
 	typedef typename D::element_type T;
+	assert(y.m == H && y.n == W);
 	const T* col0 = &m1[0][0];
 	double*  col1 = y .vh;
 	for(int j = 0; j < W; j++, col0 += H, col1 += y.l){
@@ -191,6 +194,7 @@ void  mat_copy (const PTM::TMatrixBase<H, W, D>& m1, Matrix& y){
 
 template<class T>
 void mat_copy(const PTM::VMatrixCol<T>& m, Matrix& y){
+	assert(y.m == m.height() && y.n == m.width());
 	const T* col0 = &m[0][0];
 	double*  col1 = y.vh;
 	for(int j = 0; j < y.n; j++, col0 += y.m, col1 += y.l){
@@ -216,6 +220,14 @@ inline void vec_clear(SparseVector& y){
 		vec_clear(it->second);
 }
 
+inline double vec_norm(const Vector& v){
+	double vn = 0.0;
+	for(int j = 0; j < v.n; j++)
+		vn += (v(j)*v(j));
+
+	return sqrt(vn);
+}
+
 inline void mat_clear(Matrix&& y){
 	double* vh0 = y.vh;
 	for(int j = 0; j < y.n; j++, vh0 += y.l){
@@ -237,6 +249,7 @@ inline void mat_clear(SparseMatrix& y){
 }
 
 inline void vec_copy(const Vector& v1, Vector&& y){
+	assert(y.n == v1.n);
 	double* vh0 = v1.vh;
 	double* vh1 = y .vh;
 	for(int i = 0; i < v1.n; i++)
@@ -255,7 +268,29 @@ inline void vec_copy (const SparseVector& v1, SparseVector& y){
 	}
 }
 
+template<size_t N, class D>
+inline void subvec_copy(const PTM::TVectorBase<N, D>& v, Vector& y, real_t k, int i0){
+	int n = (int)v.size();
+	assert(0 <= i0 && i0+n <= y.n);
+	const double* vh0 = &v[0];
+	double* vh1 = &y(i0);
+	for(int i = 0; i < n; i++)
+		*vh1++ = *vh0++;
+}
+
+template<class T>
+inline void subvec_copy(const PTM::VVector<T>& v, Vector& y, real_t k, int i0){
+	int n = (int)v.size();
+	assert(0 <= i0 && i0+n <= y.n);
+	const double* vh0 = &v[0];
+	double* vh1 = &y(i0);
+	for(int i = 0; i < n; i++)
+		*vh1++ = *vh0++;
+}
+
+
 inline void mat_copy(const Matrix& m1, Matrix&& y){
+	assert(y.m == m1.m && y.n == m1.n);
 	double* col0 = m1.vh;
 	double* col1 = y .vh;
 	for(int j = 0; j < m1.n; j++, col0 += m1.l, col1 += y.l){
@@ -281,7 +316,41 @@ inline void mat_copy (const SparseMatrix& m1, SparseMatrix& y){
 	}
 }
 
+template<size_t H, size_t W, class D>
+inline void submat_copy(const PTM::TMatrixBase<H, W, D>& m, Matrix& y, real_t k, int r0, int c0){
+	int nrow = (int)m.height();
+	int ncol = (int)m.width ();
+	assert(0 <= r0 && r0+nrow <= y.m && 0 <= c0 && c0+ncol <= y.n);
+	const double* col0 = &m[0][0];
+	double* col1 = &y(r0, c0);
+	for(int j = 0; j < ncol; j++, col0 += nrow, col1 += y.l){
+		const double* v0 = col0;
+		double* v1 = col1;
+		for(int i = 0; i < nrow; i++){
+			*v1++ = k*(*v0++);
+		}
+	}
+}
+
+template<class T>
+inline void submat_copy(const PTM::VMatrixCol<T>& m, Matrix& y, real_t k, int r0, int c0){
+	int nrow = (int)m.height();
+	int ncol = (int)m.width ();
+	assert(0 <= r0 && r0+nrow <= y.m && 0 <= c0 && c0+ncol <= y.n);
+	const double* col0 = &m[0][0];
+	double* col1 = &y(r0, c0);
+	for(int j = 0; j < ncol; j++, col0 += nrow, col1 += y.l){
+		const double* v0 = col0;
+		double* v1 = col1;
+		for(int i = 0; i < nrow; i++){
+			*v1++ = k*(*v0++);
+		}
+	}
+}
+
+
 inline void vec_add(const Vector& v1, Vector&& y){
+	assert(y.n == v1.n);
 	double* vh0 = v1.vh;
 	double* vh1 = y .vh;
 	for(int i = 0; i < v1.n; i++)
@@ -300,7 +369,9 @@ inline void vec_add(const SparseVector& v1, SparseVector& y){
 	}
 }
 
+// y += m1
 inline void mat_add(const Matrix& m1, Matrix&& y){
+	assert(y.m == m1.m && y.n == m1.n);
 	double* col0 = m1.vh;
 	double* col1 = y .vh;
 	for(int j = 0; j < m1.n; j++, col0 += m1.l, col1 += y.l){
@@ -311,8 +382,41 @@ inline void mat_add(const Matrix& m1, Matrix&& y){
 		}
 	}
 }
+// y += k*m1
+inline void mat_add(const Matrix& m1, Matrix&& y, double k){
+	assert(y.m == m1.m && y.n == m1.n);
+	double* col0 = m1.vh;
+	double* col1 = y .vh;
+	for(int j = 0; j < m1.n; j++, col0 += m1.l, col1 += y.l){
+		double* v0 = col0;
+		double* v1 = col1;
+		for(int i = 0; i < m1.m; i++){
+			*v1++ += k*(*v0++);
+		}
+	}
+}
+// y += m1^T
+inline void mattr_add(const Matrix& m1, Matrix&& y){
+	assert(y.m == m1.n && y.n == m1.m);
+	double* col0 = m1.vh;
+	double* row1 = y .vh;
+	for(int j = 0; j < m1.n; j++, col0 += m1.l, row1++){
+		double* v0 = col0;
+		double* v1 = row1;
+		for(int i = 0; i < m1.m; i++){
+			*v1 += *v0++;
+			v1 += y.l;
+		}
+	}
+}
 inline void mat_add(const Matrix& m1, Matrix& y){
 	mat_add(m1, (Matrix&&)std::move(y));
+}
+inline void mat_add(const Matrix& m1, Matrix& y, double k){
+	mat_add(m1, (Matrix&&)std::move(y), k);
+}
+inline void mattr_add(const Matrix& m1, Matrix& y){
+	mattr_add(m1, (Matrix&&)std::move(y));
 }
 
 inline void mat_add(const SparseMatrix& m1, SparseMatrix& y){
@@ -332,10 +436,21 @@ inline double mat_abs(const Matrix& m){
 }
 
 inline double vec_dot(const Vector& v1, const Vector& v2){
+	assert(v1.n == v2.n);
 	return cblas_ddot(v1.n, v1.vh, 1, v2.vh, 1);
 }
 
+inline double quadform(const Matrix& m, const Vector& v1, const Vector& v2){
+	assert(v1.n == m.m && v2.n == m.n);
+	double y = 0.0;
+	for(int i = 0; i < v1.n; i++)for(int j = 0; j < v2.n; j++)
+		y += m(i,j)*v1(i)*v2(j);
+
+	return y;
+}
+
 inline void mat_vec_mul(const Matrix& m1, const Vector& v, Vector&& y, double alpha, double beta){
+	assert(y.n == m1.m && v.n == m1.n);
 	Vector tmp;
 	if(v.vh == y.vh){
 		if(tmp.n != y.n)
@@ -363,6 +478,7 @@ inline void mat_vec_mul(const SparseMatrix& m1, const SparseVector& v, Vector& y
 }
 
 inline void mattr_vec_mul(const Matrix& m1, const Vector& v, Vector&& y, double alpha, double beta){
+	assert(y.n == m1.n && v.n == m1.m);
 	Vector tmp;
 	if(v.vh == y.vh){
 		if(tmp.n != y.n)
@@ -389,10 +505,12 @@ inline void mattr_vec_mul(const SparseMatrix& m1, const Vector& v, SparseVector&
 }
 
 inline void symmat_vec_mul(const Matrix& m1, const Vector& v, Vector& y, double alpha, double beta){
+	assert(y.n == m1.m && v.n == m1.n);
 	cblas_dsymv(CblasColMajor, CblasUpper, m1.m, alpha, m1.vh, m1.l, v.vh, 1, beta, y.vh, 1);
 }
 
 inline void mat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double alpha, double beta){
+	assert(y.m == m1.m && y.n == m2.n && m1.n == m2.m);
 	Matrix tmp;
 	if(m1.vh == y.vh || m2.vh == y.vh){
 		if(tmp.m != y.m || tmp.n != y.n)
@@ -418,6 +536,7 @@ inline void mat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double al
 //}
 
 inline void mattr_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double alpha, double beta){
+	assert(y.m == m1.n && y.n == m2.n && m1.m == m2.m);
 	Matrix tmp;
 	if(m1.vh == y.vh || m2.vh == y.vh){
 		if(tmp.m != y.m || tmp.n != y.n)
@@ -454,10 +573,12 @@ inline void mattr_mat_mul (const SparseMatrix& m1, const SparseMatrix& m2, Spars
 }
 
 inline void mat_mattr_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta){
+	assert(y.m == m1.m && y.n == m2.m && m1.n == m2.n);
 	cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, m1.m, m2.m, m1.n, alpha, m1.vh, m1.l, m2.vh, m2.l, beta, y.vh, y.l);
 }
 
 inline void symmat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double alpha, double beta){
+	assert(y.m == m1.m && y.n == m2.n && m1.n == m2.m);
 	cblas_dsymm(CblasColMajor, CblasLeft, CblasUpper, m1.m, m2.n, alpha, m1.vh, m1.l, m2.vh, m2.l , beta, y.vh, y.l);
 }
 inline void symmat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta){
@@ -473,6 +594,7 @@ inline void symmat_mat_mul(const Matrix& m1, const SparseMatrix& m2, SparseMatri
 }
 
 inline void  mat_eye(Matrix& m){
+	assert(m.m == m.n);
 	for(int j = 0; j < m.n; j++)for(int i = 0; i < m.m; i++)
 		m(i,j) = (i == j ? 1.0f : 0.0f);
 }
@@ -484,6 +606,7 @@ inline void  mat_diag(const Vector& v, Matrix& m){
 }
 
 inline void  mat_eig(const Matrix& m, Vector& wr, Vector& wi, Matrix& vl, Matrix& vr){
+	assert(m.m == m.n);
 	wr.Allocate(m.m);
 	wi.Allocate(m.m);
 	vl.Allocate(m.m, m.m);
@@ -496,6 +619,7 @@ inline void  mat_eig(const Matrix& m, Vector& wr, Vector& wi, Matrix& vl, Matrix
 
 // inverse of general matrix
 inline void mat_inv_gen(const Matrix& m, Matrix& y){
+	assert(m.m == m.n && y.m == m.m && y.n == m.n);
 	mat_copy(m, y);
 	vector<int> pivot; pivot.resize(m.m);
 	LAPACKE_dgetrf(LAPACK_COL_MAJOR, m.m, m.m, &y.vh[0], y.l, &pivot[0]);
@@ -504,6 +628,7 @@ inline void mat_inv_gen(const Matrix& m, Matrix& y){
 
 // inverse of symmetric positive definite matrix
 inline void mat_inv_pd(const Matrix& m, Matrix& y){
+	assert(m.m == m.n && y.m == m.m && y.n == m.n);
 	mat_copy(m, y);
 	LAPACKE_dpotrf(LAPACK_COL_MAJOR, 'U', m.m, y.vh, y.l);
 	LAPACKE_dpotri(LAPACK_COL_MAJOR, 'U', m.m, y.vh, y.l);

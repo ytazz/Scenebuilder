@@ -38,14 +38,16 @@ public:
     int         type;       ///< constraint type
 	Links		links;		///< links to constrained variables
 	Links       links_active;
-	int         nelem;
+	int         nelem;      ///< dimension of this constraint
+	int         nelem_var;  ///< total dimension of variables linked with this constraint
 	int         level;      ///< priority level
-	int         index;
+	int         index;      ///< index of this constraint in entire constraint variable y
 	bool		enabled;	///< enabled constraint (controlled by user)
 	bool		active;		///< active constraint  (for penalty inequality constraints)
 	vec3_t      weight;     ///< weight of constraint error (component-wise)
-    //vec3_t      lambda;     ///< lagrange multiplier (for barrier inequality constraints)
-	real_t		scale, scale2, scale_inv, scale2_inv;		///< scaling coefficient
+	real_t      barrier_margin;   ///< margin from zero (for barrier inequality)
+    real_t		scale, scale2, scale_inv, scale2_inv;		///< scaling coefficient
+	vector<vmat_t>  hessian;
 	
 	/** error correction rate
 		誤差修正率．
@@ -109,7 +111,7 @@ public:
 	/// virtual functions to be overridden by derived classes ///
 	virtual void CalcCoef         (){}
 	virtual void CalcDeviation    ();
-	virtual void CalcLhs          (){}
+	virtual void CalcHessian      (){}
 	
 public:
 	/// G-S related virtual functions
