@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <sbtypes.h>
+#include <sbblas.h>
 
 #include <vector>
 using namespace std;
@@ -100,7 +101,7 @@ public:
 	void UpdateConjugate2(uint k, real_t  _dz );
 	void UpdateConjugate3(uint k, real_t  ddzd);
 
-	void RegisterDelta(const vvec_t& dxvec);
+	void RegisterDelta(const Vector& dxvec);
 	
 	virtual void	Reset ()            = 0;
 	virtual real_t	Get   (uint k)      = 0;

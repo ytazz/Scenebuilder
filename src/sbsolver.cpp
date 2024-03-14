@@ -12,12 +12,8 @@
 # endif
 #endif
 
-#include <sbtimer.h>
-
 namespace Scenebuilder{;
 
-static Timer timer;
-static Timer timer2;
 static const real_t inf = numeric_limits<real_t>::max();
 static const real_t eps = 1.0e-10;
 
@@ -467,13 +463,13 @@ void Solver::CalcEquation(){
 	// 変数あるいは拘束の数が不正
 	if(dimvar == 0 || dimcon == 0)
 		return;
-			
-	A   .resize(dimcon + dimvar_weighted, dimvar);
-	b   .resize(dimcon + dimvar_weighted);
-	//yvec.resize(dimcon);
-	A   .clear();
-	b   .clear();
-	//yvec.clear();
+		
+	A.Allocate(dimcon + dimvar_weighted, dimvar);
+	b.Allocate(dimcon + dimvar_weighted);
+	
+	mat_clear(A);
+	vec_clear(b);
+	
 	pivot.resize(dimcon);
 
 	//for(auto& con : cons_active){
@@ -500,9 +496,9 @@ void Solver::CalcEquation(){
         }
 		*/
 		for(auto& link : con->links_active){
-			link->RegisterCoef(A, link->con->index, link->var->index, w);
+			link->RegisterCoef(A.SubMatrix(link->con->index, link->var->index, link->con->nelem, link->var->nelem), w);
 		}
-		con->RegisterCorrection(b   , con->weight, con->index);
+		con->RegisterCorrection(b.SubVector(con->index, con->nelem), con->weight);
 		//con->RegisterDeviation (yvec, con->index);
 	}
 
@@ -513,7 +509,7 @@ void Solver::CalcEquation(){
 		Variable* var = vars_unlocked[j];
 		if(var->index_weighted != -1){
 			for(int j = 0; j < var->nelem; j++)
-				A[dimcon + var->index_weighted + j][var->index + j] = var->weight[j];
+				A(dimcon + var->index_weighted + j, var->index + j) = var->weight[j];
 		}
 	}
 }
@@ -538,15 +534,17 @@ void Solver::CalcDirection(){
 			int t2 = timer2.CountUS();
 
 			timer2.CountUS();
-			dxvec.resize(dimvar);
-			dxvec.clear ();
+			dxvec.Allocate(dimvar);
+			vec_clear(dxvec);
+
 			if(dimcon > 0){
 	#if defined USE_MKL
 				int nb = std::max(dimcon + dimvar_weighted, dimvar);
-				b2.resize(nb);
-				b2.clear ();
+				b2.Allocate(nb);
+				vec_clear(b2);
+
 				for(int i = 0; i < dimcon; i++)
-					b2[i] = b[i];
+					b2(i) = b(i);
 			
 				bool   tryDposv = false;
 				real_t dposvEps = 0.0;
@@ -554,12 +552,12 @@ void Solver::CalcDirection(){
 				if(param.methodLapack == Method::Lapack::DGELS){
 					// dgels
 					//DSTR << "dimcon: " << dimcon << " dimvar: " << dimvar << " dimvar_weighted: " << dimvar_weighted << endl;
-					int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A[0][0], dimcon+dimvar_weighted, &b2[0], nb);
+					int info = LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', dimcon+dimvar_weighted, dimvar, 1, &A(0, 0), dimcon+dimvar_weighted, &b2(0), nb);
 					if(info < 0){
 						Message::Error("dgels: %d-th argument illegal", -info);
-						Message::Error(" 6-th argument: %lx", &A[0][0]             );
+						Message::Error(" 6-th argument: %lx", &A(0, 0)             );
 						Message::Error(" 7-th argument: %d", dimcon+dimvar_weighted);
-						Message::Error(" 8-th argument: %lx", &b2[0]               );
+						Message::Error(" 8-th argument: %lx", &b2(0)               );
 						Message::Error(" 9-th argument: %d" , nb                   );
 					}
 					if(info > 0){
@@ -590,24 +588,26 @@ void Solver::CalcDirection(){
 				}
 				if(param.methodLapack == Method::Lapack::DPOSV || tryDposv){
 					// dposv
-					AtrA = A.trans()*A;
-					for(int i = 0; i < AtrA.width(); i++)
-						AtrA[i][i] += dposvEps;
+					AtrA.Allocate(A.n, A.n);
+					mattr_mat_mul(A, A, AtrA, 1.0, 0.0);
+					for(int i = 0; i < AtrA.m; i++)
+						AtrA(i, i) += dposvEps;
 
-					b2 = A.trans()*b;
-					LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &AtrA[0][0], dimcon, &b2[0], dimcon);
+					mattr_vec_mul(A, b, b2, 1.0, 0.0);
+					LAPACKE_dposv(LAPACK_COL_MAJOR, 'U', dimcon, 1, &AtrA(0, 0), dimcon, &b2(0), dimcon);
 				}
 
 				for(int i = 0; i < dimvar; i++)
-					dxvec[i] = b2[i];
+					dxvec(i) = b2(i);
 	#else
-				AtrA = A.trans()*A;
-				Atrb = A.trans()*b;
-				dxvec = AtrA.inv()*Atrb;
+	# error  USE_MKL is required
+				//AtrA = A.trans()*A;
+				//Atrb = A.trans()*b;
+				//dxvec = AtrA.inv()*Atrb;
 	#endif
 
 				// check
-				vvec_t test = A*dxvec - b;
+				//vvec_t test = A*dxvec - b;
 			}
 			int t3 = timer2.CountUS();
 			
@@ -731,13 +731,17 @@ void Solver::Step(){
 
 	if(param.verbose){
 		Message::Out("iter:%d, step:%f, obj:%f", status.iterCount, status.stepSize, status.obj);
-		DSTR << "iter:"   << status.iterCount
-			 << " step:"  << status.stepSize
-			 << " obj:"   << status.obj
-			 << " tpre:"  << status.timePre
-			 << " tdir:"  << status.timeDir
-			 << " tstep:" << status.timeStep
-			 << " tmod:"  << status.timeMod
+		DSTR << "iter:"    << status.iterCount
+			 << " step:"   << status.stepSize
+			 << " obj:"    << status.obj
+			 << " tpre:"   << status.timePre
+			 << " tdir:"   << status.timeDir
+			 << " tstep:"  << status.timeStep
+			 << " ttran:"  << status.timeTrans
+			 << " tcost:"  << status.timeCost
+			 << " tcostgrad: " << status.timeCostGrad
+			 << " tback: " << status.timeBack
+			 << " tmod:"   << status.timeMod
 			 << endl;
 	}
 	status.iterCount++;

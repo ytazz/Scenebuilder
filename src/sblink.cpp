@@ -49,12 +49,12 @@ void SLink::AddError(){
 	}
 }
 
-void SLink::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void SLink::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	for(int ii = 0; ii < con->nelem; ii++)
-		J[i+ii][j+ii] = w[ii] * coef;
+	for(int i = 0; i < con->nelem; i++)
+		J(i,i) = w[i]*coef;
 }	
 
 void SLink::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -109,13 +109,13 @@ void X3Link::AddError(){
 	con->y += coef % ((V3Var*)var)->val;
 }
 
-void X3Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void X3Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	J[i+0][j+0] =  0.0           ; J[i+0][j+1] = -w[0] * coef[2]; J[i+0][j+2] =  w[0] * coef[1];
-	J[i+1][j+0] =  w[1] * coef[2]; J[i+1][j+1] =  0.0           ; J[i+1][j+2] = -w[1] * coef[0];
-	J[i+2][j+0] = -w[2] * coef[1]; J[i+2][j+1] =  w[2] * coef[0]; J[i+2][j+2] =  0.0           ;
+	J(0,0) =  0.0         ; J(0,1) = -w[0]*coef[2]; J(0,2) =  w[0]*coef[1];
+	J(1,0) =  w[1]*coef[2]; J(1,1) =  0.0         ; J(1,2) = -w[1]*coef[0];
+	J(2,0) = -w[2]*coef[1]; J(2,1) =  w[2]*coef[0]; J(2,2) =  0.0         ;
 }	
 
 void X3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -177,12 +177,12 @@ void C2Link::AddError(){
 	con->y[1] += coef[1] * ((SVar*)var)->val;
 }
 
-void C2Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void C2Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	J[i+0][j] = w[0] * coef[0];
-	J[i+1][j] = w[1] * coef[1];
+	J(0,0) = w[0]*coef[0];
+	J(1,0) = w[1]*coef[1];
 }	
 
 void C2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -216,13 +216,13 @@ void C3Link::AddError(){
 	con->y += coef * ((SVar*)var)->val;
 }
 
-void C3Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void C3Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	J[i+0][j] = w[0] * coef[0];
-	J[i+1][j] = w[1] * coef[1];
-	J[i+2][j] = w[2] * coef[2];
+	J(0,0) = w[0]*coef[0];
+	J(1,0) = w[1]*coef[1];
+	J(2,0) = w[2]*coef[2];
 }	
 
 void C3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -255,12 +255,12 @@ void R2Link::AddError(){
 	con->y[0] += coef * ((V2Var*)var)->val;
 }
 
-void R2Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void R2Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	J[i][j+0] = w[0] * coef[0];
-	J[i][j+1] = w[0] * coef[1];
+	J(0,0) = w[0]*coef[0];
+	J(0,1) = w[0]*coef[1];
 }	
 
 void R2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -294,13 +294,13 @@ void R3Link::AddError(){
 	con->y[0] += coef * ((V3Var*)var)->val;
 }
 
-void R3Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void R3Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	J[i][j+0] = w[0] * coef[0];
-	J[i][j+1] = w[0] * coef[1];
-	J[i][j+2] = w[0] * coef[2];
+	J(0,0) = w[0]*coef[0];
+	J(0,1) = w[0]*coef[1];
+	J(0,2) = w[0]*coef[2];
 }	
 
 void R3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -340,12 +340,12 @@ void M2Link::AddError(){
 	con->y[1] += coef.row(1) * ((V2Var*)var)->val;
 }
 
-void M2Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void M2Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	for(int ii = 0; ii < 2; ii++)for(int jj = 0; jj < 2; jj++)
-		J[i+ii][j+jj] = w[ii] * coef[ii][jj];
+	for(int i = 0; i < 2; i++)for(int j = 0; j < 2; j++)
+		J(i,j) = w[i]*coef[i][j];
 }	
 
 void M2Link::Col(uint k, real_t d, Constraint::UpdateFunc func){
@@ -390,12 +390,12 @@ void M3Link::AddError(){
 	con->y += coef * ((V3Var*)var)->val;
 }
 
-void M3Link::RegisterCoef(vmat_t& J, int i, int j, vec3_t w){
+void M3Link::RegisterCoef(Matrix& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
-	for(int ii = 0; ii < 3; ii++)for(int jj = 0; jj < 3; jj++)
-		J[i+ii][j+jj] = w[ii] * coef[ii][jj];
+	for(int i = 0; i < 3; i++)for(int j = 0; j < 3; j++)
+		J(i,j) = w[i]*coef[i][j];
 }	
 
 void M3Link::Col(uint k, real_t d, Constraint::UpdateFunc func){

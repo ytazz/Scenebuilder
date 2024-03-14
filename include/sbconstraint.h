@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <sbvariable.h>
+#include <sbblas.h>
 
 #include <map>
 
@@ -94,8 +95,8 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
-	void RegisterCorrection(vvec_t& dydvec, const vec3_t& _weight, int offset);
-	void RegisterDeviation (vvec_t& yvec  , int offset);
+	void RegisterCorrection(Vector& dydvec, const vec3_t& _weight);
+	void RegisterDeviation (Vector& yvec);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);

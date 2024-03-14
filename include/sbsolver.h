@@ -5,6 +5,7 @@
 #include <sbconstraint.h>
 #include <sblink.h>
 #include <sbblas.h>
+#include <sbtimer.h>
 
 namespace Scenebuilder{;
 
@@ -133,12 +134,12 @@ public:
 	struct SubStateLink{
 		SubState* x;
 		Link*     link;
-		vmat_t    A;
+		//Matrix    A;
 	};
 	struct SubInputLink{
 		SubInput* u;
 		Link*     link;
-		vmat_t    A;
+		//Matrix    A;
 	};
 		
 	struct SubTransition : UTRefCount{
@@ -146,20 +147,23 @@ public:
 		SubState*              x1;
 		vector<SubStateLink>   x0;
 		vector<SubInputLink>   u;
-		vvec_t                 b;
+		//Vector                 b;
 	};
 	struct SubReverseTransition : UTRefCount{
 		Constraint*            con;
 		SubState*              x0;
 		vector<SubStateLink>   x1;
 		vector<SubInputLink>   u;
-		vvec_t                 b;
+		//Vector                 b;
 	};
 	struct SubCost : UTRefCount{
+		int                    index;
         Constraint*            con;
 		vector<SubStateLink>   x;
 		vector<SubInputLink>   u;
-		vvec_t                 b;
+		int  xbegin, xend;
+		int  ubegin, uend;
+		//Vector                 b, wb;
 	};
 
 	struct State : UTRefCount{
@@ -181,7 +185,11 @@ public:
 		vector< UTRef<SubReverseTransition> > subtran;
 	};
 	struct Cost : UTRefCount{
+		int     dim;
 		vector< UTRef<SubCost> >  subcost;
+		Vector  y, b;
+		Matrix  Ax;
+		Matrix  Au;
 	};
 	
 	Param            param;
@@ -199,11 +207,10 @@ public:
 	int         dimvar         ;
 	int         dimvar_weighted;
 	int         dimcon         ;
-	vmat_t      A, AtrA;
-	vvec_t      b, b2;
-	vvec_t      Atrb;
-	//vvec_t      yvec;
-	vvec_t      dxvec;
+	Matrix      A, AtrA;
+	Vector      b, b2;
+	Vector      Atrb;
+	Vector      dxvec;
 	vector<int> pivot;
 
 	vector<VariableInfo>    varInfoType;
@@ -253,6 +260,8 @@ public:
 	vector<Vector>    Qu_plus_Qux_dx;
 	Matrix            Vxxinv;
 
+	Timer timer, timer2, timer3, timer4;
+	
 public:
 	/// internal functions
 	void    Prepare             ();

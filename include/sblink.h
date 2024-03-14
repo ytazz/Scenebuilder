@@ -2,6 +2,7 @@
 
 #include <sbvariable.h>
 #include <sbconstraint.h>
+#include <sbblas.h>
 
 namespace Scenebuilder{;
 
@@ -29,7 +30,7 @@ public:
 	/// x -> c(x)
 	virtual void AddError() = 0;
 
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w) = 0;
+	virtual void RegisterCoef(Matrix& J, vec3_t w) = 0;
 
 	/// con->func(J.col(k) * d)
 	virtual void Col     (uint k, real_t  d, Constraint::UpdateFunc func) = 0;
@@ -58,7 +59,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -95,7 +96,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -118,7 +119,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -132,7 +133,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -150,7 +151,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -162,7 +163,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -184,7 +185,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);
@@ -205,7 +206,7 @@ public:
 	virtual void AddRowSqr   (vec3_t& v);
 	virtual void AddColSqr   (vec3_t& v);
 	virtual void AddError    ();
-	virtual void RegisterCoef(vmat_t& J, int i, int j, vec3_t w);
+	virtual void RegisterCoef(Matrix& J, vec3_t w);
 	virtual void Col         (uint k, real_t  d, Constraint::UpdateFunc func);
 	virtual void Row         (uint k, vec3_t& d, Constraint::UpdateFunc func);
 	virtual void ColTrans    (uint k, real_t  d, Variable  ::UpdateFunc func);

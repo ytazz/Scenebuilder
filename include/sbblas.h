@@ -57,6 +57,7 @@ struct Matrix{
 	double& operator()(int i, int j)const{ assert(0 <= i && i < m && 0 <= j && j < n); return vh[l*j+i]; }
 
 	Matrix SubMatrix(int row, int col, int _m, int _n);
+	Vector Col(int col);
 
 	 Matrix();
 	 Matrix(int _m, int _n);
@@ -207,9 +208,10 @@ void mat_copy(const PTM::VMatrixCol<T>& m, Matrix& y){
 }
 
 inline void vec_clear(Vector&& y){
-	double* vh = y.vh;
-	for(int i = 0; i < y.n; i++)
-		*vh++ = 0.0;
+	memset(y.vh, 0, sizeof(double)*y.n);
+	//double* vh = y.vh;
+	//for(int i = 0; i < y.n; i++)
+	//	*vh++ = 0.0;
 }
 inline void vec_clear(Vector& y){
 	vec_clear((Vector&&)std::move(y));
@@ -231,10 +233,11 @@ inline double vec_norm(const Vector& v){
 inline void mat_clear(Matrix&& y){
 	double* vh0 = y.vh;
 	for(int j = 0; j < y.n; j++, vh0 += y.l){
-		double* vh = vh0;
-		for(int i = 0; i < y.m; i++, vh++){
-			*vh = 0.0;
-		}
+		memset(vh0, 0, sizeof(double)*y.m);
+		//double* vh = vh0;
+		//for(int i = 0; i < y.m; i++, vh++){
+		//	*vh = 0.0;
+		//}
 	}
 }
 inline void mat_clear(Matrix& y){
@@ -250,13 +253,24 @@ inline void mat_clear(SparseMatrix& y){
 
 inline void vec_copy(const Vector& v1, Vector&& y){
 	assert(y.n == v1.n);
+	memcpy(y.vh, v1.vh, sizeof(double)*y.n);
+	//double* vh0 = v1.vh;
+	//double* vh1 = y .vh;
+	//for(int i = 0; i < v1.n; i++)
+	//	*vh1++ = *vh0++;
+}
+inline void vec_copy(const Vector& v1, Vector&& y, real_t k){
+	assert(y.n == v1.n);
 	double* vh0 = v1.vh;
 	double* vh1 = y .vh;
 	for(int i = 0; i < v1.n; i++)
-		*vh1++ = *vh0++;
+		*vh1++ = k*(*vh0++);
 }
 inline void vec_copy(const Vector& v1, Vector& y){
 	vec_copy(v1, (Vector&&)std::move(y));
+}
+inline void vec_copy(const Vector& v1, Vector& y, real_t k){
+	vec_copy(v1, (Vector&&)std::move(y), k);
 }
 
 inline void vec_copy (const SparseVector& v1, SparseVector& y){
@@ -296,13 +310,29 @@ inline void mat_copy(const Matrix& m1, Matrix&& y){
 	for(int j = 0; j < m1.n; j++, col0 += m1.l, col1 += y.l){
 		double* v0 = col0;
 		double* v1 = col1;
+		memcpy(v1, v0, sizeof(double)*m1.m);
+		//for(int i = 0; i < m1.m; i++){
+		//	*v1++ = *v0++;
+		//}
+	}
+}
+inline void mat_copy(const Matrix& m1, Matrix&& y, real_t k){
+	assert(y.m == m1.m && y.n == m1.n);
+	double* col0 = m1.vh;
+	double* col1 = y .vh;
+	for(int j = 0; j < m1.n; j++, col0 += m1.l, col1 += y.l){
+		double* v0 = col0;
+		double* v1 = col1;
 		for(int i = 0; i < m1.m; i++){
-			*v1++ = *v0++;
+			*v1++ = k*(*v0++);
 		}
 	}
 }
 inline void mat_copy(const Matrix& m1, Matrix& y){
 	mat_copy(m1, (Matrix&&)std::move(y));
+}
+inline void mat_copy(const Matrix& m1, Matrix& y, real_t k){
+	mat_copy(m1, (Matrix&&)std::move(y), k);
 }
 
 inline void mat_copy (const SparseMatrix& m1, SparseMatrix& y){

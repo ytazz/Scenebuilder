@@ -12,12 +12,7 @@
 # endif
 #endif
 
-#include <sbtimer.h>
-
 namespace Scenebuilder{;
-
-static Timer timer;
-static Timer timer2;
 
 static const real_t inf = numeric_limits<real_t>::max();
 static const real_t eps = 1.0e-10;
@@ -232,102 +227,50 @@ void Solver::InitDDP(){
 		}
 	}
 
-	for(int k = 0; k < N; k++){
-		Transition* tr = transition[k];
-		for(SubTransition* subtr : tr->subtran){
-			if(!subtr->con->enabled)
-				continue;
-            if(subtr->x1->var->locked)
-                continue;
-			
-			int n  = subtr->con->nelem;			
-			subtr->b.resize(n);
-			subtr->b.clear();
-            
-			for(SubStateLink& x0 : subtr->x0){
-				if(x0.x->var->locked)
-					continue;
-
-				int m  = x0.x->var->nelem;
-				x0.A.resize(n, m);
-				x0.A.clear();
-			}
-            
-            for(SubInputLink& u : subtr->u){
-				if(u.u->var->locked)
-					continue;
-
-				int m = u.u->var->nelem;
-				u.A.resize(n, m);
-				u.A.clear();			
-			}
-		}
-	}
-
-	if(!transition_rev.empty()){
-		for(int k = 0; k < N; k++){
-			ReverseTransition* tr_rev = transition_rev[k];
-			for(SubReverseTransition* subtr : tr_rev->subtran){
-				if(!subtr->con->enabled)
-					continue;
-				if(subtr->x0->var->locked)
-					continue;
-			
-				int n  = subtr->con->nelem;			
-				subtr->b.resize(n);
-				subtr->b.clear();
-            
-				for(SubStateLink& x1 : subtr->x1){
-					if(x1.x->var->locked)
-						continue;
-
-					int m  = x1.x->var->nelem;
-					x1.A.resize(n, m);
-					x1.A.clear();
-				}
-            
-				for(SubInputLink& u : subtr->u){
-					if(u.u->var->locked)
-						continue;
-
-					int m = u.u->var->nelem;
-					u.A.resize(n, m);
-					u.A.clear();			
-				}
-			}
-		}
-	}
-
 	for(int k = 0; k <= N; k++){
 		if(!cost[k])
 			continue;
 
+		cost[k]->dim = 0;
+
 		for(SubCost* subcost : cost[k]->subcost){     
-            if(!subcost->con->enabled)
+			subcost->index = -1;
+
+			if(!subcost->con->enabled)
 				continue;
-	
-			int n  = subcost->con->nelem;
-			subcost->b.resize(n);
-			
+
+			subcost->xbegin = state[k]->dim;
+			subcost->xend   = 0;
+			subcost->ubegin = 0;
+			subcost->uend   = 0;
 			for(SubStateLink& x : subcost->x){
 				if(x.x->var->locked)
 					continue;
-
-				int m = x.x->var->nelem;
-				x.A.resize(n, m);
-				x.A.clear();
+				subcost->xbegin = std::min(subcost->xbegin, x.x->index);
+				subcost->xend   = std::max(subcost->xend  , x.x->index + x.x->var->nelem);
 			}
-
 			if(k < N){
+				subcost->ubegin = input[k]->dim;
+				subcost->uend   = 0;
 				for(SubInputLink& u : subcost->u){
 					if(u.u->var->locked)
 						continue;
-
-					int m = u.u->var->nelem;
-					u.A.resize(n, m);
-					u.A.clear();
+					subcost->ubegin = std::min(subcost->ubegin, u.u->index);
+					subcost->uend   = std::max(subcost->uend  , u.u->index + u.u->var->nelem);
 				}
-			}            
+			}    
+			if(subcost->xbegin >= subcost->xend && subcost->ubegin >= subcost->uend)
+				continue;
+
+			subcost->index = cost[k]->dim;
+			cost[k]->dim += subcost->con->nelem;			        
+		}
+
+		cost[k]->y.Allocate(cost[k]->dim);
+		cost[k]->b.Allocate(cost[k]->dim);
+		cost[k]->Ax.Allocate(cost[k]->dim, state[k]->dim);
+		if(k < N){
+			cost[k]->Au.Allocate(cost[k]->dim, input[k]->dim);
 		}
 	}
 
@@ -478,7 +421,7 @@ void Solver::ClearDDP(){
 }
 
 void Solver::CalcTransitionDDP(){
-	timer2.CountUS();
+	timer3.CountUS();
 
 	vec3_t one(1.0, 1.0, 1.0);
 
@@ -494,13 +437,6 @@ void Solver::CalcTransitionDDP(){
 		mat_clear(fx  [k]);
 		mat_clear(fu  [k]);
         vec_clear(fcor[k]);
-		int nx = fx[k].m;
-		for(int i = 0; i < nx; i++){
-			mat_clear(fxx[k][i]);
-			mat_clear(fux[k][i]);
-			mat_clear(fuu[k][i]);
-		}
-
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
 				continue;
@@ -511,8 +447,6 @@ void Solver::CalcTransitionDDP(){
 			
 			int i0 = subtr->con->index;
 			int n  = subtr->con->nelem;
-			// for fcor, constraint weight should be ignored
-            subtr->con->RegisterCorrection(subtr->b, one, 0);
 
 			// set fx
 			int ix0 = 0;
@@ -521,20 +455,16 @@ void Solver::CalcTransitionDDP(){
 					continue;
 
 				int m = x0.x->var->nelem;
-				x0.link->RegisterCoef(x0.A, 0, 0, one);
 
 				// continuous time
 				if(param.methodMajor == Method::Major::DDPContinuous){
 					if(ix0 != 0){
-						for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-							fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j]*hinv;
+						x0.link->RegisterCoef(fx[k].SubMatrix(subtr->x1->index, x0.x->index, n, m), -hinv*one);
 					}
 				}
 				// discrete time
 				else{
-					//for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					//	fx[k](subtr->x1->index+i, x0.x->index+j) = -x0.A[i][j];
-					submat_copy(x0.A, fx[k], -1.0, subtr->x1->index, x0.x->index);
+					x0.link->RegisterCoef(fx[k].SubMatrix(subtr->x1->index, x0.x->index, n, m), -one);
 				}
 
 				ix0++;
@@ -545,37 +475,35 @@ void Solver::CalcTransitionDDP(){
 				if(u.u->var->locked)
 					continue;
 
-				//int j0 = u->var->index; 
 				int m = u.u->var->nelem;
-				u.link->RegisterCoef(u.A, 0, 0, one);
 
 				// continuous time
 				if(param.methodMajor == Method::Major::DDPContinuous){
-					for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-						fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j]*hinv;
+					u.link->RegisterCoef(fu[k].SubMatrix(subtr->x1->index, u.u->index, n, m), -hinv*one);
 				}
 				// discrete time
 				else{
-					//for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					//	fu[k](subtr->x1->index+i, u.u->index+j) = -u.A[i][j];
-					submat_copy(u.A, fu[k], -1.0, subtr->x1->index, u.u->index);
+					u.link->RegisterCoef(fu[k].SubMatrix(subtr->x1->index, u.u->index, n, m), -one);
 				}
 			}
             
             // set correction term
 			// continuous time
 			if(param.methodMajor == Method::Major::DDPContinuous){
-				for(int i = 0; i < n; i++)
-					fcor[k](subtr->x1->index+i) = subtr->b[i]*hinv;				
+				subtr->con->RegisterCorrection(fcor[k].SubVector(subtr->x1->index, n), hinv*one);
 			}
 			// discrete time
 			else{
-				//for(int i = 0; i < n; i++)
-				//	fcor[k](subtr->x1->index+i) = subtr->b[i];
-				subvec_copy(subtr->b, fcor[k], 1.0, subtr->x1->index);
+				subtr->con->RegisterCorrection(fcor[k].SubVector(subtr->x1->index, n), one);
 			}
 			
 			if(param.useHessian){
+				int nx = fx[k].m;
+				for(int i = 0; i < nx; i++){
+					mat_clear(fxx[k][i]);
+					mat_clear(fux[k][i]);
+					mat_clear(fuu[k][i]);
+				}
 				// set fxx
 				for(SubStateLink& x00 : subtr->x0) for(SubStateLink& x01 : subtr->x0){
 					if(x00.x->var->locked || x01.x->var->locked)
@@ -642,7 +570,7 @@ void Solver::CalcTransitionDDP(){
 			}
 		}
 	}
-	status.timeTrans = timer2.CountUS();
+	status.timeTrans = timer3.CountUS();
 
 	//DSTR << " tf: " << tf << endl;
 	/*
@@ -717,7 +645,7 @@ void Solver::CalcTransitionDDP(){
 }
 
 void Solver::CalcReverseTransitionDDP(){
-	timer2.CountUS();
+	timer3.CountUS();
 
 	vec3_t one(1.0, 1.0, 1.0);
 
@@ -745,8 +673,6 @@ void Solver::CalcReverseTransitionDDP(){
 			
 			int i0 = subtr->con->index;
 			int n  = subtr->con->nelem;
-			// for fcor, constraint weight should be ignored
-            subtr->con->RegisterCorrection(subtr->b, one, 0);
 
 			// set fx
 			for(SubStateLink& x1 : subtr->x1){
@@ -754,11 +680,7 @@ void Solver::CalcReverseTransitionDDP(){
 					continue;
 
 				int m = x1.x->var->nelem;
-				x1.link->RegisterCoef(x1.A, 0, 0, one);
-
-				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fx_rev[k](subtr->x0->index+i, x1.x->index+j) = -x1.A[i][j];
-				
+				x1.link->RegisterCoef(fx_rev[k].SubMatrix(subtr->x0->index, x1.x->index, n, m), -one);
 			}
             
             // set fu
@@ -766,17 +688,12 @@ void Solver::CalcReverseTransitionDDP(){
 				if(u.u->var->locked)
 					continue;
 
-				//int j0 = u->var->index; 
 				int m = u.u->var->nelem;
-				u.link->RegisterCoef(u.A, 0, 0, one);
-
-				for(int i = 0; i < n; i++)for(int j = 0; j < m; j++)
-					fu_rev[k](subtr->x0->index+i, u.u->index+j) = -u.A[i][j];
+				u.link->RegisterCoef(fu_rev[k].SubMatrix(subtr->x0->index, u.u->index, n, m), -one);
 			}
             
             // set correction term
-			for(int i = 0; i < n; i++)
-				fcor_rev[k](subtr->x0->index+i) = subtr->b[i];
+			subtr->con->RegisterCorrection(fcor_rev[k].SubVector(subtr->x0->index, n), one);
 			
 			if(param.useHessian){
 				// set fxx
@@ -828,7 +745,7 @@ void Solver::CalcReverseTransitionDDP(){
 
 		}
 	}
-	status.timeTransRev = timer2.CountUS();
+	status.timeTransRev = timer3.CountUS();
 	/*
 	for(int k = 0; k < N; k++){
 		int nx1 = dx[k+1].n;
@@ -885,39 +802,38 @@ void Solver::CalcCostDDP(){
 		L  [k] = 0.0;
 	}
 
-	timer2.CountUS();
+	timer3.CountUS();
 	// calculate state cost
 #pragma omp parallel for if(param.parallelize)
 	for(int k = 0; k <= N; k++){
 		if(!cost[k])
 			continue;
 
-		for(SubCost* subcost : cost[k]->subcost){     
-            if(!subcost->con->enabled)
-				continue;
-			if(!subcost->con->active)
-				continue;
+		vec_clear(cost[k]->y);
 
+		for(SubCost* subcost : cost[k]->subcost){     
+			if(subcost->index == -1)
+				continue;
+			
 			int n  = subcost->con->nelem;
-			subcost->con->RegisterDeviation(subcost->b, 0);
-			//subcost->con->RegisterCorrection(subcost->b, subcost->con->weight, 0);
+			subcost->con->RegisterDeviation(cost[k]->y.SubVector(subcost->index, n));
 
 			// sum up L
 			if( subcost->con->type == Constraint::Type::Equality ||
 				subcost->con->type == Constraint::Type::InequalityPenalty ){
 				for(int i = 0; i < n; i++){
-					L[k] += 0.5 * square(subcost->con->weight[i]*subcost->b[i]);
+					L[k] += 0.5 * square(subcost->con->weight[i]*cost[k]->y(subcost->index + i));
 				}
 			}
 			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
 				// assume n = 1
-				L[k] += -square(subcost->con->weight[0])*log(std::min(std::max(subcost->con->barrier_margin, subcost->b[0]), 1.0));
+				L[k] += -square(subcost->con->weight[0])*log(std::min(std::max(subcost->con->barrier_margin, cost[k]->y(subcost->index)), 1.0));
 			}
 
 		}
 	}
 
-	status.timeCost = timer2.CountUS();
+	status.timeCost = timer3.CountUS();
 	//DSTR << " tL: " << tL << endl;
 }
 
@@ -932,140 +848,117 @@ void Solver::CalcCostGradientDDP(){
 		mat_clear(Lux[k]);
 	}
 
-	timer2.CountUS();
+	timer3.CountUS();
 	// calculate state cost
 #pragma omp parallel for if(param.parallelize)
 	for(int k = 0; k <= N; k++){
 		if(!cost[k])
 			continue;
 
+		timer4.CountUS();
+		vec_clear(cost[k]->b );
+		mat_clear(cost[k]->Ax);
+		mat_clear(cost[k]->Au);
+
 		for(SubCost* subcost : cost[k]->subcost){     
-            if(!subcost->con->enabled)
-				continue;
-			if(!subcost->con->active)
+			if(subcost->index == -1)
 				continue;
 
 			int n  = subcost->con->nelem;
 
-			// calc Lx
+			// dynamic weight scaling
+			real_t tmp;
+			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+				if(subcost->con->barrier_margin < cost[k]->y(subcost->index) && cost[k]->y(subcost->index) < 1.0)
+					 tmp = 1.0/cost[k]->y(subcost->index);
+				else tmp = 0.0;
+			}
+			else tmp = 1.0;
+
+			// calc b
+			if( subcost->con->type == Constraint::Type::Equality ||
+				subcost->con->type == Constraint::Type::InequalityPenalty ){
+				for(int i = 0; i < n; i++){
+					cost[k]->b(subcost->index + i) = subcost->con->weight[i]*cost[k]->y(subcost->index + i);
+				}
+			}
+			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+				cost[k]->b(subcost->index) = -subcost->con->weight[0];
+			}
+
+			// calc Ax
 			for(SubStateLink& x : subcost->x){
 				if(x.x->var->locked)
 					continue;
 
-				//int j0 = x->var->index;
 				int m = x.x->var->nelem;
-				x.link->RegisterCoef(x.A, 0, 0, subcost->con->weight);
-
-				if( subcost->con->type == Constraint::Type::Equality ||
-					subcost->con->type == Constraint::Type::InequalityPenalty ){
-					// Lx = A^T y
-					for(int j = 0; j < m; j++){
-						for(int i = 0; i < n; i++){
-							Lx[k](x.x->index+j) += x.A[i][j]*(subcost->con->weight[i]*subcost->b[i]);
-						}
-					}
-				}
-				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-					if(subcost->con->barrier_margin < subcost->b[0] && subcost->b[0] < 1.0){
-						for(int j = 0; j < m; j++){
-							Lx[k](x.x->index+j) += x.A[0][j]*(-subcost->con->weight[0]/subcost->b[0]);
-						}
-					}
-				}
+				x.link->RegisterCoef(cost[k]->Ax.SubMatrix(subcost->index, x.x->index, n, m), tmp*subcost->con->weight);
 			}
 
-			// calc Lxx
-			for(SubStateLink& x0 : subcost->x)for(SubStateLink& x1 : subcost->x){
-				if(x0.x->var->locked || x1.x->var->locked)
-					continue;
-
-				int m0  = x0.x->var->nelem;
-				int m1  = x1.x->var->nelem;
-
-				real_t tmp;
-				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-					if(subcost->con->barrier_margin < subcost->b[0] && subcost->b[0] < 1.0)
-						 tmp = 1.0/square(subcost->b[0]);
-					else tmp = 0.0;
-				}
-				else tmp = 1.0;
-				
-				// Lxx = A^T A
-				for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-					for(int i = 0; i < n; i++){
-						Lxx[k](x0.x->index+j0, x1.x->index+j1) += tmp*x0.A[i][j0]*x1.A[i][j1];
-					}
-				}
-			}
-
+			// calc Au
 			if(k < N){
-				// calc Lu
 				for(SubInputLink& u : subcost->u){
 					if(u.u->var->locked)
 						continue;
 
-					//int j0 = u->var->index;
 					int m  = u.u->var->nelem;
-					u.link->RegisterCoef(u.A, 0, 0, subcost->con->weight);
-
-					if( subcost->con->type == Constraint::Type::Equality ||
-						subcost->con->type == Constraint::Type::InequalityPenalty ){
-						for(int j = 0; j < m; j++){
-							for(int i = 0; i < n; i++){
-								Lu[k](u.u->index+j) += u.A[i][j]*(subcost->con->weight[i]*subcost->b[i]);
-							}
-						}
-					}
-					if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-						for(int j = 0; j < m; j++){
-							Lu[k](u.u->index+j) += u.A[0][j]*(-subcost->con->weight[0]/std::max(subcost->con->barrier_margin, subcost->b[0]));
-						}
-					}
+					u.link->RegisterCoef(cost[k]->Au.SubMatrix(subcost->index, u.u->index, n, m), tmp*subcost->con->weight);
 				}
-
-				// calc Luu
-				for(SubInputLink& u0 : subcost->u)for(SubInputLink& u1 : subcost->u){
-					if(u0.u->var->locked || u1.u->var->locked)
-						continue;
-
-					int m0  = u0.u->var->nelem;
-					int m1  = u1.u->var->nelem;
-
-					real_t tmp;
-					if( subcost->con->type == Constraint::Type::InequalityBarrier )
-						 tmp = 1.0/square(std::max(subcost->con->barrier_margin, subcost->b[0]));
-					else tmp = 1.0;
-
-					// Lxx = A^T A
-					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-						for(int i = 0; i < n; i++){
-							Luu[k](u0.u->index+j0, u1.u->index+j1) += tmp*u0.A[i][j0]*u1.A[i][j1];
-						}
-					}
-
-				}
-				// calc Lux
-				for(SubInputLink& u : subcost->u)for(SubStateLink& x : subcost->x){
-					if(u.u->var->locked || x.x->var->locked)
-						continue;
-
-					int m0  = u.u->var->nelem;
-					int m1  = x.x->var->nelem;
-
-					real_t tmp;
-					if( subcost->con->type == Constraint::Type::InequalityBarrier )
-						 tmp = 1.0/square(std::max(subcost->con->barrier_margin, subcost->b[0]));
-					else tmp = 1.0;
-
-					// Lxx = A^T A
-					for(int j0 = 0; j0 < m0; j0++)for(int j1 = 0; j1 < m1; j1++){
-						for(int i = 0; i < n; i++){
-							Lux[k](u.u->index+j0, x.x->index+j1) += tmp*u.A[i][j0]*x.A[i][j1];
-						}
-					}
-				}
-			}            
+			}
 		}
+		int T1 = timer4.CountUS();
+
+		timer4.CountUS();
+		for(SubCost* subcost : cost[k]->subcost){     
+			if(subcost->index == -1)
+				continue;
+
+			int n  = subcost->con->nelem;
+			int nx = subcost->xend - subcost->xbegin;
+
+			if(nx > 0){
+				mattr_vec_mul(
+					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
+					cost[k]->y.SubVector(subcost->index, n),
+					Lx[k].SubVector(subcost->xbegin, nx), 1.0, 1.0);
+				mattr_mat_mul(
+					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
+					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
+					Lxx[k].SubMatrix(subcost->xbegin, subcost->xbegin, nx, nx), 1.0, 1.0);
+			}
+			
+			if(k < N){
+				int nu = subcost->uend - subcost->ubegin;
+				if(nu > 0){	
+					mattr_vec_mul(
+						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+						cost[k]->y.SubVector(subcost->index, n),
+						Lu[k].SubVector(subcost->ubegin, nu), 1.0, 1.0);
+					mattr_mat_mul(
+						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+						Luu[k].SubMatrix(subcost->ubegin, subcost->ubegin, nu, nu), 1.0, 1.0);
+					if(nx > 0){
+						mattr_mat_mul(
+							cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+							cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx),
+							Lux[k].SubMatrix(subcost->ubegin, subcost->xbegin, nu, nx), 1.0, 1.0);
+					}
+				}
+			}
+		}
+
+		//mattr_vec_mul(cost[k]->Ax, cost[k]->y, Lx[k], 1.0, 0.0);
+		//mattr_mat_mul(cost[k]->Ax, cost[k]->Ax, Lxx[k], 1.0, 0.0);
+		//
+		//if(k < N){
+		//	mattr_vec_mul(cost[k]->Au, cost[k]->y , Lu [k], 1.0, 0.0);
+		//	mattr_mat_mul(cost[k]->Au, cost[k]->Au, Luu[k], 1.0, 0.0);
+		//	mattr_mat_mul(cost[k]->Au, cost[k]->Ax, Lux[k], 1.0, 0.0);
+		//}
+		int T2 = timer4.CountUS();
+
+		//DSTR << "costgrad: T1: " << T1 << " T2: " << T2 << endl;
 
         // weights
 		for(SubState* subst : state[k]->substate){
@@ -1095,7 +988,7 @@ void Solver::CalcCostGradientDDP(){
             }
         }
 	}
-	status.timeCostGrad = timer2.CountUS();
+	status.timeCostGrad = timer3.CountUS();
 
 	//DSTR << " tLgrad: " << tLgrad << endl;
 	/*
@@ -1146,7 +1039,7 @@ void Solver::BackwardDDP(){
 	mat_copy(Lxx[N], Vxx[N]);
 
 	for(int k = N-1; k >= 0; k--){
-		timer2.CountUS();
+		timer4.CountUS();
 		mat_vec_mul(Vxx[k+1], fcor[k], Vxx_fcor[k], 1.0, 0.0);
 
 		if(state[k]->dim != 0)
@@ -1198,15 +1091,15 @@ void Solver::BackwardDDP(){
 		    Quu[k](i,i) += param.regularization;
 
 		//PrintSparsity(k, Quu[k]);
-    	tback1 = timer2.CountUS();
+    	tback1 = timer4.CountUS();
 
 		// input dimension could be zero
 		if(Quu[k].m > 0){
-			timer2.CountUS();
+			timer4.CountUS();
             mat_inv_pd(Quu[k], Quuinv[k]);
-			tback2 = timer2.CountUS();
+			tback2 = timer4.CountUS();
         
-			timer2.CountUS();
+			timer4.CountUS();
 			symmat_vec_mul(Quuinv[k], Qu[k], Quuinv_Qu[k], 1.0, 0.0);
 			//Quuinv_Qu = Quuinv*Qu;
 
@@ -1221,7 +1114,7 @@ void Solver::BackwardDDP(){
 				symmat_mat_mul(Quuinv[k], Qux[k], Quuinv_Qux[k], 1.0, 0.0);
 				mattr_mat_mul(Qux[k], Quuinv_Qux[k], Vxx[k], -1.0, 1.0);
 			}
-			tback3 = timer2.CountUS();
+			tback3 = timer4.CountUS();
 			//mat_inv_sym(Quu[k], Quuinv[k]);
 			//
 			//Quuinv_Qu[k] = Quuinv[k]*Qu[k];
@@ -1268,7 +1161,7 @@ void Solver::BackwardDDPContinuous(){
 	mat_copy(Lxx[N], Vxx[N]);
 
 	for(int k = N-1; k >= 0; k--){
-		timer2.CountUS();
+		timer4.CountUS();
 
 		real_t h = dt[k]/1000;
 
@@ -1338,7 +1231,7 @@ void Solver::BackwardDDPContinuous(){
 	    for(int i = 1; i < Vxx[k].m; i++) for(int j = 0; j < i; j++)
 		    Vxx[k](i,j) = Vxx[k](j,i);
 
-		int tback = timer2.CountUS();
+		int tback = timer4.CountUS();
 	}
 }
 
@@ -1356,7 +1249,7 @@ void Solver::ForwardDDP(real_t alpha){
 	}
 
     for(int k = 0; k < N; k++){
-		timer2.CountUS();
+		timer4.CountUS();
 		if(k == 0 && param.fixInitialInput){
 			vec_clear(du[0]);
 		}
@@ -1382,7 +1275,7 @@ void Solver::ForwardDDP(real_t alpha){
 		//du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
 		//dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];
 
-		int tfor = timer2.CountUS();
+		int tfor = timer4.CountUS();
 		//DSTR << "dx[k]: " << dx[k] << endl;
 		//DSTR << "for  " << k << " : " << tfor << endl;
 	}
@@ -1399,7 +1292,7 @@ void Solver::ForwardDDPContinuous(real_t alpha){
 	}
 
     for(int k = 0; k < N; k++){
-		timer2.CountUS();
+		timer4.CountUS();
 		if(input[k]->dim != 0){
 			vec_copy(Qu[k], Qu_plus_Qux_dx[k]);
 			for(int i = 0; i < Qu_plus_Qux_dx[k].n; i++)
@@ -1424,7 +1317,7 @@ void Solver::ForwardDDPContinuous(real_t alpha){
 
 		vec_add(dx[k], dx[k+1]);
 
-		int tfor = timer2.CountUS();
+		int tfor = timer4.CountUS();
 	}
 }
 
@@ -1435,11 +1328,11 @@ void Solver::CalcDirectionDDP(){
 	CalcCostDDP();
 	CalcCostGradientDDP();
 
-	timer.CountUS();
+	timer3.CountUS();
 	if(param.methodMajor == Method::Major::DDPContinuous)
 	 	 BackwardDDPContinuous();
 	else BackwardDDP();
-	status.timeBack = timer.CountUS();
+	status.timeBack = timer3.CountUS();
 }
 
 real_t Solver::CalcObjectiveDDP(){

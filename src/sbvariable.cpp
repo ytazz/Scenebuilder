@@ -117,9 +117,9 @@ void Variable::UpdateConjugate3(uint k, real_t ddzd){
 	dzd[k] += ddzd;
 }
 
-void Variable::RegisterDelta(const vvec_t& dxvec){
+void Variable::RegisterDelta(const Vector& dxvec){
 	for(int n = 0; n < nelem; n++)
-		dx[n] = dxvec[index+n];
+		dx[n] = dxvec(index+n);
 }
 
 }

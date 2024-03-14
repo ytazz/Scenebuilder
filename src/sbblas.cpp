@@ -16,10 +16,11 @@ Vector::Vector(int _n){
 }
 
 Vector::~Vector(){
-	Delete();
+	//Delete();
 }
 
 Vector Vector::SubVector(int ofst, int sz){
+	assert(0 <= ofst && ofst + sz <= n);
 	Vector y;
 	y.vh = vh + ofst;
 	y.n  = sz;
@@ -27,10 +28,15 @@ Vector Vector::SubVector(int ofst, int sz){
 }
 
 void Vector::Delete(){
-	//if(vh) delete[] vh;
+	if(vh) delete[] vh;
+	n  = 0;
+	vh = 0;
 }
 
 void Vector::Allocate(int _n){
+	if(n == _n)
+		return;
+
 	Delete();
 	vh = new double[_n];
 		
@@ -64,9 +70,15 @@ Matrix::~Matrix(){
 
 void Matrix::Delete(){
 	if(vh) delete[] vh;
+	m  = 0;
+	n  = 0;
+	l  = 0;
+	vh = 0;
 }
 
 Matrix Matrix::SubMatrix(int row, int col, int _m, int _n){
+	assert( 0 <= row && row + _m <= m &&
+		    0 <= col && col + _n <= n );
 	Matrix y;
 	y.vh = vh + row + l*col;
 	y.m = _m;
@@ -75,7 +87,18 @@ Matrix Matrix::SubMatrix(int row, int col, int _m, int _n){
 	return y;
 }
 
+Vector Matrix::Col(int col){
+	assert(0 <= col && col < n);
+	Vector c;
+	c.vh = vh + l*col;
+	c.n = m;
+	return c;
+}
+
 void Matrix::Allocate(int _m, int _n){
+	if(m == _m && n == _n)
+		return;
+
 	Delete();
 	vh = new double[_m*_n];
 	
