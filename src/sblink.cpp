@@ -49,7 +49,7 @@ void SLink::AddError(){
 	}
 }
 
-void SLink::RegisterCoef(Matrix& J, vec3_t w){
+void SLink::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -109,7 +109,7 @@ void X3Link::AddError(){
 	con->y += coef % ((V3Var*)var)->val;
 }
 
-void X3Link::RegisterCoef(Matrix& J, vec3_t w){
+void X3Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -177,7 +177,7 @@ void C2Link::AddError(){
 	con->y[1] += coef[1] * ((SVar*)var)->val;
 }
 
-void C2Link::RegisterCoef(Matrix& J, vec3_t w){
+void C2Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -216,7 +216,7 @@ void C3Link::AddError(){
 	con->y += coef * ((SVar*)var)->val;
 }
 
-void C3Link::RegisterCoef(Matrix& J, vec3_t w){
+void C3Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -255,7 +255,7 @@ void R2Link::AddError(){
 	con->y[0] += coef * ((V2Var*)var)->val;
 }
 
-void R2Link::RegisterCoef(Matrix& J, vec3_t w){
+void R2Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -294,7 +294,7 @@ void R3Link::AddError(){
 	con->y[0] += coef * ((V3Var*)var)->val;
 }
 
-void R3Link::RegisterCoef(Matrix& J, vec3_t w){
+void R3Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -340,7 +340,7 @@ void M2Link::AddError(){
 	con->y[1] += coef.row(1) * ((V2Var*)var)->val;
 }
 
-void M2Link::RegisterCoef(Matrix& J, vec3_t w){
+void M2Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);
@@ -390,7 +390,7 @@ void M3Link::AddError(){
 	con->y += coef * ((V3Var*)var)->val;
 }
 
-void M3Link::RegisterCoef(Matrix& J, vec3_t w){
+void M3Link::RegisterCoef(Matrix&& J, vec3_t w){
 	//uint i = con->index;
 	//uint j = var->index;
 	w *= (con->scale_inv*var->scale);

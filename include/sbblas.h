@@ -161,8 +161,9 @@ void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
 	assert(y.n == N);
 	const T* v0 = &v[0];
 	double*  v1 = y.vh;
-	for(int i = 0; i < N; i++)
-		*v1++ = (double)*v0++;
+	memcpy(v1, v0, sizeof(double)*N);
+	//for(int i = 0; i < N; i++)
+	//	*v1++ = (double)*v0++;
 }
 
 template<class T>
@@ -170,8 +171,9 @@ void vec_copy(const PTM::VVector<T>& v, Vector& y){
 	assert(y.n == v.size());
 	const T* v0 = &v[0];
 	double*  v1 = y.vh;
-	for(int i = 0; i < y.n; i++)
-		*v1++ = (double)*v0++;
+	memcpy(v1, v0, sizeof(double)*y.n);
+	//for(int i = 0; i < y.n; i++)
+	//	*v1++ = (double)*v0++;
 }
 
 template<size_t H, size_t W, class D>
@@ -183,9 +185,10 @@ void  mat_copy (const PTM::TMatrixBase<H, W, D>& m1, Matrix&& y){
 	for(int j = 0; j < W; j++, col0 += H, col1 += y.l){
 		const real_t* v0 = col0;
 		double*       v1 = col1;
-		for(int i = 0; i < H; i++){
-			*v1++ = (double)*v0++;
-		}
+		memcpy(v1, v0, sizeof(double)*H);
+		//for(int i = 0; i < H; i++){
+		//	*v1++ = (double)*v0++;
+		//}
 	}
 }
 template<size_t H, size_t W, class D>
@@ -201,9 +204,10 @@ void mat_copy(const PTM::VMatrixCol<T>& m, Matrix& y){
 	for(int j = 0; j < y.n; j++, col0 += y.m, col1 += y.l){
 		const T* v0 = col0;
 		double*  v1 = col1;
-		for(int i = 0; i < y.m; i++){
-			*v1++ = (double)*v0++;
-		}
+		memcpy(v1, v0, sizeof(double)*y.m);
+		//for(int i = 0; i < y.m; i++){
+		//	*v1++ = (double)*v0++;
+		//}
 	}
 }
 
@@ -289,7 +293,7 @@ inline void subvec_copy(const PTM::TVectorBase<N, D>& v, Vector& y, real_t k, in
 	const double* vh0 = &v[0];
 	double* vh1 = &y(i0);
 	for(int i = 0; i < n; i++)
-		*vh1++ = *vh0++;
+		*vh1++ = k*(*vh0++);
 }
 
 template<class T>
@@ -299,9 +303,8 @@ inline void subvec_copy(const PTM::VVector<T>& v, Vector& y, real_t k, int i0){
 	const double* vh0 = &v[0];
 	double* vh1 = &y(i0);
 	for(int i = 0; i < n; i++)
-		*vh1++ = *vh0++;
+		*vh1++ = k*(*vh0++);
 }
-
 
 inline void mat_copy(const Matrix& m1, Matrix&& y){
 	assert(y.m == m1.m && y.n == m1.n);
@@ -377,7 +380,6 @@ inline void submat_copy(const PTM::VMatrixCol<T>& m, Matrix& y, real_t k, int r0
 		}
 	}
 }
-
 
 inline void vec_add(const Vector& v1, Vector&& y){
 	assert(y.n == v1.n);

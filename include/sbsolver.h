@@ -60,6 +60,7 @@ public:
 		real_t         cutoffStepSize;
 		bool           hastyStepSize;
 		real_t         regularization;
+		real_t         stateRegularization;
         real_t         complRelaxation;  ///< relaxation parameter of barrier inequality constraints
 		bool           useHessian;
 		bool           fixInitialState;  ///< fix initial state in ddp

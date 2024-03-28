@@ -29,6 +29,7 @@ Solver::Param::Param(){
 	cutoffStepSize  =  0.001;
 	hastyStepSize   = false;
 	regularization  =  0.001;
+	stateRegularization = 0.0;
     complRelaxation =  1.0;
 	useHessian      = false;
 	parallelize     = false;
@@ -386,7 +387,9 @@ void Solver::Prepare(){
 		if(var->locked)
 			varInfoType[var->tag].numLocked++;
 	}
-	
+
+	int T1 = timer2.CountUS();
+
 	cons_active.clear();
 	for(int i = 0; i < (int)cons_level.size(); i++)
 		cons_level[i].clear();
@@ -418,23 +421,29 @@ void Solver::Prepare(){
 			cons_level[con->level].push_back(con);
 		}
 	}
-	// links pointing to active constraints and unlocked variables
-	for(auto& con : cons_active){
-		con->links_active.clear();
-		for(auto& link : con->links){
-			if(!link->var->locked)
-				con->links_active.push_back(link);
+
+	int T2 = timer2.CountUS();
+
+	if( param.methodMajor == Method::Major::GaussNewton ||
+		param.methodMinor == Method::Minor::GaussSeidel){
+		// links pointing to active constraints and unlocked variables
+		for(auto& con : cons_active){
+			con->links_active.clear();
+			for(auto& link : con->links){
+				if(!link->var->locked)
+					con->links_active.push_back(link);
+			}
+		}
+		for(auto& var : vars_unlocked){
+			var->links_active.clear();
+			for(auto& link : var->links){
+				if(link->con->active)
+					var->links_active.push_back(link);
+			}
 		}
 	}
-	for(auto& var : vars_unlocked){
-		var->links_active.clear();
-		for(auto& link : var->links){
-			if(link->con->active)
-				var->links_active.push_back(link);
-		}
-	}
-	int timeCoef = timer2.CountUS();
-	//DSTR << "tcoef " << timeCoef << endl;
+	int T3 = timer2.CountUS();
+	//DSTR << "T1:  " << T1 << " T2: " << T2 << " T3: " << T3 << endl;
 }
 
 void Solver::CalcEquation(){

@@ -95,8 +95,8 @@ public:
 	/// preparation
 	void CalcError();
 	void CalcCorrection();
-	void RegisterCorrection(Vector& dydvec, const vec3_t& _weight);
-	void RegisterDeviation (Vector& yvec);
+	void RegisterCorrection(Vector&& dydvec, const vec3_t& _weight);
+	void RegisterDeviation (Vector&& yvec);
 
 	/// steepest-descent
 	void UpdateGradient(uint k);

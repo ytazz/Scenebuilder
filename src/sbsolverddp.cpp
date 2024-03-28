@@ -909,6 +909,7 @@ void Solver::CalcCostGradientDDP(){
 		int T1 = timer4.CountUS();
 
 		timer4.CountUS();
+		
 		for(SubCost* subcost : cost[k]->subcost){     
 			if(subcost->index == -1)
 				continue;
@@ -919,7 +920,7 @@ void Solver::CalcCostGradientDDP(){
 			if(nx > 0){
 				mattr_vec_mul(
 					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
-					cost[k]->y.SubVector(subcost->index, n),
+					cost[k]->b .SubVector(subcost->index, n),
 					Lx[k].SubVector(subcost->xbegin, nx), 1.0, 1.0);
 				mattr_mat_mul(
 					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
@@ -932,7 +933,7 @@ void Solver::CalcCostGradientDDP(){
 				if(nu > 0){	
 					mattr_vec_mul(
 						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
-						cost[k]->y.SubVector(subcost->index, n),
+						cost[k]->b .SubVector(subcost->index, n),
 						Lu[k].SubVector(subcost->ubegin, nu), 1.0, 1.0);
 					mattr_mat_mul(
 						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
@@ -947,15 +948,17 @@ void Solver::CalcCostGradientDDP(){
 				}
 			}
 		}
-
-		//mattr_vec_mul(cost[k]->Ax, cost[k]->y, Lx[k], 1.0, 0.0);
-		//mattr_mat_mul(cost[k]->Ax, cost[k]->Ax, Lxx[k], 1.0, 0.0);
-		//
-		//if(k < N){
-		//	mattr_vec_mul(cost[k]->Au, cost[k]->y , Lu [k], 1.0, 0.0);
-		//	mattr_mat_mul(cost[k]->Au, cost[k]->Au, Luu[k], 1.0, 0.0);
-		//	mattr_mat_mul(cost[k]->Au, cost[k]->Ax, Lux[k], 1.0, 0.0);
-		//}
+		
+		/*
+		mattr_vec_mul(cost[k]->Ax, cost[k]->b , Lx[k], 1.0, 0.0);
+		mattr_mat_mul(cost[k]->Ax, cost[k]->Ax, Lxx[k], 1.0, 0.0);
+		
+		if(k < N){
+			mattr_vec_mul(cost[k]->Au, cost[k]->b , Lu [k], 1.0, 0.0);
+			mattr_mat_mul(cost[k]->Au, cost[k]->Au, Luu[k], 1.0, 0.0);
+			mattr_mat_mul(cost[k]->Au, cost[k]->Ax, Lux[k], 1.0, 0.0);
+		}
+		*/
 		int T2 = timer4.CountUS();
 
 		//DSTR << "costgrad: T1: " << T1 << " T2: " << T2 << endl;
@@ -1037,6 +1040,8 @@ void Solver::BackwardDDP(){
  	V  [N] = L  [N];
 	vec_copy(Lx [N], Vx [N]);
 	mat_copy(Lxx[N], Vxx[N]);
+	for(int i = 0; i < Vxx[N].m; i++)
+		Vxx[N](i,i) += param.stateRegularization;
 
 	for(int k = N-1; k >= 0; k--){
 		timer4.CountUS();
@@ -1066,7 +1071,9 @@ void Solver::BackwardDDP(){
         if(state[k]->dim != 0){
 			mat_copy(Lxx[k], Qxx[k]);
 	        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
-
+			
+			for(int i = 0; i < Qxx[k].m; i++)
+				Qxx[k](i,i) += param.stateRegularization;
 
 		}
 
