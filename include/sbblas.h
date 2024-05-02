@@ -48,10 +48,17 @@ struct Vector{
 struct Matrix{
 	int     m, n, l;  //< rows, cols, leading-dim
 	double* vh;
+	sparse_matrix_t  sparse;  //< sparse matrix handle
+	matrix_descr     desc;    //< sparse matrix descriptor
+	int              nnz;
+	vector<double>   val_csr;
+	vector<int>      dict_csr;
 	
 	void Delete  ();
 	void Allocate(int _m, int _n);
 	void Resize  (int _m, int _n);
+	
+	void InitSparse();
 
 	double& operator()(int i, int j)     { assert(0 <= i && i < m && 0 <= j && j < n); return vh[l*j+i]; }
 	double& operator()(int i, int j)const{ assert(0 <= i && i < m && 0 <= j && j < n); return vh[l*j+i]; }
@@ -557,6 +564,11 @@ inline void mat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double a
 }
 inline void mat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta){
 	mat_mat_mul(m1, m2, (Matrix&&)std::move(y), alpha, beta);
+}
+
+inline void spmat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double alpha, double beta){
+	mkl_sparse_d_mm (SPARSE_OPERATION_NON_TRANSPOSE, alpha, m1.sparse, m1.desc, SPARSE_LAYOUT_COLUMN_MAJOR,
+		m2.vh, y.n, m2.l, beta, y.vh, y.l);
 }
 
 //void mat_mat_mul(const SparseMatrix& m1, const Matrix& m2, SparseMatrix& y, double alpha, double beta){

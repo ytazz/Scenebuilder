@@ -17,7 +17,7 @@ Variable::Variable(uint _type, Solver* solver, ID _id, real_t _scale):ID(_id){
 	}
 
 	index          = 0;
-	dmax           = 0.1;
+	dmax           = 1.0;
 	weight         = vec3_t(0.0, 0.0, 0.0);
 	index_weighted = -1;
 	locked         = false;

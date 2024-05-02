@@ -592,6 +592,12 @@ void Solver::CalcTransitionDDP(){
 		fprintf(file, "\n");
 	}
 	fclose(file);
+
+	file = fopen("fcor.csv", "w");
+	for(int i = 0; i < fcor[k].n; i++){
+		fprintf(file, "%f\n", fcor[k](i));
+	}
+	fclose(file);
 	*/
 	/*
 	for(int k = 0; k < N; k++){

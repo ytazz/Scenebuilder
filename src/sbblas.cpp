@@ -54,6 +54,8 @@ Matrix::Matrix(){
 	n  = 0;
 	l  = 0;
 	vh = 0;
+
+	sparse = 0;
 }
 
 Matrix::Matrix(int _m, int _n){
@@ -110,6 +112,45 @@ void Matrix::Allocate(int _m, int _n){
 void Matrix::Resize(int _m, int _n){
 	m = _m;
 	n = _n;
+}
+
+void Matrix::InitSparse(){
+	// newly create for the first time
+	if(!sparse){
+		desc.type = SPARSE_MATRIX_TYPE_GENERAL;
+		
+		// convert to csr format
+		val_csr .clear();
+		dict_csr.clear();
+		vector<int> idx, row_begin(m, -1), row_end(m, -1);
+		// count non-zeros
+		int i = 0;
+		for(int r = 0; r < m; r++){
+			for(int c = 0; c < n; c++){
+				double v = (*this)(r,c);
+				if(!isnan(v)){
+					val_csr.push_back(v);
+					idx.push_back(c);
+					if(row_begin[r] == -1){
+						row_begin[r] = i;
+						row_end  [r] = i;
+					}
+					dict_csr.push_back(l*c+r);
+					row_end[r]++;
+					i++;
+				}
+			}
+		}
+		nnz = i;
+
+		mkl_sparse_d_create_csr(&sparse, SPARSE_INDEX_BASE_ZERO, m, n, &row_begin[0], &row_end[0], &idx[0], &val_csr[0]);
+	}
+	// or update values
+	else{
+		for(int i = 0; i < nnz; i++)
+			val_csr[i] = vh[dict_csr[i]];
+		mkl_sparse_d_update_values (sparse, nnz, 0, 0, &val_csr[0]);
+	}
 }
 
 ostream& operator<<(ostream& os, Vector& v){
