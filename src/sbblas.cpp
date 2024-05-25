@@ -143,13 +143,13 @@ void Matrix::InitSparse(){
 		}
 		nnz = i;
 
-		mkl_sparse_d_create_csr(&sparse, SPARSE_INDEX_BASE_ZERO, m, n, &row_begin[0], &row_end[0], &idx[0], &val_csr[0]);
+		//mkl_sparse_d_create_csr(&sparse, SPARSE_INDEX_BASE_ZERO, m, n, &row_begin[0], &row_end[0], &idx[0], &val_csr[0]);
 	}
 	// or update values
 	else{
 		for(int i = 0; i < nnz; i++)
 			val_csr[i] = vh[dict_csr[i]];
-		mkl_sparse_d_update_values (sparse, nnz, 0, 0, &val_csr[0]);
+		//mkl_sparse_d_update_values (sparse, nnz, 0, 0, &val_csr[0]);
 	}
 }
 

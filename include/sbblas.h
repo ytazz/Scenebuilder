@@ -163,7 +163,7 @@ ostream& operator<<(ostream& os, Vector& v);
 ostream& operator<<(ostream& os, Matrix& m);
 
 template<size_t N, class D>
-void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
+void vec_copy(const PTM::TVectorBase<N, D>& v, Vector&& y){
 	typedef typename D::element_type T;
 	assert(y.n == N);
 	const T* v0 = &v[0];
@@ -171,6 +171,10 @@ void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
 	memcpy(v1, v0, sizeof(double)*N);
 	//for(int i = 0; i < N; i++)
 	//	*v1++ = (double)*v0++;
+}
+template<size_t N, class D>
+void vec_copy(const PTM::TVectorBase<N, D>& v, Vector& y){
+	mat_copy(v, std::move(y));
 }
 
 template<class T>
