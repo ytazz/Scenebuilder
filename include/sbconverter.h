@@ -69,25 +69,33 @@ public:
 		@param	value	value in string
 		**/
 	static bool FromString(string_iterator_pair str, char*  val, size_t len);
-	static bool FromString(string_iterator_pair str, string     &  val);
-	static bool FromString(string_iterator_pair str, Color      &  val);
-	static bool FromString(string_iterator_pair str, bool       &  val);
-	static bool FromString(string_iterator_pair str, int        &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, uint       &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, float      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, double     &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, VVecf      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, VVecd      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec2f      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec2d      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec3f      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec3d      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec4f      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Vec4d      &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Quaternionf&  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Quaterniond&  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Matrix3f   &  val, int dim = Dimension::None);
-	static bool FromString(string_iterator_pair str, Matrix3d   &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, string        &  val);
+	static bool FromString(string_iterator_pair str, Color         &  val);
+	static bool FromString(string_iterator_pair str, bool          &  val);
+	static bool FromString(string_iterator_pair str, int           &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, uint          &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, float         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, double        &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, VVecf         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, VVecd         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, vector<int>   &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, vector<float> &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, vector<double>&  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec2f         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec2d         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec3f         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec3d         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec4f         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Vec4d         &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Quaternionf   &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Quaterniond   &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Matrix3f      &  val, int dim = Dimension::None);
+	static bool FromString(string_iterator_pair str, Matrix3d      &  val, int dim = Dimension::None);
+	
+	template<typename T>
+	static bool FromString(string_iterator_pair str, vector<T>&  val, int dim = Dimension::None){
+
+	}
 	
 	/// ウェブカラー名からRGBAを取得
 	static bool ColorFromName(string_iterator_pair name, Vec4f& c);

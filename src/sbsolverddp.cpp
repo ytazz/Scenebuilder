@@ -573,9 +573,10 @@ void Solver::CalcTransitionDDP(){
 	status.timeTrans = timer3.CountUS();
 
 	//DSTR << " tf: " << tf << endl;
-	/*
-	FILE* file = fopen("fx.csv", "w");
+	FILE* file;
 	int k = 5;
+	/*
+	file = fopen("fx.csv", "w");
 	for(int i = 0; i < fx[k].m; i++){
 		for(int j = 0; j < fx[k].n; j++){
 			fprintf(file, "%f, ", fx[k](i,j));
@@ -592,13 +593,14 @@ void Solver::CalcTransitionDDP(){
 		fprintf(file, "\n");
 	}
 	fclose(file);
-
+	
 	file = fopen("fcor.csv", "w");
 	for(int i = 0; i < fcor[k].n; i++){
 		fprintf(file, "%f\n", fcor[k](i));
 	}
 	fclose(file);
 	*/
+	
 	/*
 	for(int k = 0; k < N; k++){
 		int nx1 = dx[k+1].n;
@@ -820,6 +822,8 @@ void Solver::CalcCostDDP(){
 		for(SubCost* subcost : cost[k]->subcost){     
 			if(subcost->index == -1)
 				continue;
+			if(!subcost->con->active)
+				continue;
 			
 			int n  = subcost->con->nelem;
 			subcost->con->RegisterDeviation(cost[k]->y.SubVector(subcost->index, n));
@@ -869,7 +873,9 @@ void Solver::CalcCostGradientDDP(){
 		for(SubCost* subcost : cost[k]->subcost){     
 			if(subcost->index == -1)
 				continue;
-
+			if(!subcost->con->active)
+				continue;
+			
 			int n  = subcost->con->nelem;
 
 			// dynamic weight scaling
@@ -919,7 +925,9 @@ void Solver::CalcCostGradientDDP(){
 		for(SubCost* subcost : cost[k]->subcost){     
 			if(subcost->index == -1)
 				continue;
-
+			if(!subcost->con->active)
+				continue;
+			
 			int n  = subcost->con->nelem;
 			int nx = subcost->xend - subcost->xbegin;
 

@@ -251,20 +251,12 @@ bool Converter::FromString(string_iterator_pair str, double& val, int dim){
 	}
 }
 
-bool Converter::FromString(string_iterator_pair str, VVecf& val, int dim){
-	VVecd tmp;
-	if(FromString(str, tmp, dim)){
-		for(uint i = 0; i < val.size(); i++)
-			val[i] = (float)tmp[i];
-		return true;
-	}
-	return false;
-}
-bool Converter::FromString(string_iterator_pair str, VVecd& val, int dim){
+template<class V, class T>
+inline bool ArrayFromString(string_iterator_pair str, V& val, int dim){
 	str = eat_white(str);
 	// vvec_t(PTM::VVector)::resizeは内容を保持してくれないので，一度目のパースで要素数を調べ，二度目のパースで数値を読む
 	size_t n;
-	double elem;
+	T elem;
 	
 	// 括弧をスキップしつつトークン化
 	Tokenizer tok;
@@ -273,11 +265,36 @@ bool Converter::FromString(string_iterator_pair str, VVecd& val, int dim){
 	val.resize(n);
 
 	for(n = 0, tok.Set(str, " \t", true, true); !tok.IsEnd(); n++, tok.Next()){
-		if(!FromString(tok.GetToken(), elem, dim))
+		if(!Converter::FromString(tok.GetToken(), elem, dim))
 			return false;
 		val[n] = elem;
 	}
 	return true;
+}
+
+bool Converter::FromString(string_iterator_pair str, VVecf& val, int dim){
+	/*
+	VVecd tmp;
+	if(FromString(str, tmp, dim)){
+		for(uint i = 0; i < val.size(); i++)
+			val[i] = (float)tmp[i];
+		return true;
+	}
+	return false;
+	*/
+	return ArrayFromString<VVecf, float>(str, val, dim);
+}
+bool Converter::FromString(string_iterator_pair str, VVecd& val, int dim){
+	return ArrayFromString<VVecd, double>(str, val, dim);
+}
+bool Converter::FromString(string_iterator_pair str, vector<int>   &  val, int dim){
+	return ArrayFromString<vector<int>, int>(str, val, dim);
+}
+bool Converter::FromString(string_iterator_pair str, vector<float> &  val, int dim){
+	return ArrayFromString<vector<float>, float>(str, val, dim);
+}
+bool Converter::FromString(string_iterator_pair str, vector<double>&  val, int dim){
+	return ArrayFromString<vector<double>, double>(str, val, dim);
 }
 
 bool Converter::FromString(string_iterator_pair str, Vec2f& val, int dim){
