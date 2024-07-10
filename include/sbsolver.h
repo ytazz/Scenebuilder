@@ -66,6 +66,7 @@ public:
 		bool           fixInitialState;  ///< fix initial state in ddp
 		bool           fixInitialInput;  ///< fix initial input in ddp
 		bool           parallelize;
+		bool           enableSparse;     ///< use sparse matrix in ddp
 		
 		Param();
 	};
@@ -254,8 +255,8 @@ public:
 	vector<Vector>    Vx, dVx;
 	vector<Matrix>    Vxx, dVxx;
 	vector<Vector>    Vxx_fcor;
-	vector<Matrix>    Vxx_fx;
-	vector<Matrix>    Vxx_fu;
+	vector<Matrix>    Vxx_fx, fxtr_Vxx;
+	vector<Matrix>    Vxx_fu, futr_Vxx;
     vector<Vector>    Vx_plus_Vxx_fcor;
 	vector<Matrix>    Quuinv_Qux;
 	vector<Vector>    Qu_plus_Qux_dx;

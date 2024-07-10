@@ -310,7 +310,9 @@ void Solver::InitDDP(){
 	dVxx     .resize(N+1);
 	Vxx_fcor .resize(N);
 	Vxx_fx   .resize(N);
+	fxtr_Vxx .resize(N);
 	Vxx_fu   .resize(N);
+	futr_Vxx .resize(N);
 	Vx_plus_Vxx_fcor.resize(N);
 	Quuinv_Qux      .resize(N);
 	Qu_plus_Qux_dx  .resize(N);
@@ -370,7 +372,9 @@ void Solver::InitDDP(){
 			Qux      [k].Allocate(nu , nx );
 	        Vxx_fcor [k].Allocate(nx1     );
 	        Vxx_fx   [k].Allocate(nx1, nx );
+	        fxtr_Vxx [k].Allocate(nx , nx1);
 	        Vxx_fu   [k].Allocate(nx1, nu );
+			futr_Vxx [k].Allocate(nu , nx1);
 			Vx_plus_Vxx_fcor[k].Allocate(nx1);
 			Quuinv_Qux      [k].Allocate(nu, nx);
 			Qu_plus_Qux_dx  [k].Allocate(nu);
@@ -434,9 +438,10 @@ void Solver::CalcTransitionDDP(){
 			hinv = 1.0/h;	
 		}
 
-		mat_clear(fx  [k]);
-		mat_clear(fu  [k]);
+		mat_clear(fx  [k], param.enableSparse ? std::nan("") : 0.0);
+		mat_clear(fu  [k], param.enableSparse ? std::nan("") : 0.0);
         vec_clear(fcor[k]);
+
 		for(SubTransition* subtr : tr->subtran){
 			if(!subtr->con->enabled)
 				continue;
@@ -568,6 +573,11 @@ void Solver::CalcTransitionDDP(){
 					}
 				}
 			}
+		}
+
+		if(param.enableSparse){
+			fx[k].InitSparse();
+			fu[k].InitSparse();
 		}
 	}
 	status.timeTrans = timer3.CountUS();
@@ -1061,11 +1071,25 @@ void Solver::BackwardDDP(){
 		timer4.CountUS();
 		mat_vec_mul(Vxx[k+1], fcor[k], Vxx_fcor[k], 1.0, 0.0);
 
-		if(state[k]->dim != 0)
-			mat_mat_mul(Vxx[k+1], fx  [k], Vxx_fx  [k], 1.0, 0.0);
+		if(state[k]->dim != 0){
+			if(param.enableSparse){
+				spmattr_mat_mul(fx[k], Vxx[k+1], fxtr_Vxx[k], 1.0, 0.0);
+				mattr_copy(fxtr_Vxx[k], Vxx_fx[k]);
+			}
+			else{
+				mat_mat_mul(Vxx[k+1], fx[k], Vxx_fx[k], 1.0, 0.0);
+			}
+		}
 
-		if(input[k]->dim != 0)
-			mat_mat_mul(Vxx[k+1], fu  [k], Vxx_fu  [k], 1.0, 0.0);
+		if(input[k]->dim != 0){
+			if(param.enableSparse){
+				spmattr_mat_mul(fu[k], Vxx[k+1], futr_Vxx[k], 1.0, 0.0);
+				mattr_copy(futr_Vxx[k], Vxx_fu[k]);
+			}
+			else{
+				mat_mat_mul(Vxx[k+1], fu[k], Vxx_fu[k], 1.0, 0.0);
+			}
+		}
 
         vec_copy(Vx[k+1]    , Vx_plus_Vxx_fcor[k]);
         vec_add (Vxx_fcor[k], Vx_plus_Vxx_fcor[k]);
@@ -1074,17 +1098,32 @@ void Solver::BackwardDDP(){
         
         if(state[k]->dim != 0){
 			vec_copy(Lx[k], Qx[k]);
-			mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+			if(param.enableSparse){
+				spmattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+			}
+			else{
+				mattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
+			}
 		}
 
         if(input[k]->dim != 0){
 			vec_copy(Lu[k], Qu[k]);
-			mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+			if(param.enableSparse){
+				spmattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+			}
+			else{
+				mattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
+			}
 		}
 
         if(state[k]->dim != 0){
 			mat_copy(Lxx[k], Qxx[k]);
-	        mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+			if(param.enableSparse){
+				spmattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+			}
+			else{
+				mattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
+			}
 			
 			for(int i = 0; i < Qxx[k].m; i++)
 				Qxx[k](i,i) += param.stateRegularization;
@@ -1093,12 +1132,22 @@ void Solver::BackwardDDP(){
 
         if(input[k]->dim != 0){
 			mat_copy(Luu[k], Quu[k]);
-			mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+			if(param.enableSparse){
+				spmattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+			}
+			else{
+				mattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
+			}
 		}
 
         if(input[k]->dim != 0 && state[k]->dim != 0){
 			mat_copy(Lux[k], Qux[k]);
-	        mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+			if(param.enableSparse){
+				spmattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+			}
+			else{
+			    mattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
+			}
 		}
 
 		//Q  [k] = L  [k] + V[k+1] + Vx[k+1]*f_cor[k] + (1.0/2.0)*((Vxx[k+1]*f_cor[k])*f_cor[k]);
@@ -1287,11 +1336,23 @@ void Solver::ForwardDDP(real_t alpha){
 
         vec_copy(fcor[k], dx[k+1]);
 
-		if(state[k]->dim != 0)
-			mat_vec_mul(fx  [k], dx[k], dx[k+1], 1.0, 1.0);
+		if(state[k]->dim != 0){
+			if(param.enableSparse){
+				spmat_vec_mul(fx[k], dx[k], dx[k+1], 1.0, 1.0);
+			}
+			else{
+				mat_vec_mul(fx[k], dx[k], dx[k+1], 1.0, 1.0);
+			}
+		}
 
-		if(input[k]->dim != 0)
-			mat_vec_mul(fu  [k], du[k], dx[k+1], 1.0, 1.0);
+		if(input[k]->dim != 0){
+			if(param.enableSparse){
+				spmat_vec_mul(fu[k], du[k], dx[k+1], 1.0, 1.0);
+			}
+			else{
+				mat_vec_mul(fu[k], du[k], dx[k+1], 1.0, 1.0);
+			}
+		}
 
 		//du[k] = -Quuinv[k]*(Qu[k] + Qux[k]*dx[k]);
 		//dx[k+1] = fx[k]*dx[k] + fu[k]*du[k] + f_cor[k];

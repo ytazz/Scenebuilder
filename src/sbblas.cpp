@@ -122,7 +122,11 @@ void Matrix::InitSparse(){
 		// convert to csr format
 		val_csr .clear();
 		dict_csr.clear();
-		vector<int> idx, row_begin(m, -1), row_end(m, -1);
+		col_idx .clear();
+		row_begin.resize(m);
+		row_end  .resize(m);
+		fill(row_begin.begin(), row_begin.end(), 0);
+		fill(row_end  .begin(), row_end  .end(), 0);
 		// count non-zeros
 		int i = 0;
 		for(int r = 0; r < m; r++){
@@ -130,8 +134,8 @@ void Matrix::InitSparse(){
 				double v = (*this)(r,c);
 				if(!isnan(v)){
 					val_csr.push_back(v);
-					idx.push_back(c);
-					if(row_begin[r] == -1){
+					col_idx.push_back(c);
+					if(row_begin[r] == row_end[r]){
 						row_begin[r] = i;
 						row_end  [r] = i;
 					}
@@ -143,13 +147,14 @@ void Matrix::InitSparse(){
 		}
 		nnz = i;
 
-		//mkl_sparse_d_create_csr(&sparse, SPARSE_INDEX_BASE_ZERO, m, n, &row_begin[0], &row_end[0], &idx[0], &val_csr[0]);
+		mkl_sparse_d_create_csr(&sparse, SPARSE_INDEX_BASE_ZERO, m, n, &row_begin[0], &row_end[0], &col_idx[0], &val_csr[0]);
 	}
 	// or update values
 	else{
 		for(int i = 0; i < nnz; i++)
 			val_csr[i] = vh[dict_csr[i]];
-		//mkl_sparse_d_update_values (sparse, nnz, 0, 0, &val_csr[0]);
+		
+		mkl_sparse_d_update_values (sparse, nnz, 0, 0, &val_csr[0]);
 	}
 }
 

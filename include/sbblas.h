@@ -48,15 +48,18 @@ struct Vector{
 struct Matrix{
 	int     m, n, l;  //< rows, cols, leading-dim
 	double* vh;
+
 	sparse_matrix_t  sparse;  //< sparse matrix handle
 	matrix_descr     desc;    //< sparse matrix descriptor
 	int              nnz;
 	vector<double>   val_csr;
 	vector<int>      dict_csr;
-	
-	void Delete  ();
-	void Allocate(int _m, int _n);
-	void Resize  (int _m, int _n);
+	vector<int>      col_idx, row_begin, row_end;
+
+	void Delete   ();
+	void Allocate (int _m, int _n);
+	void Resize   (int _m, int _n);
+	void Transpose();  ///< transpose by changing layout
 	
 	void InitSparse();
 
@@ -222,14 +225,14 @@ void mat_copy(const PTM::VMatrixCol<T>& m, Matrix& y){
 	}
 }
 
-inline void vec_clear(Vector&& y){
-	memset(y.vh, 0, sizeof(double)*y.n);
-	//double* vh = y.vh;
-	//for(int i = 0; i < y.n; i++)
-	//	*vh++ = 0.0;
+inline void vec_clear(Vector&& y, double val = 0.0){
+	//memset(y.vh, 0, sizeof(double)*y.n);
+	double* vh = y.vh;
+	for(int i = 0; i < y.n; i++)
+		*vh++ = val;
 }
-inline void vec_clear(Vector& y){
-	vec_clear((Vector&&)std::move(y));
+inline void vec_clear(Vector& y, double val = 0.0){
+	vec_clear((Vector&&)std::move(y), val);
 }
 
 inline void vec_clear(SparseVector& y){
@@ -245,18 +248,18 @@ inline double vec_norm(const Vector& v){
 	return sqrt(vn);
 }
 
-inline void mat_clear(Matrix&& y){
+inline void mat_clear(Matrix&& y, double val = 0.0){
 	double* vh0 = y.vh;
 	for(int j = 0; j < y.n; j++, vh0 += y.l){
-		memset(vh0, 0, sizeof(double)*y.m);
-		//double* vh = vh0;
-		//for(int i = 0; i < y.m; i++, vh++){
-		//	*vh = 0.0;
-		//}
+		//memset(vh0, 0, sizeof(double)*y.m);
+		double* vh = vh0;
+		for(int i = 0; i < y.m; i++, vh++){
+			*vh = val;
+		}
 	}
 }
-inline void mat_clear(Matrix& y){
-	mat_clear((Matrix&&)std::move(y));
+inline void mat_clear(Matrix& y, double val = 0.0){
+	mat_clear((Matrix&&)std::move(y), val);
 }
 
 inline void mat_clear(SparseMatrix& y){
@@ -342,11 +345,28 @@ inline void mat_copy(const Matrix& m1, Matrix&& y, real_t k){
 		}
 	}
 }
+inline void mattr_copy(const Matrix& m1, Matrix&& y){
+	assert(y.m == m1.n && y.n == m1.m);
+	double* col0 = m1.vh;
+	double* row1 = y .vh;
+	for(int j = 0; j < m1.n; j++, col0 += m1.l, row1++){
+		double* v0 = col0;
+		double* v1 = row1;
+		for(int i = 0; i < m1.m; i++){
+			*v1 = *v0++;
+			v1 += y.l;
+		}
+	}
+}
+
 inline void mat_copy(const Matrix& m1, Matrix& y){
 	mat_copy(m1, (Matrix&&)std::move(y));
 }
 inline void mat_copy(const Matrix& m1, Matrix& y, real_t k){
 	mat_copy(m1, (Matrix&&)std::move(y), k);
+}
+inline void mattr_copy(const Matrix& m1, Matrix& y){
+	mattr_copy(m1, (Matrix&&)std::move(y));
 }
 
 inline void mat_copy (const SparseMatrix& m1, SparseMatrix& y){
@@ -570,8 +590,18 @@ inline void mat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double al
 	mat_mat_mul(m1, m2, (Matrix&&)std::move(y), alpha, beta);
 }
 
-inline void spmat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix&& y, double alpha, double beta){
+inline void spmat_vec_mul(const Matrix& m1, const Vector& v, Vector& y, double alpha, double beta){
+	mkl_sparse_d_mv (SPARSE_OPERATION_NON_TRANSPOSE, alpha, m1.sparse, m1.desc, v.vh, beta, y.vh);
+}
+inline void spmattr_vec_mul(const Matrix& m1, const Vector& v, Vector& y, double alpha, double beta){
+	mkl_sparse_d_mv (SPARSE_OPERATION_TRANSPOSE, alpha, m1.sparse, m1.desc, v.vh, beta, y.vh);
+}
+inline void spmat_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta){
 	mkl_sparse_d_mm (SPARSE_OPERATION_NON_TRANSPOSE, alpha, m1.sparse, m1.desc, SPARSE_LAYOUT_COLUMN_MAJOR,
+		m2.vh, y.n, m2.l, beta, y.vh, y.l);
+}
+inline void spmattr_mat_mul(const Matrix& m1, const Matrix& m2, Matrix& y, double alpha, double beta){
+	mkl_sparse_d_mm (SPARSE_OPERATION_TRANSPOSE, alpha, m1.sparse, m1.desc, SPARSE_LAYOUT_COLUMN_MAJOR,
 		m2.vh, y.n, m2.l, beta, y.vh, y.l);
 }
 
