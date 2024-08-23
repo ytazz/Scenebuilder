@@ -35,7 +35,6 @@ Solver::Param::Param(){
 	parallelize     = false;
 	fixInitialState = false;
 	fixInitialInput = false;
-	parallelize     = false;
 	enableSparse    = false;
 
 	numIter.resize(10, 1);
