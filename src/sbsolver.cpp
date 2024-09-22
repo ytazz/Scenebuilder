@@ -70,6 +70,8 @@ Solver::ConstraintInfo::ConstraintInfo(){
 
 Solver::Solver(){
 	ready = false;
+
+	ddpCallback = 0;
 }
 
 void Solver::AddVar(Variable* var){

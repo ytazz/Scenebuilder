@@ -19,6 +19,15 @@ typedef vector< Constraint* >			Constraints;
 typedef vector< UTRef<Constraint> >		ConstraintRefs;
 typedef vector< UTRef<Link> >			LinkRefs;
 
+struct DDPCallback{
+	virtual void mat_fx_mul  (Matrix& V , Matrix& fx, Matrix& y, bool add) = 0;
+	virtual void mat_fu_mul  (Matrix& V , Matrix& fu, Matrix& y, bool add) = 0;
+	virtual void fxtr_mat_mul(Matrix& fx, Matrix& V , Matrix& y, bool add) = 0;
+	virtual void futr_mat_mul(Matrix& fu, Matrix& V , Matrix& y, bool add) = 0;
+	virtual void fxtr_vec_mul(Matrix& fx, Vector& v , Vector& y, bool add) = 0;
+	virtual void futr_vec_mul(Matrix& fu, Vector& v , Vector& y, bool add) = 0;
+};
+
 class Solver : public UTRefCount{
 public:
 	struct Method{
@@ -192,6 +201,11 @@ public:
 		Vector  y, b;
 		Matrix  Ax;
 		Matrix  Au;
+
+		bool    useQuadWeight;      //< use fully quadratic weight
+		real_t  Vconst;             //< cost constant term
+		Vector  Vy, Vy_plus_Vyy_y;  //< cost gradient
+		Matrix  Vyy, Axtr_Vyy;      //< cost Hessian
 	};
 	
 	Param            param;
@@ -220,6 +234,8 @@ public:
 	vector<ConstraintInfo>  conInfoLevel;		///< sum for each priority level
 
 	bool  ready;
+
+	DDPCallback*  ddpCallback;
 
 	vector< UTRef<State> >             state;
 	vector< UTRef<Input> >             input;

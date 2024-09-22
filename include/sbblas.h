@@ -419,9 +419,20 @@ inline void vec_add(const Vector& v1, Vector&& y){
 	for(int i = 0; i < v1.n; i++)
 		*vh1++ += *vh0++;
 }
+inline void vec_add(const Vector& v1, Vector&& y, real_t k){
+	assert(y.n == v1.n);
+	double* vh0 = v1.vh;
+	double* vh1 = y .vh;
+	for(int i = 0; i < v1.n; i++)
+		*vh1++ += k*(*vh0++);
+}
 inline void vec_add(const Vector& v1, Vector& y){
 	vec_add(v1, (Vector&&)std::move(y));
 }
+inline void vec_add(const Vector& v1, Vector& y, real_t k){
+	vec_add(v1, (Vector&&)std::move(y), k);
+}
+
 
 inline void vec_add(const SparseVector& v1, SparseVector& y){
 	for(SparseVector::const_iterator it = v1.begin(); it != v1.end(); it++){
@@ -675,6 +686,9 @@ inline void  mat_eye(Matrix& m){
 	assert(m.m == m.n);
 	for(int j = 0; j < m.n; j++)for(int i = 0; i < m.m; i++)
 		m(i,j) = (i == j ? 1.0f : 0.0f);
+}
+inline void mat_identity(Matrix& m){
+	mat_eye(m);
 }
 
 inline void  mat_diag(const Vector& v, Matrix& m){

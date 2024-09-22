@@ -501,7 +501,7 @@ void Solver::CalcTransitionDDP(){
 			else{
 				subtr->con->RegisterCorrection(fcor[k].SubVector(subtr->x1->index, n), one);
 			}
-			
+
 			if(param.useHessian){
 				int nx = fx[k].m;
 				for(int i = 0; i < nx; i++){
@@ -583,9 +583,9 @@ void Solver::CalcTransitionDDP(){
 	status.timeTrans = timer3.CountUS();
 
 	//DSTR << " tf: " << tf << endl;
+	/*
 	FILE* file;
 	int k = 5;
-	/*
 	file = fopen("fx.csv", "w");
 	for(int i = 0; i < fx[k].m; i++){
 		for(int j = 0; j < fx[k].n; j++){
@@ -827,8 +827,8 @@ void Solver::CalcCostDDP(){
 		if(!cost[k])
 			continue;
 
+		// register y vector
 		vec_clear(cost[k]->y);
-
 		for(SubCost* subcost : cost[k]->subcost){     
 			if(subcost->index == -1)
 				continue;
@@ -837,19 +837,33 @@ void Solver::CalcCostDDP(){
 			
 			int n  = subcost->con->nelem;
 			subcost->con->RegisterDeviation(cost[k]->y.SubVector(subcost->index, n));
+		}
 
-			// sum up L
-			if( subcost->con->type == Constraint::Type::Equality ||
-				subcost->con->type == Constraint::Type::InequalityPenalty ){
-				for(int i = 0; i < n; i++){
-					L[k] += 0.5 * square(subcost->con->weight[i]*cost[k]->y(subcost->index + i));
+		// use custom quadratic weight
+		if(cost[k]->useQuadWeight){
+			L[k] = cost[k]->Vconst + vec_dot(cost[k]->Vy, cost[k]->y) + (1.0/2.0)*quadform(cost[k]->Vyy, cost[k]->y, cost[k]->y);
+		}
+		// otherwise, sum up cost using the weight of each constraint
+		else{
+			for(SubCost* subcost : cost[k]->subcost){     
+				if(subcost->index == -1)
+					continue;
+				if(!subcost->con->active)
+					continue;
+	
+				int n  = subcost->con->nelem;
+				if( subcost->con->type == Constraint::Type::Equality ||
+					subcost->con->type == Constraint::Type::InequalityPenalty ){
+					for(int i = 0; i < n; i++){
+						L[k] += 0.5 * square(subcost->con->weight[i]*cost[k]->y(subcost->index + i));
+					}
 				}
-			}
-			if( subcost->con->type == Constraint::Type::InequalityBarrier ){
-				// assume n = 1
-				L[k] += -square(subcost->con->weight[0])*log(std::min(std::max(subcost->con->barrier_margin, cost[k]->y(subcost->index)), 1.0));
-			}
+				if( subcost->con->type == Constraint::Type::InequalityBarrier ){
+					// assume n = 1
+					L[k] += -square(subcost->con->weight[0])*log(std::min(std::max(subcost->con->barrier_margin, cost[k]->y(subcost->index)), 1.0));
+				}
 
+			}
 		}
 	}
 
@@ -932,62 +946,80 @@ void Solver::CalcCostGradientDDP(){
 
 		timer4.CountUS();
 		
-		for(SubCost* subcost : cost[k]->subcost){     
-			if(subcost->index == -1)
-				continue;
-			if(!subcost->con->active)
-				continue;
-			
-			int n  = subcost->con->nelem;
-			int nx = subcost->xend - subcost->xbegin;
+		//
+		if(cost[k]->useQuadWeight){
+			// current implementation assumes custom weight is used for terminal cost only
+			// so input cost is ignored
+			cost[k]->Axtr_Vyy.Allocate(dx[k].n, cost[k]->dim);
+			cost[k]->Vy_plus_Vyy_y.Allocate(cost[k]->dim);
 
-			if(nx > 0){
-				mattr_vec_mul(
-					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
-					cost[k]->b .SubVector(subcost->index, n),
-					Lx[k].SubVector(subcost->xbegin, nx), 1.0, 1.0);
-				mattr_mat_mul(
-					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
-					cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
-					Lxx[k].SubMatrix(subcost->xbegin, subcost->xbegin, nx, nx), 1.0, 1.0);
-			}
+			vec_copy(cost[k]->Vy, cost[k]->Vy_plus_Vyy_y);
+			mat_vec_mul(cost[k]->Vyy, cost[k]->y, cost[k]->Vy_plus_Vyy_y, 1.0, 1.0);
+			mattr_vec_mul(cost[k]->Ax, cost[k]->Vy_plus_Vyy_y, Lx[k], 1.0, 0.0);
+
+			mattr_mat_mul(cost[k]->Ax, cost[k]->Vyy, cost[k]->Axtr_Vyy, 1.0, 0.0);
+			mat_mat_mul  (cost[k]->Axtr_Vyy, cost[k]->Ax, Lxx[k], 1.0, 0.0);
+		}
+		else{
+			for(SubCost* subcost : cost[k]->subcost){     
+				if(subcost->index == -1)
+					continue;
+				if(!subcost->con->active)
+					continue;
 			
-			if(k < N){
-				int nu = subcost->uend - subcost->ubegin;
-				if(nu > 0){	
+				int n  = subcost->con->nelem;
+				int nx = subcost->xend - subcost->xbegin;
+
+				if(nx > 0){
 					mattr_vec_mul(
-						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+						cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
 						cost[k]->b .SubVector(subcost->index, n),
-						Lu[k].SubVector(subcost->ubegin, nu), 1.0, 1.0);
+						Lx[k].SubVector(subcost->xbegin, nx), 1.0, 1.0);
 					mattr_mat_mul(
-						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
-						cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
-						Luu[k].SubMatrix(subcost->ubegin, subcost->ubegin, nu, nu), 1.0, 1.0);
-					if(nx > 0){
+						cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
+						cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx), 
+						Lxx[k].SubMatrix(subcost->xbegin, subcost->xbegin, nx, nx), 1.0, 1.0);
+				}
+			
+				if(k < N){
+					int nu = subcost->uend - subcost->ubegin;
+					if(nu > 0){	
+						mattr_vec_mul(
+							cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+							cost[k]->b .SubVector(subcost->index, n),
+							Lu[k].SubVector(subcost->ubegin, nu), 1.0, 1.0);
 						mattr_mat_mul(
 							cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
-							cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx),
-							Lux[k].SubMatrix(subcost->ubegin, subcost->xbegin, nu, nx), 1.0, 1.0);
+							cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+							Luu[k].SubMatrix(subcost->ubegin, subcost->ubegin, nu, nu), 1.0, 1.0);
+						if(nx > 0){
+							mattr_mat_mul(
+								cost[k]->Au.SubMatrix(subcost->index, subcost->ubegin, n, nu),
+								cost[k]->Ax.SubMatrix(subcost->index, subcost->xbegin, n, nx),
+								Lux[k].SubMatrix(subcost->ubegin, subcost->xbegin, nu, nx), 1.0, 1.0);
+						}
 					}
 				}
 			}
-		}
 		
-		/*
-		mattr_vec_mul(cost[k]->Ax, cost[k]->b , Lx[k], 1.0, 0.0);
-		mattr_mat_mul(cost[k]->Ax, cost[k]->Ax, Lxx[k], 1.0, 0.0);
+			/*
+			// calculate using whole dense matrix multiplication
+			// this is expensive considering Ax and Au are highly sparse
+			mattr_vec_mul(cost[k]->Ax, cost[k]->b , Lx[k], 1.0, 0.0);
+			mattr_mat_mul(cost[k]->Ax, cost[k]->Ax, Lxx[k], 1.0, 0.0);
 		
-		if(k < N){
-			mattr_vec_mul(cost[k]->Au, cost[k]->b , Lu [k], 1.0, 0.0);
-			mattr_mat_mul(cost[k]->Au, cost[k]->Au, Luu[k], 1.0, 0.0);
-			mattr_mat_mul(cost[k]->Au, cost[k]->Ax, Lux[k], 1.0, 0.0);
+			if(k < N){
+				mattr_vec_mul(cost[k]->Au, cost[k]->b , Lu [k], 1.0, 0.0);
+				mattr_mat_mul(cost[k]->Au, cost[k]->Au, Luu[k], 1.0, 0.0);
+				mattr_mat_mul(cost[k]->Au, cost[k]->Ax, Lux[k], 1.0, 0.0);
+			}
+			*/
 		}
-		*/
 		int T2 = timer4.CountUS();
 
 		//DSTR << "costgrad: T1: " << T1 << " T2: " << T2 << endl;
 
-        // weights
+        // weights assigned to variables
 		for(SubState* subst : state[k]->substate){
             if(subst->var->locked)
                 continue;
@@ -1072,7 +1104,10 @@ void Solver::BackwardDDP(){
 		mat_vec_mul(Vxx[k+1], fcor[k], Vxx_fcor[k], 1.0, 0.0);
 
 		if(state[k]->dim != 0){
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->mat_fx_mul(Vxx[k+1], fx[k], Vxx_fx[k], false);
+			}
+			else if(param.enableSparse){
 				spmattr_mat_mul(fx[k], Vxx[k+1], fxtr_Vxx[k], 1.0, 0.0);
 				mattr_copy(fxtr_Vxx[k], Vxx_fx[k]);
 			}
@@ -1082,7 +1117,10 @@ void Solver::BackwardDDP(){
 		}
 
 		if(input[k]->dim != 0){
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->mat_fu_mul(Vxx[k+1], fu[k], Vxx_fu[k], false);
+			}
+			else if(param.enableSparse){
 				spmattr_mat_mul(fu[k], Vxx[k+1], futr_Vxx[k], 1.0, 0.0);
 				mattr_copy(futr_Vxx[k], Vxx_fu[k]);
 			}
@@ -1098,7 +1136,10 @@ void Solver::BackwardDDP(){
         
         if(state[k]->dim != 0){
 			vec_copy(Lx[k], Qx[k]);
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->fxtr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], true);
+			}
+			else if(param.enableSparse){
 				spmattr_vec_mul(fx[k], Vx_plus_Vxx_fcor[k], Qx[k], 1.0, 1.0);
 			}
 			else{
@@ -1108,7 +1149,10 @@ void Solver::BackwardDDP(){
 
         if(input[k]->dim != 0){
 			vec_copy(Lu[k], Qu[k]);
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->futr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], true);
+			}
+			else if(param.enableSparse){
 				spmattr_vec_mul(fu[k], Vx_plus_Vxx_fcor[k], Qu[k], 1.0, 1.0);
 			}
 			else{
@@ -1118,7 +1162,10 @@ void Solver::BackwardDDP(){
 
         if(state[k]->dim != 0){
 			mat_copy(Lxx[k], Qxx[k]);
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->fxtr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], true);
+			}
+			else if(param.enableSparse){
 				spmattr_mat_mul(fx[k], Vxx_fx[k], Qxx[k], 1.0, 1.0);
 			}
 			else{
@@ -1132,7 +1179,10 @@ void Solver::BackwardDDP(){
 
         if(input[k]->dim != 0){
 			mat_copy(Luu[k], Quu[k]);
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->futr_mat_mul(fu[k], Vxx_fu[k], Quu[k], true);
+			}
+			else if(param.enableSparse){
 				spmattr_mat_mul(fu[k], Vxx_fu[k], Quu[k], 1.0, 1.0);
 			}
 			else{
@@ -1142,7 +1192,10 @@ void Solver::BackwardDDP(){
 
         if(input[k]->dim != 0 && state[k]->dim != 0){
 			mat_copy(Lux[k], Qux[k]);
-			if(param.enableSparse){
+			if(ddpCallback){
+				ddpCallback->futr_mat_mul(fu[k], Vxx_fx[k], Qux[k], true);
+			}
+			else if(param.enableSparse){
 				spmattr_mat_mul(fu[k], Vxx_fx[k], Qux[k], 1.0, 1.0);
 			}
 			else{
