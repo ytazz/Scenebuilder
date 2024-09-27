@@ -206,6 +206,10 @@ public:
 		real_t  Vconst;             //< cost constant term
 		Vector  Vy, Vy_plus_Vyy_y;  //< cost gradient
 		Matrix  Vyy, Axtr_Vyy;      //< cost Hessian
+
+        Cost(){
+            useQuadWeight = false;
+        }
 	};
 	
 	Param            param;
